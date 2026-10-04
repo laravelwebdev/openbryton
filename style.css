@@ -1025,6 +1025,30 @@ body {
 }
 
 @media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .logo-group {
+    width: 100%;
+  }
+
+  .header-badges {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .setting-label-row {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .setting-label {
+    flex: 1;
+    min-width: 0;
+  }
+
   .container {
     padding: 0 16px;
   }
@@ -1090,6 +1114,19 @@ body {
 }
 
 @media (max-width: 480px) {
+  .header-badges {
+    gap: 6px;
+  }
+
+  .header-badges select {
+    width: 100%;
+  }
+
+  .badge {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+  }
+
   .container {
     padding: 0 12px;
   }

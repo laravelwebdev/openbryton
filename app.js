@@ -167,6 +167,11 @@ function showToast(message, type = 'info', autoHide = true) {
     }
   }
 
+  function getInstructionCountLabel(count) {
+    const instructionWord = typeof t === 'function' ? t('instructionCountWord') : 'Instruksi';
+    return `${count} ${instructionWord}`;
+  }
+
   elements.toast.className = `toast toast-${type}`;
   elements.toastMsg.textContent = translatedMsg;
   elements.toast.classList.remove('hidden');
@@ -400,10 +405,10 @@ function resetState() {
 
   elements.turnsTableBody.innerHTML = `
     <tr class="empty-row">
-      <td colspan="8" class="text-center">Belum ada data turn-by-turn. Silakan upload file GPX terlebih dahulu.</td>
+      <td colspan="8" class="text-center">${typeof t === 'function' ? t('emptyTable') : 'Belum ada data turn-by-turn. Silakan upload file GPX terlebih dahulu.'}</td>
     </tr>
   `;
-  elements.turnCounterBadge.textContent = '0 Instruksi';
+  elements.turnCounterBadge.textContent = getInstructionCountLabel(0);
   elements.elevationCanvas.style.display = 'none';
 }
 
@@ -1687,7 +1692,7 @@ function updateStatsAndUI() {
   elements.statOsmTurns.textContent = osmCount;
   elements.statExtraTurns.textContent = extraCount;
   elements.statTotalTurns.textContent = state.combinedInstructions.length;
-  elements.turnCounterBadge.textContent = `${state.combinedInstructions.length} Instruksi`;
+  elements.turnCounterBadge.textContent = getInstructionCountLabel(state.combinedInstructions.length);
 
   renderTurnMarkersOnMap(state.combinedInstructions);
   renderTurnsTable(state.combinedInstructions);

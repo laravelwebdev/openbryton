@@ -101,6 +101,7 @@ const translations = {
     legendTrack: 'Track Path (Blue)',
     layerHint: 'Gunakan ikon layer di pojok kanan atas peta untuk beralih ke <strong>Satelit</strong> / <strong>CyclOSM</strong> / <strong>Street</strong>.',
     turnCounterBadge: '0 Instruksi',
+    instructionCountWord: 'Instruksi',
     btnMinimizeTable: 'Minimize Tabel'
   },
   en: {
@@ -205,6 +206,7 @@ const translations = {
     legendTrack: 'Track Path (Blue)',
     layerHint: 'Use the layer icon in the top right corner of the map to switch to <strong>Satellite</strong> / <strong>CyclOSM</strong> / <strong>Street</strong>.',
     turnCounterBadge: '0 Instructions',
+    instructionCountWord: 'Instructions',
     btnMinimizeTable: 'Minimize Table'
   }
 };
