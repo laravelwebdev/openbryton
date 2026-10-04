@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>OpenBryton Pro — GPX to Bryton Route with OSM TBT, Road Smoothing & Route Editor</title>
   <meta name="description"
     content="Aplikasi konversi GPX ke Bryton Route (.smy, .track, .tinfo, .gpx, .kml) dengan Snap to OSM Road Smoothing, Turn-by-Turn OSM resmi, deteksi sudut cerdas, edit rute interaktif, dan satellite layer.">
@@ -44,7 +44,7 @@
         </div>
         <div>
           <h1 class="logo-title">OpenBryton <span>Pro</span></h1>
-          <p class="logo-subtitle">GPX &rarr; Bryton Rider Route (.zip) with Road Snap, OSM TBT & Editor</p>
+          <p class="logo-subtitle"><span data-i18n-html="true" data-i18n="appSubtitle">GPX &rarr; Bryton Rider Route (.zip) with Road Snap, OSM TBT & Editor</span></p>
         </div>
       </div>
       <div class="header-badges">
@@ -52,9 +52,6 @@
           <option value="id">🇮🇩 ID</option>
           <option value="en">🇬🇧 EN</option>
         </select>
-        <span class="badge badge-bryton"><i data-lucide="cpu"></i> Bryton Rider Format</span>
-        <span class="badge badge-osm"><i data-lucide="map"></i> OSM Road Snap</span>
-        <span class="badge badge-vercel"><i data-lucide="zap"></i> Vercel Ready</span>
       </div>
     </div>
   </header>
@@ -66,7 +63,7 @@
       <!-- Sidebar Header / Minimize Button -->
       <div class="sidebar-top-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; color:#f1f5f9; padding: 0 5px;">
         <span class="sidebar-title" id="sidebarTitle" style="font-weight:600; display:flex; align-items:center; gap:8px;"><i data-lucide="settings"></i> Panel</span>
-        <button class="btn btn-icon btn-sm" id="btnToggleSidebarUI" title="Minimize Panel"><i data-lucide="minimize-2"></i></button>
+        <button class="btn btn-outline btn-sm" id="btnToggleSidebarUI" title="Minimize Panel" style="padding: 4px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i data-lucide="minimize-2"></i> <span>Sembunyikan</span></button>
       </div>
       <div class="sidebar-content" id="sidebarContent">
       <!-- Upload Card -->
@@ -153,7 +150,7 @@
             <span class="value-bubble" id="angleThresholdValue">35°</span>
           </div>
           <input type="range" id="angleThreshold" min="15" max="90" value="35" step="5" class="slider">
-          <p class="setting-desc" data-i18n="angleDesc">Jika ada belokan &ge; sudut ini yang <strong>belum ada di OSM</strong>, belokan baru akan ditambahkan otomatis. Jika sudah ada di OSM, tidak diduplikasi.</p>
+          <p class="setting-desc" data-i18n="angleDesc">Jika ada belokan ≥ sudut ini yang <strong>belum ada di OSM</strong>, belokan baru akan ditambahkan otomatis. Jika sudah ada di OSM, tidak diduplikasi.</p>
         </div>
 
         <!-- Duplicate Tolerance Radius -->
@@ -308,8 +305,7 @@
 
         <div class="map-status-bar hidden" id="editStatusBar">
           <i data-lucide="alert-circle"></i>
-          <span>Mode Edit Aktif: Geser titik putih (handles) pada garis rute untuk mengubah jalur. Klik "Selesai &
-            Update Rute" jika sudah.</span>
+          <span data-i18n="editHint">KLIK & GESER marker putih untuk mengubah rute. KLIK garis biru (atau peta) untuk tambah titik. KLIK KANAN marker untuk hapus.</span>
         </div>
 
         <div class="map-status-bar hidden" id="createStatusBar">
@@ -423,6 +419,16 @@
           <option value="3" data-i18n="dirSharpRight">Belok Tajam Kanan</option>
           <option value="0" data-i18n="dirStraight">Lurus</option>
           <option value="24" data-i18n="dirUturn">Putar Balik (U-Turn)</option>
+          <optgroup label="Point of Interest (Garmin Standard)">
+            <option value="101" data-i18n="poiFood">Food / Makanan</option>
+            <option value="102" data-i18n="poiWater">Water / Air Minum</option>
+            <option value="103" data-i18n="poiSummit">Summit / Puncak</option>
+            <option value="104" data-i18n="poiDanger">Danger / Bahaya</option>
+            <option value="105" data-i18n="poiSprint">Sprint</option>
+            <option value="106" data-i18n="poiFirstAid">First Aid / Medis</option>
+            <option value="107" data-i18n="poiValley">Valley / Lembah</option>
+            <option value="108" data-i18n="poiGeneric">Generic POI</option>
+          </optgroup>
         </select>
       </div>
 

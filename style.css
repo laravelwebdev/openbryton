@@ -36,9 +36,15 @@
   padding: 0;
 }
 
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
+  background-color: var(--bg-dark);
+}
+
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-dark);
   color: var(--text-main);
   line-height: 1.5;
   background-image:
@@ -53,7 +59,7 @@ body {
 
 .container {
   width: 100%;
-  max-width: 1440px;
+  max-width: 1800px;
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -180,6 +186,10 @@ body {
   .main-layout {
     grid-template-columns: 1fr;
   }
+}
+
+.main-layout > * {
+  min-width: 0;
 }
 
 /* Cards */
@@ -685,7 +695,8 @@ body {
 
 .map-container {
   width: 100%;
-  height: 500px;
+  height: 65vh;
+  min-height: 550px;
   border-radius: var(--radius-md);
   overflow: hidden;
   background: #0f172a;
@@ -696,11 +707,140 @@ body {
 }
 
 .map-container.map-expanded {
-  height: 75vh;
+  height: 85vh;
 }
 
 .collapsed-hidden {
   display: none !important;
+}
+
+.layer-thumb {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  margin-right: 8px;
+  vertical-align: middle;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-size: cover;
+  background-position: center;
+}
+.osm-thumb { background-image: url('https://tile.openstreetmap.org/10/815/528.png'); }
+.sat-thumb { background-image: url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/10/528/815'); }
+.cycle-thumb { background-image: url('https://c.tile-cyclosm.openstreetmap.fr/cyclosm/10/815/528.png'); }
+
+.leaflet-control-layers-list label span.layer-name {
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+.leaflet-control-layers-list label input {
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+/* Custom Google Maps style layer control */
+.custom-layer-control {
+  position: relative;
+  z-index: 999;
+}
+
+.layer-main-btn {
+  width: 60px;
+  height: 60px;
+  background: var(--bg-card);
+  border: 2px solid #fff;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.layer-main-btn:hover {
+  transform: scale(1.05);
+}
+
+.layer-main-btn span {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  padding: 2px 0;
+}
+
+.layer-thumb-box {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+
+.layer-popup-panel {
+  position: absolute;
+  bottom: 0;
+  left: 70px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+  border: 1px solid var(--bg-card-border);
+}
+
+.layer-popup-panel.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.layer-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  width: 64px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.layer-option:hover {
+  opacity: 1;
+}
+
+.layer-option.active {
+  opacity: 1;
+}
+
+.layer-option .layer-thumb-box {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  margin-bottom: 4px;
+}
+
+.layer-option.active .layer-thumb-box {
+  border-color: #3b82f6;
+}
+
+.layer-option span {
+  font-size: 11px;
+  color: var(--text-color);
+  text-align: center;
 }
 
 .map-placeholder {

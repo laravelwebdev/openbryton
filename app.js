@@ -167,10 +167,7 @@ function showToast(message, type = 'info', autoHide = true) {
     }
   }
 
-  function getInstructionCountLabel(count) {
-    const instructionWord = typeof t === 'function' ? t('instructionCountWord') : 'Instruksi';
-    return `${count} ${instructionWord}`;
-  }
+
 
   elements.toast.className = `toast toast-${type}`;
   elements.toastMsg.textContent = translatedMsg;
@@ -185,22 +182,30 @@ function showToast(message, type = 'info', autoHide = true) {
   }
 }
 
+function getInstructionCountLabel(count) {
+  const instructionWord = typeof t === 'function' ? t('instructionCountWord') : 'Instruksi';
+  return `${count} ${instructionWord}`;
+}
+
 /**
  * Initialize Leaflet Map with Multiple Base Layers
  */
 function initMapWithLayers() {
   const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+    maxZoom: 20,
+    maxNativeZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
 
   const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19,
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    maxZoom: 20,
+    maxNativeZoom: 18,
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, etc.'
   });
 
   const cyclOsm = L.tileLayer('https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png', {
-    maxZoom: 18,
+    maxZoom: 20,
+    maxNativeZoom: 18,
     attribution: '&copy; <a href="https://www.cyclosm.org">CyclOSM</a> | OpenStreetMap'
   });
 
@@ -223,18 +228,103 @@ function initMapWithLayers() {
   });
 
   state.map.on('locationerror', function (e) {
-    showToast('Gagal mendapatkan lokasi Anda. Pastikan izin GPS (Lokasi) diaktifkan di browser.', 'error');
+    showToast(t('toastLocError'), 'error');
   });
-  const baseMaps = {
-    "🗺️ OpenStreetMap": osmStandard,
-    "🛰️ Satelit HD (Esri)": esriSatellite,
-    "🚴 Peta Sepeda (CyclOSM)": cyclOsm
+  state.baseMaps = {
+    'osm': osmStandard,
+    'sat': esriSatellite,
+    'cycle': cyclOsm
   };
 
-  L.control.layers(baseMaps, null, { position: 'topright' }).addTo(state.map);
+  createCustomLayerControl();
 
   // Map Click Listener (for adding manual turn or adding waypoint)
   state.map.on('click', handleMapClick);
+}
+
+function createCustomLayerControl() {
+  const customControl = L.control({ position: 'bottomleft' });
+
+  customControl.onAdd = function (map) {
+    const div = L.DomUtil.create('div', 'custom-layer-control');
+    L.DomEvent.disableClickPropagation(div);
+    L.DomEvent.disableScrollPropagation(div);
+
+    div.innerHTML = `
+      <div class="layer-selector-wrapper" id="layerSelectorWrapper">
+        <div class="layer-main-btn" id="layerMainBtn" title="Ganti Peta Dasar">
+          <div class="layer-thumb-box sat-thumb"></div>
+          <span>Satelit</span>
+        </div>
+        
+        <div class="layer-popup-panel" id="layerPopupPanel">
+          <div class="layer-option active" data-layer="osm">
+            <div class="layer-thumb-box osm-thumb"></div>
+            <span>OSM</span>
+          </div>
+          <div class="layer-option" data-layer="sat">
+            <div class="layer-thumb-box sat-thumb"></div>
+            <span>Satelit</span>
+          </div>
+          <div class="layer-option" data-layer="cycle">
+            <div class="layer-thumb-box cycle-thumb"></div>
+            <span>CyclOSM</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    setTimeout(() => {
+      const btn = div.querySelector('#layerMainBtn');
+      const panel = div.querySelector('#layerPopupPanel');
+      const options = div.querySelectorAll('.layer-option');
+
+      let currentLayer = 'osm';
+
+      btn.addEventListener('click', () => {
+        panel.classList.toggle('show');
+      });
+
+      // Close if clicked outside
+      document.addEventListener('click', (e) => {
+        if (!div.contains(e.target)) {
+          panel.classList.remove('show');
+        }
+      });
+
+      options.forEach(opt => {
+        opt.addEventListener('click', () => {
+          const selected = opt.getAttribute('data-layer');
+          
+          if (selected === currentLayer) {
+            panel.classList.remove('show');
+            return;
+          }
+
+          // Remove old layer, add new layer
+          state.map.removeLayer(state.baseMaps[currentLayer]);
+          state.baseMaps[selected].addTo(state.map);
+          currentLayer = selected;
+
+          // Update active state in panel
+          options.forEach(o => o.classList.remove('active'));
+          opt.classList.add('active');
+
+          // Update main button to next alternative (like Google Maps)
+          // If selected OSM, show Sat as alternative
+          const nextLayer = selected === 'sat' ? 'osm' : 'sat';
+          const nextText = nextLayer === 'sat' ? 'Satelit' : 'OSM';
+          btn.innerHTML = `<div class="layer-thumb-box ${nextLayer}-thumb"></div><span>${nextText}</span>`;
+
+          panel.classList.remove('show');
+        });
+      });
+    }, 100);
+
+    return div;
+  };
+
+  customControl.addTo(state.map);
 }
 
 // Event Bindings
@@ -253,19 +343,30 @@ function bindEvents() {
 
   elements.fileInput.addEventListener('change', handleFileSelect);
 
-  elements.dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    elements.dropZone.classList.add('dragover');
+  // Prevent global drag/drop to avoid browser opening the file
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    document.addEventListener(eventName, (e) => {
+      e.preventDefault();
+    });
+    elements.dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+    });
   });
 
-  elements.dropZone.addEventListener('dragleave', () => {
-    elements.dropZone.classList.remove('dragover');
+  ['dragenter', 'dragover'].forEach(eventName => {
+    elements.dropZone.addEventListener(eventName, (e) => {
+      elements.dropZone.classList.add('dragover');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    elements.dropZone.addEventListener(eventName, (e) => {
+      elements.dropZone.classList.remove('dragover');
+    });
   });
 
   elements.dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    elements.dropZone.classList.remove('dragover');
-    if (e.dataTransfer.files.length > 0) {
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFile(e.dataTransfer.files[0]);
     }
   });
@@ -312,7 +413,8 @@ function bindEvents() {
     elements.mainLayout.classList.toggle('sidebar-collapsed');
     const isHidden = elements.sidebarContent.classList.contains('collapsed-hidden');
     const icon = isHidden ? 'maximize-2' : 'minimize-2';
-    elements.btnToggleSidebarUI.innerHTML = `<i data-lucide="${icon}"></i>`;
+    const text = isHidden ? (typeof t === 'function' ? t('btnShowPanel') : 'Tampilkan') : (typeof t === 'function' ? t('btnHidePanel') : 'Sembunyikan');
+    elements.btnToggleSidebarUI.innerHTML = `<i data-lucide="${icon}"></i> <span>${text}</span>`;
     lucide.createIcons();
     setTimeout(() => { if (state.map) state.map.invalidateSize(); }, 350);
   });
@@ -341,7 +443,7 @@ function handleFileSelect(e) {
 
 function processFile(file) {
   if (!file.name.toLowerCase().endsWith('.gpx')) {
-    showToast('Harap pilih file dengan format .gpx!', 'error');
+    showToast(t('toastFormatGpx'), 'error');
     return;
   }
 
@@ -360,7 +462,7 @@ function processFile(file) {
     elements.btnManualSnap.disabled = false;
 
     parseGpx();
-    showToast('File GPX dimuat! Klik "Analisis & Generate Route"', 'success');
+    showToast(t('toastGpxLoaded'), 'success');
   };
   reader.readAsText(file);
 }
@@ -441,7 +543,7 @@ function parseGpx() {
   if (ptNodes.length === 0) ptNodes = xmlDoc.querySelectorAll('wpt');
 
   if (ptNodes.length === 0) {
-    showToast('Format GPX tidak valid atau tidak memiliki titik koordinat.', 'error');
+    showToast(t('toastGpxInvalid'), 'error');
     return;
   }
 
@@ -617,7 +719,9 @@ function renderTrackOnMap(fitBounds = true) {
 
   // Click on polyline to add manual turn
   state.mapLayers.trackLine.on('click', (e) => {
-    if (state.isAddingManualTurn) {
+    if (state.isEditingRoute) {
+      insertWaypointAtLatLng(e.latlng);
+    } else if (state.isAddingManualTurn) {
       openAddManualTurnModal(e.latlng);
     }
   });
@@ -635,7 +739,7 @@ async function snapGpxToOsmRoads(showNotification = true) {
   if (state.points.length < 2) return;
 
   if (showNotification) {
-    showToast('Sedang melakukan smoothing jalan OSM (Anti-Double Track)...', 'info', false);
+    showToast(t('toastSmoothing'), 'info', false);
     elements.snapSpinner.classList.add('spinning');
   }
 
@@ -740,13 +844,13 @@ async function snapGpxToOsmRoads(showNotification = true) {
 
       renderTrackOnMap();
       if (showNotification) {
-        showToast('Smoothing presisi jalan berhasil tanpa double jalur!', 'success');
+        showToast(t('toastSmoothSuccess'), 'success');
       }
     }
   } catch (err) {
     console.error('Road snap error:', err);
     if (showNotification) {
-      showToast('Gagal melakukan snap jalan, menggunakan koordinat GPX asli.', 'info');
+      showToast(t('toastSnapFailed'), 'info');
     }
   } finally {
     if (showNotification) {
@@ -761,7 +865,7 @@ async function snapGpxToOsmRoads(showNotification = true) {
  */
 function toggleRouteEditing() {
   if (state.points.length === 0) {
-    showToast('Upload file GPX terlebih dahulu untuk mengedit rute.', 'error');
+    showToast(t('toastUploadFirstEdit'), 'error');
     return;
   }
 
@@ -783,9 +887,12 @@ function toggleRouteEditing() {
     state.history = [];
     state.historyIndex = -1;
     saveHistoryState();
+    
+    // Save original state for cancel
+    state.originalPointsBeforeEdit = state.points.map(p => ({ ...p }));
 
     setupRouteEditHandles();
-    showToast('Mode Edit Aktif: Geser titik putih atau KLIK di garis rute untuk menambah titik baru!', 'info');
+    showToast(t('toastEditModeOn'), 'info');
   } else {
     elements.btnToggleEditRoute.classList.remove('active');
     elements.btnEditRouteText.setAttribute('data-i18n', 'btnEditModeOn');
@@ -794,6 +901,13 @@ function toggleRouteEditing() {
     if (elements.btnUndoEdit) elements.btnUndoEdit.classList.add('hidden');
     if (elements.btnRedoEdit) elements.btnRedoEdit.classList.add('hidden');
     elements.editStatusBar.classList.add('hidden');
+
+    // Restore points if canceled (not saved)
+    if (state.originalPointsBeforeEdit) {
+      state.points = state.originalPointsBeforeEdit;
+      state.originalPointsBeforeEdit = null;
+      recalculateRouteDistances();
+    }
 
     clearEditHandles();
     renderTrackOnMap(false);
@@ -847,6 +961,15 @@ function setupRouteEditHandles() {
       setupRouteEditHandles();
     });
 
+    marker.on('contextmenu', (e) => {
+      e.originalEvent.preventDefault();
+      state.points.splice(pointIndex, 1);
+      recalculateRouteDistances();
+      saveHistoryState();
+      renderTrackOnMap(false);
+      setupRouteEditHandles();
+    });
+
     state.mapLayers.editHandles.push(marker);
   }
 }
@@ -858,11 +981,10 @@ async function insertWaypointAtLatLng(latlng) {
   const insertIdx = findBestInsertIndex(state.points, latlng.lat, latlng.lng);
 
   if (elements.chkManualSnap && elements.chkManualSnap.checked) {
-    const step = Math.max(1, Math.floor(state.points.length / 30));
-    const prevIndex = Math.max(0, insertIdx - step);
-    const nextIndex = Math.min(state.points.length - 1, insertIdx + step);
+    const prevIndex = Math.max(0, insertIdx - 1);
+    const nextIndex = Math.min(state.points.length - 1, insertIdx);
 
-    showToast('Membuat rute ke titik baru...', 'info', false);
+    showToast(t('toastRoutingNewPoint'), 'info', false);
     const coords = [
       state.points[prevIndex],
       { lat: latlng.lat, lon: latlng.lng },
@@ -886,7 +1008,7 @@ async function insertWaypointAtLatLng(latlng) {
   saveHistoryState();
   renderTrackOnMap(false);
   setupRouteEditHandles();
-  showToast(`Titik baru ditambahkan di indeks #${insertIdx}!`, 'success');
+  showToast(t('toastPointAddedIndex').replace('{idx}', insertIdx), 'success');
 }
 
 function findBestInsertIndex(points, lat, lon) {
@@ -996,7 +1118,7 @@ function undoEdit() {
   if (state.historyIndex > 0) {
     state.historyIndex--;
     restoreHistoryState(state.history[state.historyIndex]);
-    showToast('Undo berhasil', 'info');
+    showToast(t('toastUndo'), 'info');
   }
 }
 
@@ -1004,7 +1126,7 @@ function redoEdit() {
   if (state.historyIndex < state.history.length - 1) {
     state.historyIndex++;
     restoreHistoryState(state.history[state.historyIndex]);
-    showToast('Redo berhasil', 'info');
+    showToast(t('toastRedo'), 'info');
   }
 }
 
@@ -1058,10 +1180,10 @@ function recalculateRouteDistances() {
 }
 
 async function saveRouteEditing() {
+  state.originalPointsBeforeEdit = null;
   recalculateRouteDistances();
   toggleRouteEditing();
-  showToast('Rute berhasil diperbarui! Menjalankan ulang analisis belokan...', 'success');
-  await runTurnAnalysis();
+  showToast(t('toastRouteUpdated'), 'success');
 }
 
 /**
@@ -1070,7 +1192,7 @@ async function saveRouteEditing() {
  */
 function toggleAddManualTurnMode() {
   if (state.points.length === 0) {
-    showToast('Upload file GPX terlebih dahulu.', 'error');
+    showToast(t('toastUploadFirst'), 'error');
     return;
   }
 
@@ -1085,7 +1207,7 @@ function toggleAddManualTurnMode() {
     elements.btnAddTurnManual.querySelector('span').setAttribute('data-i18n', 'btnCancelAddTurn');
     elements.btnAddTurnManual.querySelector('span').textContent = t('btnCancelAddTurn');
     elements.addTurnStatusBar.classList.remove('hidden');
-    showToast('Klik pada garis rute di peta untuk memasang belokan manual.', 'info');
+    showToast(t('toastClickManualTurn'), 'info');
   } else {
     elements.btnAddTurnManual.classList.remove('active');
     elements.btnAddTurnManual.querySelector('span').setAttribute('data-i18n', 'btnAddTurn');
@@ -1095,7 +1217,9 @@ function toggleAddManualTurnMode() {
 }
 
 async function handleMapClick(e) {
-  if (state.isAddingManualTurn) {
+  if (state.isEditingRoute) {
+    insertWaypointAtLatLng(e.latlng);
+  } else if (state.isAddingManualTurn) {
     openAddManualTurnModal(e.latlng);
   } else if (state.isCreatingRoute) {
     const lat = e.latlng.lat;
@@ -1117,11 +1241,11 @@ async function handleMapClick(e) {
       state.points.push(newPt);
       renderTrackOnMap(false);
       saveHistoryState();
-      showToast('Titik awal rute ditambahkan!', 'success');
+      showToast(t('toastStartPointAdded'), 'success');
     } else {
       const lastPt = state.points[state.points.length - 1];
       if (elements.chkManualSnap.checked) {
-        showToast('Merutekan ke jalan...', 'info', false);
+        showToast(t('toastRoutingRoad'), 'info', false);
         const routedPoints = await routeSegmentOSRM([lastPt, { lat, lon }]);
         if (routedPoints && routedPoints.length > 0) {
           state.points.push(...routedPoints.slice(1));
@@ -1138,8 +1262,8 @@ async function handleMapClick(e) {
       recalculateRouteDistances();
       renderTrackOnMap(false);
       saveHistoryState();
-      if (elements.chkManualSnap.checked) showToast('Titik ditambahkan (Snap ke Jalan)!', 'success');
-      else showToast('Titik lurus ditambahkan (Offroad)!', 'success');
+      if (elements.chkManualSnap.checked) showToast(t('toastPointSnapped'), 'success');
+      else showToast(t('toastPointOffroad'), 'success');
     }
   }
 }
@@ -1174,7 +1298,7 @@ function toggleCreateManualRoute() {
     state.historyIndex = -1;
     saveHistoryState();
 
-    showToast('Klik pada peta untuk mulai menggambar rute manual.', 'info');
+    showToast(t('toastClickMapManual'), 'info');
   } else {
     elements.btnCreateManualRoute.classList.remove('active');
     elements.btnCreateManualRoute.querySelector('span').setAttribute('data-i18n', 'btnCreateRoute');
@@ -1240,7 +1364,7 @@ function confirmAddManualTurn() {
   });
 
   closeModal();
-  showToast(`Belokan manual "${text}" berhasil ditambahkan!`, 'success');
+  showToast(t('toastTurnAdded').replace('{text}', text), 'success');
 
   // Re-finalize instructions & re-render
   state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns);
@@ -1261,7 +1385,7 @@ async function runTurnAnalysis() {
   state.isProcessing = true;
   elements.btnProcess.disabled = true;
   elements.processSpinner.classList.add('spinning');
-  showToast('Sedang menganalisis rute & mendeteksi belokan OSM...', 'info', false);
+  showToast(t('toastAnalyzing'), 'info', false);
 
   try {
 
@@ -1273,7 +1397,7 @@ async function runTurnAnalysis() {
     if (useOsm) {
       const orsKey = elements.orsApiKey.value.trim();
       if (orsKey) {
-        showToast('Mengambil TBT via OpenRouteService API...', 'info', false);
+        showToast(t('toastFetchORS'), 'info', false);
         state.osmTurns = await fetchOrsTurnByTurn(state.points, orsKey);
       } else {
         try {
@@ -1284,7 +1408,7 @@ async function runTurnAnalysis() {
 
         // If OSRM returned 0, run our built-in OSM Overpass Intersection Engine!
         if (state.osmTurns.length === 0) {
-          showToast('Menggunakan engine deteksi jalan OSM langsung (Overpass)...', 'info', false);
+          showToast(t('toastFetchOverpass'), 'info', false);
           state.osmTurns = await fetchOsmOverpassIntersections(state.points);
         }
       }
@@ -1299,7 +1423,7 @@ async function runTurnAnalysis() {
     let combined = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns);
 
     if (elements.enableOsmNames.checked && combined.length > 0) {
-      showToast('Mengambil nama jalan resmi dari OpenStreetMap...', 'info', false);
+      showToast(t('toastFetchOsmNames'), 'info', false);
       combined = await enrichStreetNamesFromOsm(combined);
     }
 
@@ -1308,10 +1432,10 @@ async function runTurnAnalysis() {
 
     elements.btnDownloadZip.disabled = false;
     initIcons();
-    showToast(`Analisis selesai! Terdeteksi ${state.combinedInstructions.length} instruksi turn-by-turn.`, 'success');
+    showToast(t('toastAnalysisDone').replace('{count}', state.combinedInstructions.length), 'success');
   } catch (error) {
     console.error('Analysis failed:', error);
-    showToast('Terjadi kesalahan saat analisis: ' + error.message, 'error');
+    showToast(t('toastAnalyzeError') + error.message, 'error');
   } finally {
     state.isProcessing = false;
     elements.btnProcess.disabled = false;
@@ -1706,7 +1830,7 @@ function deleteTurn(index) {
   if (index < 0 || index >= state.combinedInstructions.length) return;
 
   const removed = state.combinedInstructions.splice(index, 1);
-  showToast(`Belokan "${removed[0].instruction}" dihapus.`, 'info');
+  showToast(t('toastTurnDeleted').replace('{text}', removed[0].instruction), 'info');
 
   for (let i = 0; i < state.combinedInstructions.length; i++) {
     const cur = state.combinedInstructions[i];
@@ -1802,7 +1926,7 @@ function getTranslatedInstruction(text, dirCode) {
   
   let result = text;
   // Replace standard phrases if they match
-  const keys = ['dirSharpLeft', 'dirSharpRight', 'dirSlightLeft', 'dirSlightRight', 'dirLeft', 'dirRight', 'dirStraight', 'dirUturn', 'startRoute'];
+  const keys = ['dirSharpLeft', 'dirSharpRight', 'dirSlightLeft', 'dirSlightRight', 'dirLeft', 'dirRight', 'dirStraight', 'dirUturn', 'startRoute', 'poiFood', 'poiWater', 'poiSummit', 'poiDanger', 'poiSprint', 'poiFirstAid', 'poiValley', 'poiGeneric'];
   
   for (const key of keys) {
     const idText = translations.id[key];
@@ -1906,7 +2030,7 @@ function renderTurnsTable(instructions) {
  */
 async function generateBrytonZip() {
   if (state.points.length === 0 || state.combinedInstructions.length === 0) {
-    showToast('Silakan lakukan analisis rute terlebih dahulu.', 'error');
+    showToast(t('toastAnalyzeFirst'), 'error');
     return;
   }
 
@@ -1937,14 +2061,14 @@ async function generateBrytonZip() {
     const kmlString = createKmlString(state.points, prefix);
     zip.file(`${prefix}.kml`, kmlString);
 
-    showToast('Sedang membuat file ZIP Bryton...', 'info', false);
+    showToast(t('toastCreatingZip'), 'info', false);
     const content = await zip.generateAsync({ type: 'blob' });
     saveAs(content, `${prefix}-bryton.zip`);
 
-    showToast('Download ZIP berhasil! Silakan salin file ke Bryton Anda.', 'success');
+    showToast(t('toastZipSuccess'), 'success');
   } catch (error) {
     console.error('Failed to generate ZIP:', error);
-    showToast('Gagal membuat ZIP: ' + error.message, 'error');
+    showToast(t('toastZipError') + error.message, 'error');
   }
 }
 
@@ -2018,6 +2142,14 @@ function createTinfoBuffer(instructions) {
       case 2: dirByte = 0x02; break;
       case 3: dirByte = 0x06; break;
       case 24: dirByte = 0x18; break;
+      case 101: dirByte = 0x16; break; // Food
+      case 102: dirByte = 0x15; break; // Water
+      case 103: dirByte = 0x0F; break; // Summit
+      case 104: dirByte = 0x17; break; // Danger
+      case 105: dirByte = 0x14; break; // Sprint
+      case 106: dirByte = 0x1B; break; // First Aid
+      case 107: dirByte = 0x1C; break; // Valley
+      case 108: dirByte = 0x1E; break; // Generic
       default: dirByte = 0x01; break;
     }
     view.setUint8(offset + 2, dirByte);
@@ -2114,6 +2246,14 @@ function getDirectionLabel(code) {
     case 2: return t('dirRight');
     case 3: return t('dirSharpRight');
     case 24: return t('dirUturn');
+    case 101: return t('poiFood');
+    case 102: return t('poiWater');
+    case 103: return t('poiSummit');
+    case 104: return t('poiDanger');
+    case 105: return t('poiSprint');
+    case 106: return t('poiFirstAid');
+    case 107: return t('poiValley');
+    case 108: return t('poiGeneric');
     default: return t('dirStraight');
   }
 }
@@ -2128,6 +2268,14 @@ function getDirectionArrow(code) {
     case 2: return '→';
     case 3: return '↱';
     case 24: return '↩';
+    case 101: return '🍽️';
+    case 102: return '💧';
+    case 103: return '⛰️';
+    case 104: return '⚠️';
+    case 105: return '🚩';
+    case 106: return '⚕️';
+    case 107: return '🏞️';
+    case 108: return '📍';
     default: return '↑';
   }
 }
