@@ -51,7 +51,6 @@
       <!-- Top Navigation -->
       <nav class="top-nav" id="mainNav" style="display:none;">
         <button class="nav-link" onclick="switchPage('create')" id="nav-create"><i data-lucide="pen-tool"></i> <span>Create</span></button>
-        <button class="nav-link" onclick="switchPage('explore')" id="nav-explore"><i data-lucide="compass"></i> <span>Explore</span></button>
         <button class="nav-link" onclick="switchPage('myroutes')" id="nav-myroutes"><i data-lucide="library"></i> <span>My Routes</span></button>
       </nav>
 
@@ -623,16 +622,7 @@
 
   </div> <!-- End page-create -->
 
-  <!-- PAGE: EXPLORE -->
-  <main class="container page-view hidden" id="page-explore" style="padding: 20px;">
-    <h2>Explore Public Routes</h2>
-    <div class="filters-bar" style="display:flex; gap:10px; margin-bottom:20px; background:var(--bg-card); padding:10px; border-radius:8px;">
-      <input type="text" id="exploreSearch" placeholder="Search routes..." style="flex:1; padding:8px; border-radius:4px; background:var(--bg-input); border:1px solid var(--bg-card-border); color:#fff;">
-    </div>
-    <div id="exploreGrid" class="route-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
-      <!-- Cards rendered here -->
-    </div>
-  </main>
+
 
   <!-- PAGE: MY ROUTES -->
   <main class="container page-view hidden" id="page-myroutes" style="padding: 20px;">

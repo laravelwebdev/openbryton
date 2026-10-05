@@ -174,13 +174,29 @@ async function saveRouteToDb() {
     };
 
     if (isMockMode) {
-      const dbMock = JSON.parse(localStorage.getItem('openbryton_mock_db') || '[]');
-      payload.id = 'route_' + Date.now();
-      dbMock.push(payload);
+      let dbMock = JSON.parse(localStorage.getItem('openbryton_mock_db') || '[]');
+      if (window.state.currentRouteId && window.state.currentRouteOwner === currentUser.uid) {
+        payload.id = window.state.currentRouteId;
+        const idx = dbMock.findIndex(r => r.id === payload.id);
+        if (idx !== -1) {
+          dbMock[idx] = payload;
+        } else {
+          dbMock.push(payload);
+        }
+      } else {
+        payload.id = 'route_' + Date.now();
+        dbMock.push(payload);
+      }
       localStorage.setItem('openbryton_mock_db', JSON.stringify(dbMock));
       await new Promise(r => setTimeout(r, 500)); // simulate delay
     } else {
-      await db.collection('routes').add(payload);
+      if (window.state.currentRouteId && window.state.currentRouteOwner === currentUser.uid) {
+        // Update existing route
+        await db.collection('routes').doc(window.state.currentRouteId).update(payload);
+      } else {
+        // Create new route
+        await db.collection('routes').add(payload);
+      }
     }
 
     alert("Rute berhasil disimpan!");
@@ -228,23 +244,13 @@ function renderRouteCards(containerId, routes, isMyRoutes) {
       dateStr = new Date(r.createdAt.seconds * 1000).toLocaleDateString();
     }
 
-    let actionButtons = '';
     const isOwner = currentUser && r.uid === currentUser.uid;
-    
-    if (isMyRoutes || isOwner) {
-      actionButtons = `
-        <div class="card-actions">
-          <button class="btn btn-outline btn-sm" onclick="editRoute('${r.id}')">Edit</button>
-          <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteRoute('${r.id}')">Hapus</button>
-        </div>
-      `;
-    } else {
-      actionButtons = `
-        <div class="card-actions">
-          <button class="btn btn-outline btn-sm" onclick="editRoute('${r.id}')">Lihat & Unduh</button>
-        </div>
-      `;
-    }
+    let actionButtons = `
+      <div class="card-actions">
+        <button class="btn btn-outline btn-sm" onclick="editRoute('${r.id}')">Lihat</button>
+        ${isOwner || isMyRoutes ? `<button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteRoute('${r.id}')">Hapus</button>` : ''}
+      </div>
+    `;
 
     return `
       <div class="route-card">
@@ -348,14 +354,16 @@ async function editRoute(id) {
       data = dbMock.find(r => r.id === id);
     } else {
       const doc = await db.collection('routes').doc(id).get();
-      if (doc.exists) data = doc.data();
+      if (doc.exists) {
+        data = doc.data();
+        data.id = id;
+      }
     }
 
     if (!data) return alert("Rute tidak ditemukan");
     
     if (window.loadRouteFromFirebase) {
-      const isOwner = currentUser && data.uid === currentUser.uid;
-      window.loadRouteFromFirebase(data, isOwner);
+      window.loadRouteFromFirebase(data, true);
       switchPage('create');
     } else {
       alert("Fungsi editor belum siap. Silakan muat ulang halaman.");

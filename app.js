@@ -45,6 +45,9 @@ const state = {
 window.state = state;
 
 window.loadRouteFromFirebase = function(data, isOwner = true) {
+  state.currentRouteId = data.id || null;
+  state.currentRouteOwner = data.uid || null;
+
   state.fileName = data.title;
   state.baseName = data.title;
   if (elements.brytonRouteName) elements.brytonRouteName.value = data.title;
@@ -85,6 +88,9 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
   renderTrackOnMap(true);
   updateStatsAndUI();
   
+  // Render the elevation chart now that points are loaded
+  setTimeout(() => renderElevationChart(), 500);
+  
   // Toggle editing controls based on ownership
   const btnSave = document.getElementById('btnSaveRoute');
   if (btnSave) btnSave.style.display = isOwner ? 'flex' : 'none';
@@ -92,6 +98,12 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
   if (elements.btnToggleAddTurn) elements.btnToggleAddTurn.style.display = isOwner ? 'flex' : 'none';
   if (elements.btnToggleAddPoi) elements.btnToggleAddPoi.style.display = isOwner ? 'flex' : 'none';
   if (elements.btnManualSnap) elements.btnManualSnap.style.display = isOwner ? 'flex' : 'none';
+
+  // Enable download buttons since the user wants to download
+  elements.btnDownloadBryton.disabled = false;
+  elements.btnDownloadKml.disabled = false;
+  elements.btnDownloadGpx.disabled = false;
+  elements.btnDownloadFit.disabled = false;
   
   if (typeof showToast === 'function') {
     showToast(isOwner ? 'Rute dimuat ke Editor!' : 'Mode Lihat: Hanya bisa mengunduh', 'success');
