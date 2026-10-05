@@ -63,8 +63,14 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
   
   if (data.instructions) {
     state.combinedInstructions = JSON.parse(data.instructions);
+    state.osmTurns = state.combinedInstructions.filter(i => i.source === 'osm');
+    state.extraTurns = state.combinedInstructions.filter(i => i.source === 'extra');
+    state.manualTurns = state.combinedInstructions.filter(i => i.source === 'manual');
   } else {
     state.combinedInstructions = [];
+    state.osmTurns = [];
+    state.extraTurns = [];
+    state.manualTurns = [];
   }
   
   recalculateRouteDistances();
