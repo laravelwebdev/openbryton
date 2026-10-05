@@ -249,8 +249,8 @@ function renderRouteCards(containerId, routes, isMyRoutes) {
     const isOwner = currentUser && r.uid === currentUser.uid;
     let actionButtons = `
       <div class="card-actions">
-        <button class="btn btn-outline btn-sm" onclick="editRoute('${r.id}')">Lihat</button>
-        ${isOwner || isMyRoutes ? `<button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteRoute('${r.id}')">Hapus</button>` : ''}
+        <button class="btn btn-outline btn-sm" onclick="editRoute('${r.id}')">${t('btnViewRoute')}</button>
+        ${isOwner || isMyRoutes ? `<button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteRoute('${r.id}')">${t('btnDeleteRoute')}</button>` : ''}
       </div>
     `;
 
@@ -333,7 +333,7 @@ async function loadExploreRoutes() {
 }
 
 async function deleteRoute(id) {
-  if (!confirm("Hapus rute ini?")) return;
+  if (!confirm(t('confirmDeleteRoute'))) return;
   try {
     if (isMockMode) {
       let dbMock = JSON.parse(localStorage.getItem('openbryton_mock_db') || '[]');
@@ -344,7 +344,7 @@ async function deleteRoute(id) {
     }
     loadMyRoutes();
   } catch (err) {
-    alert("Gagal menghapus: " + err.message);
+    alert(t('alertDeleteFailed') + err.message);
   }
 }
 

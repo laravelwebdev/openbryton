@@ -107,7 +107,7 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
   if (elements.btnToggleEdit) elements.btnToggleEdit.style.display = isOwner ? 'flex' : 'none';
   if (elements.btnToggleAddTurn) elements.btnToggleAddTurn.style.display = isOwner ? 'flex' : 'none';
   if (elements.btnToggleAddPoi) elements.btnToggleAddPoi.style.display = isOwner ? 'flex' : 'none';
-  if (elements.btnManualSnap) elements.btnManualSnap.style.display = isOwner ? 'flex' : 'none';
+
 
   // Enable download buttons since the user wants to download
   elements.btnDownloadBryton.disabled = false;
@@ -128,8 +128,7 @@ const elements = {
   fileName: document.getElementById('fileName'),
   fileMeta: document.getElementById('fileMeta'),
   btnRemoveFile: document.getElementById('btnRemoveFile'),
-  btnManualSnap: document.getElementById('btnManualSnap'),
-  snapSpinner: document.getElementById('snapSpinner'),
+
   enableOsmTbt: document.getElementById('enableOsmTbt'),
   orsApiKey: document.getElementById('orsApiKey'),
   enableOsmNames: document.getElementById('enableOsmNames'),
@@ -182,6 +181,7 @@ const elements = {
   editStatusBar: document.getElementById('editStatusBar'),
   createStatusBar: document.getElementById('createStatusBar'),
   chkManualSnap: document.getElementById('chkManualSnap'),
+  btnSimplifyRdp: document.getElementById('btnSimplifyRdp'),
   addTurnStatusBar: document.getElementById('addTurnStatusBar'),
   modalAddTurn: document.getElementById('modalAddTurn'),
   btnCloseModal: document.getElementById('btnCloseModal'),
@@ -545,9 +545,7 @@ function bindEvents() {
   elements.btnAddTurnManual.addEventListener('click', () => toggleAddManualTurnMode('turn'));
   elements.btnAddPoiManual.addEventListener('click', () => toggleAddManualTurnMode('poi'));
 
-  elements.btnManualSnap.addEventListener('click', async () => {
-    await snapGpxToOsmRoads(true);
-  });
+
 
   elements.btnToggleSidebarUI.addEventListener('click', () => {
     elements.sidebarContent.classList.toggle('collapsed-hidden');
@@ -575,6 +573,27 @@ function bindEvents() {
   elements.btnCloseModal.addEventListener('click', closeModal);
   elements.btnCancelAddTurn.addEventListener('click', closeModal);
   elements.btnConfirmAddTurn.addEventListener('click', confirmAddManualTurn);
+
+  if (elements.btnSimplifyRdp) {
+    elements.btnSimplifyRdp.addEventListener('click', () => {
+      if (state.points.length === 0) {
+        showToast(t('toastRdpNoRoute'), "error");
+        return;
+      }
+      if (confirm(t('toastRdpConfirm'))) {
+        const oldPointCount = state.points.length;
+        simplifyRoute(1.5);
+        if (state.points.length < oldPointCount) {
+          const removed = oldPointCount - state.points.length;
+          showToast(t('toastRdpSuccess').replace('{0}', removed), 'success');
+          elements.statPoints.textContent = state.points.length.toLocaleString();
+          renderTrackOnMap(false);
+        } else {
+          showToast(t('toastRdpNoOp'), 'info');
+        }
+      }
+    });
+  }
 }
 
 function handleFileSelect(e) {
@@ -601,7 +620,7 @@ function processFile(file) {
     elements.fileInfo.classList.remove('hidden');
     elements.dropZone.querySelector('.drop-zone-content').classList.add('hidden');
     elements.btnProcess.disabled = false;
-    elements.btnManualSnap.disabled = false;
+
 
     parseGpx();
     showToast(t('toastGpxLoaded'), 'success');
@@ -633,7 +652,7 @@ function resetState() {
   elements.fileInfo.classList.add('hidden');
   elements.dropZone.querySelector('.drop-zone-content').classList.remove('hidden');
   elements.btnProcess.disabled = true;
-  elements.btnManualSnap.disabled = true;
+
   elements.btnDownloadBryton.disabled = true;
   elements.btnDownloadKml.disabled = true;
   elements.btnDownloadGpx.disabled = true;
@@ -914,162 +933,107 @@ function renderTrackOnMap(fitBounds = true) {
 }
 
 /**
- * Snap to OSM Roads (Map Matching) with Anti-Double Track Filter:
- * Ensures the route does not create loops or double lines along dual-carriageways.
+ * Menyederhanakan titik-titik rute (Ramer-Douglas-Peucker)
+ * Berguna membuang titik berlebih di garis lurus, namun tetap mempertahankan bentuk.
  */
-async function snapGpxToOsmRoads(showNotification = true) {
-  if (state.points.length < 2) return;
+function simplifyRoute(epsilonMeters = 1.5) {
+  if (state.points.length <= 2) return;
 
-  if (showNotification) {
-    showToast(t('toastSmoothing'), 'info', false);
-    elements.snapSpinner.classList.add('spinning');
+  const keepIndices = new Set();
+  keepIndices.add(0);
+  keepIndices.add(state.points.length - 1);
+  
+  const markTurns = (turns) => {
+    if (turns) turns.forEach(t => keepIndices.add(t.index));
+  };
+  markTurns(state.osmTurns);
+  markTurns(state.extraTurns);
+  markTurns(state.manualTurns);
+  markTurns(state.climbTurns);
+  if (state.combinedInstructions) {
+    state.combinedInstructions.forEach(t => keepIndices.add(t.index));
   }
 
-  try {
-    const chunkSize = 40;
-    const sampleStep = Math.max(1, Math.floor(state.points.length / 100));
-    const sampled = [];
-    for (let i = 0; i < state.points.length; i += sampleStep) {
-      sampled.push({ point: state.points[i], origIndex: i });
-    }
-    if (sampled[sampled.length - 1].origIndex !== state.points.length - 1) {
-      sampled.push({ point: state.points[state.points.length - 1], origIndex: state.points.length - 1 });
-    }
+  const keepArr = Array.from(keepIndices).sort((a, b) => a - b);
+  const simplifiedPoints = [];
+  const oldToNewMap = new Map();
 
-    const rawSnapped = [];
-
-    for (let chunkStart = 0; chunkStart < sampled.length - 1; chunkStart += chunkSize - 1) {
-      const chunkEnd = Math.min(sampled.length, chunkStart + chunkSize);
-      const chunkSampled = sampled.slice(chunkStart, chunkEnd);
-      if (chunkSampled.length < 2) break;
-
-      const coordString = chunkSampled.map(s => `${s.point.lon.toFixed(6)},${s.point.lat.toFixed(6)}`).join(';');
-      const radiuses = chunkSampled.map(() => '35').join(';');
-
-      let chunkMatched = false;
-
-      try {
-        const url = `https://router.project-osrm.org/match/v1/bike/${coordString}?overview=full&geometries=geojson&radiuses=${radiuses}&tidy=true`;
-        const response = await fetch(url, { signal: AbortSignal.timeout(6000) });
-        if (response.ok) {
-          const json = await response.json();
-          if (json.code === 'Ok' && json.matchings && json.matchings.length > 0) {
-            json.matchings.forEach(matching => {
-              if (matching.geometry && matching.geometry.coordinates) {
-                matching.geometry.coordinates.forEach(c => {
-                  rawSnapped.push({ lat: c[1], lon: c[0] });
-                });
-              }
-            });
-            chunkMatched = true;
-          }
-        }
-      } catch (e) {
-        chunkMatched = false;
+  for (let i = 0; i < keepArr.length - 1; i++) {
+    const startIdx = keepArr[i];
+    const endIdx = keepArr[i + 1];
+    const slice = state.points.slice(startIdx, endIdx + 1);
+    
+    const simplifyRDP = (pts, offset) => {
+      if (pts.length <= 2) {
+        return pts.map((p, idx) => ({ point: p, origIdx: offset + idx }));
       }
-
-      if (!chunkMatched) {
-        chunkSampled.forEach(s => {
-          rawSnapped.push({ lat: s.point.lat, lon: s.point.lon });
-        });
-      }
-    }
-
-    // Anti-Double Track & Monotonic Forward Progress Filter:
-    // Removes backward jumps and duplicate points closer than 4 meters
-    const cleaned = [];
-    for (let i = 0; i < rawSnapped.length; i++) {
-      const cur = rawSnapped[i];
-      if (cleaned.length === 0) {
-        cleaned.push(cur);
-      } else {
-        const prev = cleaned[cleaned.length - 1];
-        const dist = haversineDistance(prev.lat, prev.lon, cur.lat, cur.lon);
-        // Skip duplicate or tiny jitter points
-        if (dist >= 4) {
-          cleaned.push(cur);
-        }
-      }
-    }
-
-    if (cleaned.length > 5) {
-      let runningDist = 0;
-      let latMin = Infinity, latMax = -Infinity, lonMin = Infinity, lonMax = -Infinity;
-      const newPoints = [];
-
-      for (let i = 0; i < cleaned.length; i++) {
-        const c = cleaned[i];
-        if (i > 0) {
-          const prev = newPoints[i - 1];
-          runningDist += haversineDistance(prev.lat, prev.lon, c.lat, c.lon);
-        }
-        latMin = Math.min(latMin, c.lat);
-        latMax = Math.max(latMax, c.lat);
-        lonMin = Math.min(lonMin, c.lon);
-        lonMax = Math.max(lonMax, c.lon);
-
-        newPoints.push({
-          lat: c.lat,
-          lon: c.lon,
-          ele: 0,
-          distFromStart: runningDist
-        });
-      }
-
-      state.points = newPoints;
-      state.totalDistance = runningDist;
-      state.boundingBox = { latMin, latMax, lonMin, lonMax };
-      state.isSnapped = true;
-
-      elements.statDistance.textContent = `${(runningDist / 1000).toFixed(2)} km`;
-      elements.statPoints.textContent = newPoints.length.toLocaleString();
-
-      // Fix: Resnap all existing turns to the new point geometry so they don't break!
-      const snapTurns = (arr) => {
-        if (!arr) return;
-        arr.forEach(t => {
-          let closestIdx = 0;
-          let minD = Infinity;
-          for (let k = 0; k < newPoints.length; k++) {
-            const d = haversineDistance(newPoints[k].lat, newPoints[k].lon, t.lat, t.lon);
-            if (d < minD) {
-              minD = d;
-              closestIdx = k;
-            }
-          }
-          t.index = closestIdx;
-          t.lat = newPoints[closestIdx].lat;
-          t.lon = newPoints[closestIdx].lon;
-          t.distFromStart = newPoints[closestIdx].distFromStart;
-        });
-      };
       
-      snapTurns(state.osmTurns);
-      snapTurns(state.extraTurns);
-      snapTurns(state.manualTurns);
-      snapTurns(state.climbTurns);
+      let dmax = 0;
+      let idx = 0;
+      const end = pts.length - 1;
+      
+      const x1 = pts[0].lon, y1 = pts[0].lat;
+      const x2 = pts[end].lon, y2 = pts[end].lat;
+      const den = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
 
-      if (state.combinedInstructions && state.combinedInstructions.length > 0) {
-        state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
-        renderTurnMarkersOnMap(state.combinedInstructions);
-        renderTurnsTable(state.combinedInstructions);
+      for (let j = 1; j < end; j++) {
+        const x0 = pts[j].lon, y0 = pts[j].lat;
+        let d = 0;
+        if (den === 0) {
+           d = haversineDistance(y1, x1, y0, x0);
+        } else {
+           const num = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
+           d = (num / den) * 111320; 
+        }
+        
+        if (d > dmax) {
+          idx = j;
+          dmax = d;
+        }
       }
-
-      renderTrackOnMap();
-      if (showNotification) {
-        showToast(t('toastSmoothSuccess'), 'success');
+      
+      if (dmax > epsilonMeters) {
+        const res1 = simplifyRDP(pts.slice(0, idx + 1), offset);
+        const res2 = simplifyRDP(pts.slice(idx, end + 1), offset + idx);
+        return res1.slice(0, res1.length - 1).concat(res2);
+      } else {
+        return [
+          { point: pts[0], origIdx: offset },
+          { point: pts[end], origIdx: offset + end }
+        ];
       }
-    }
-  } catch (err) {
-    console.error('Road snap error:', err);
-    if (showNotification) {
-      showToast(t('toastSnapFailed'), 'info');
-    }
-  } finally {
-    if (showNotification) {
-      elements.snapSpinner.classList.remove('spinning');
+    };
+    
+    const rdpRes = simplifyRDP(slice, startIdx);
+    
+    for (let k = 0; k < rdpRes.length; k++) {
+      if (k === rdpRes.length - 1 && i < keepArr.length - 2) {
+         continue; 
+      }
+      simplifiedPoints.push(rdpRes[k].point);
+      oldToNewMap.set(rdpRes[k].origIdx, simplifiedPoints.length - 1);
     }
   }
+
+  const updateTurns = (turns) => {
+    if (turns) {
+      turns.forEach(t => {
+        if (oldToNewMap.has(t.index)) {
+          t.index = oldToNewMap.get(t.index);
+        }
+      });
+    }
+  };
+  updateTurns(state.osmTurns);
+  updateTurns(state.extraTurns);
+  updateTurns(state.manualTurns);
+  updateTurns(state.climbTurns);
+  if (state.combinedInstructions) {
+    updateTurns(state.combinedInstructions);
+  }
+
+  state.points = simplifiedPoints;
+  recalculateRouteDistances();
 }
 
 /**
@@ -1104,6 +1068,14 @@ function toggleRouteEditing() {
     // Save original state for cancel
     state.originalPointsBeforeEdit = state.points.map(p => ({ ...p }));
 
+    // Jadikan SEMUA titik di rute sebagai handle, tanpa batasan!
+    state.points.forEach((p, i) => {
+      p.isManualHandle = true;
+    });
+
+    // Pasang listener pergerakan peta agar handle dirender ulang sesuai area yang terlihat
+    state.map.on('moveend', setupRouteEditHandles);
+
     setupRouteEditHandles();
     showToast(t('toastEditModeOn'), 'info');
   } else {
@@ -1122,6 +1094,7 @@ function toggleRouteEditing() {
       recalculateRouteDistances();
     }
 
+    state.map.off('moveend', setupRouteEditHandles);
     clearEditHandles();
     renderTrackOnMap(false);
   }
@@ -1129,12 +1102,28 @@ function toggleRouteEditing() {
 
 function setupRouteEditHandles() {
   clearEditHandles();
+  if (!state.isEditingRoute) return;
 
-  const step = Math.max(1, Math.floor(state.points.length / 30));
+  // 1. Dapatkan kotak layar (viewport) saat ini + 10% padding agar transisi mulus
+  const bounds = state.map.getBounds().pad(0.1);
 
-  for (let i = 0; i < state.points.length; i += step) {
-    const pt = state.points[i];
-    const pointIndex = i;
+  // 2. Kumpulkan titik mana saja yang sedang masuk di dalam layar
+  const visibleIndices = [];
+  for (let i = 0; i < state.points.length; i++) {
+    if (state.points[i].isManualHandle) {
+      if (bounds.contains([state.points[i].lat, state.points[i].lon])) {
+        visibleIndices.push(i);
+      }
+    }
+  }
+
+  // 3. Batasi jumlah marker di DOM agar browser tidak hang (maksimal 300 di layar)
+  const MAX_MARKERS = 300;
+  const step = Math.max(1, Math.ceil(visibleIndices.length / MAX_MARKERS));
+
+  for (let j = 0; j < visibleIndices.length; j += step) {
+    const pointIndex = visibleIndices[j];
+    const pt = state.points[pointIndex];
 
     const handleIcon = L.divIcon({
       className: 'route-edit-handle',
@@ -1168,27 +1157,7 @@ function setupRouteEditHandles() {
     });
 
     marker.on('dragend', async (e) => {
-      if (elements.chkManualSnap && elements.chkManualSnap.checked) {
-        showToast(t('toastRoutingNewPoint') || 'Routing via OSM...', 'info', false);
-        const prevIndex = Math.max(0, pointIndex - step);
-        const nextIndex = Math.min(state.points.length - 1, pointIndex + step);
-        
-        if (prevIndex !== nextIndex) {
-          const coords = [
-            state.points[prevIndex],
-            { lat: state.points[pointIndex].lat, lon: state.points[pointIndex].lon },
-            state.points[nextIndex]
-          ];
-          
-          const routedPoints = await routeSegmentOSRM(coords);
-          if (routedPoints && routedPoints.length > 0) {
-            const shiftAmount = routedPoints.length - (nextIndex - prevIndex + 1);
-            shiftTurnIndices(nextIndex + 1, shiftAmount);
-            state.points.splice(prevIndex, nextIndex - prevIndex + 1, ...routedPoints);
-          }
-        }
-      }
-
+      // Drag murni hanya memindah titik (offroad), tidak menggunakan OSRM sama sekali
       recalculateRouteDistances();
       saveHistoryState();
       renderTrackOnMap(false);
@@ -1228,33 +1197,10 @@ function shiftTurnIndices(startIndex, amount) {
 async function insertWaypointAtLatLng(latlng) {
   const insertIdx = findBestInsertIndex(state.points, latlng.lat, latlng.lng);
 
-  if (elements.chkManualSnap && elements.chkManualSnap.checked) {
-    const prevIndex = Math.max(0, insertIdx - 1);
-    const nextIndex = Math.min(state.points.length - 1, insertIdx);
-
-    showToast(t('toastRoutingNewPoint'), 'info', false);
-    const coords = [
-      state.points[prevIndex],
-      { lat: latlng.lat, lon: latlng.lng },
-      state.points[nextIndex]
-    ];
-    const routedPoints = await routeSegmentOSRM(coords);
-    if (routedPoints && routedPoints.length > 0) {
-      const shiftAmount = routedPoints.length - (nextIndex - prevIndex + 1);
-      shiftTurnIndices(nextIndex + 1, shiftAmount);
-      state.points.splice(prevIndex, nextIndex - prevIndex + 1, ...routedPoints);
-    } else {
-      shiftTurnIndices(insertIdx, 1);
-      const newPt = { lat: latlng.lat, lon: latlng.lng, ele: 0, distFromStart: 0 };
-      await fetchElevationForSinglePoint(newPt);
-      state.points.splice(insertIdx, 0, newPt);
-    }
-  } else {
-    shiftTurnIndices(insertIdx, 1);
-    const newPt = { lat: latlng.lat, lon: latlng.lng, ele: 0, distFromStart: 0 };
-    await fetchElevationForSinglePoint(newPt);
-    state.points.splice(insertIdx, 0, newPt);
-  }
+  shiftTurnIndices(insertIdx, 1);
+  const newPt = { lat: latlng.lat, lon: latlng.lng, ele: 0, distFromStart: 0, isManualHandle: true };
+  await fetchElevationForSinglePoint(newPt);
+  state.points.splice(insertIdx, 0, newPt);
 
   recalculateRouteDistances();
   saveHistoryState();
@@ -1265,18 +1211,53 @@ async function insertWaypointAtLatLng(latlng) {
 
 function findBestInsertIndex(points, lat, lon) {
   let bestIdx = 1;
-  let minExtraDist = Infinity;
+  let minDistSq = Infinity;
 
+  // Menggunakan pendekatan jarak titik ke segmen garis (Point-to-Segment Distance)
+  // Ini sangat presisi dan mencegah titik tersambung ke segmen yang salah (yang menyebabkan rute zig-zag)
   for (let i = 0; i < points.length - 1; i++) {
     const p1 = points[i];
     const p2 = points[i + 1];
 
-    const dOriginal = haversineDistance(p1.lat, p1.lon, p2.lat, p2.lon);
-    const dVia = haversineDistance(p1.lat, p1.lon, lat, lon) + haversineDistance(lat, lon, p2.lat, p2.lon);
-    const extra = dVia - dOriginal;
+    const x = lon;
+    const y = lat;
+    const x1 = p1.lon;
+    const y1 = p1.lat;
+    const x2 = p2.lon;
+    const y2 = p2.lat;
 
-    if (extra < minExtraDist) {
-      minExtraDist = extra;
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+
+    const dot = A * C + B * D;
+    const len_sq = C * C + D * D;
+    let param = -1;
+    
+    if (len_sq !== 0) {
+      param = dot / len_sq;
+    }
+
+    let xx, yy;
+
+    if (param < 0) {
+      xx = x1;
+      yy = y1;
+    } else if (param > 1) {
+      xx = x2;
+      yy = y2;
+    } else {
+      xx = x1 + param * C;
+      yy = y1 + param * D;
+    }
+
+    const dx = x - xx;
+    const dy = y - yy;
+    const distSq = dx * dx + dy * dy;
+
+    if (distSq < minDistSq) {
+      minDistSq = distSq;
       bestIdx = i + 1;
     }
   }
@@ -1531,9 +1512,7 @@ async function handleMapClick(e) {
   if (state.isProcessingMapClick) return;
   state.isProcessingMapClick = true;
   try {
-    if (state.isEditingRoute) {
-      await insertWaypointAtLatLng(e.latlng);
-    } else if (state.isAddingManualTurn) {
+    if (state.isAddingManualTurn) {
       openAddManualTurnModal(e.latlng);
     } else if (state.isCreatingRoute) {
       const lat = e.latlng.lat;
