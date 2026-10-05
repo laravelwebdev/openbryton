@@ -966,7 +966,7 @@ async function snapGpxToOsmRoads(showNotification = true) {
 
     // Anti-Double Track & Monotonic Forward Progress Filter:
     // Removes backward jumps and duplicate points closer than 4 meters
-    let cleaned = [];
+    const cleaned = [];
     for (let i = 0; i < rawSnapped.length; i++) {
       const cur = rawSnapped[i];
       if (cleaned.length === 0) {
@@ -980,38 +980,6 @@ async function snapGpxToOsmRoads(showNotification = true) {
         }
       }
     }
-
-    // U-Turn / Overshoot Culling
-    // Deteksi jika rute kebablasan lalu putar balik ke titik yang hampir sama
-    const finalCleaned = [];
-    let skipUntil = 0;
-    
-    for (let i = 0; i < cleaned.length; i++) {
-      if (i < skipUntil) continue;
-      
-      finalCleaned.push(cleaned[i]);
-      
-      // Look ahead up to 60 points
-      for (let j = Math.min(i + 60, cleaned.length - 1); j >= i + 2; j--) {
-        let directDist = haversineDistance(cleaned[i].lat, cleaned[i].lon, cleaned[j].lat, cleaned[j].lon);
-        
-        if (directDist < 25) { // Jika titik J kembali dekat ke titik I (< 25m)
-          let pathDist = 0;
-          for (let k = i; k < j; k++) {
-            pathDist += haversineDistance(cleaned[k].lat, cleaned[k].lon, cleaned[k+1].lat, cleaned[k+1].lon);
-          }
-          
-          // Jika jarak tempuh rute (pathDist) jauh lebih besar dari jarak lurus (directDist),
-          // ini adalah sebuah paku/overshoot/u-turn palsu.
-          if (pathDist > 50 && pathDist > directDist * 3) {
-            skipUntil = j; // Lewati semua titik overshoot ini
-            break;
-          }
-        }
-      }
-    }
-    
-    cleaned = finalCleaned;
 
     if (cleaned.length > 5) {
       let runningDist = 0;
