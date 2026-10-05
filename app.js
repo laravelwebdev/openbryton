@@ -2713,6 +2713,8 @@ function escapeXml(text) {
       case '&': return '&amp;';
       case '\'': return '&apos;';
       case '"': return '&quot;';
+    }
+  });
 }
 
 // ==========================================
