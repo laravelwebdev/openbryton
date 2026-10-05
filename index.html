@@ -68,11 +68,22 @@
           </div>
         </div>
 
-        <div class="lang-select-wrapper">
-          <select id="langToggle" class="lang-select" onchange="switchLanguage(this.value)">
-            <option value="id">🇮🇩 ID</option>
-            <option value="en">🇬🇧 EN</option>
-          </select>
+        <div class="custom-lang-dropdown" id="langDropdown">
+          <button class="lang-btn" id="langDropdownBtn">
+            <span id="currentLangIcon">🇮🇩</span>
+            <span id="currentLangText">ID</span>
+            <i data-lucide="chevron-down" class="lang-chevron"></i>
+          </button>
+          <ul class="lang-menu" id="langMenu">
+            <li class="lang-option" data-value="id">
+              <span class="lang-icon">🇮🇩</span>
+              <span class="lang-text">ID</span>
+            </li>
+            <li class="lang-option" data-value="en">
+              <span class="lang-icon">🇬🇧</span>
+              <span class="lang-text">EN</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
@@ -677,8 +688,7 @@
   <script src="app.js?v=3"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const toggle = document.getElementById('langToggle');
-      if (toggle) toggle.value = currentLang;
+      // Logic for language dropdown initialization is in lang.js
     });
   </script>
 </body>

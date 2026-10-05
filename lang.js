@@ -404,7 +404,73 @@ function updateDOMText() {
   }
 }
 
+function updateLangDropdownUI() {
+  const btnIcon = document.getElementById('currentLangIcon');
+  const btnText = document.getElementById('currentLangText');
+  const options = document.querySelectorAll('.lang-option');
+
+  if (btnIcon && btnText) {
+    if (currentLang === 'id') {
+      btnIcon.textContent = '🇮🇩';
+      btnText.textContent = 'ID';
+    } else {
+      btnIcon.textContent = '🇬🇧';
+      btnText.textContent = 'EN';
+    }
+  }
+
+  options.forEach(opt => {
+    if (opt.getAttribute('data-value') === currentLang) {
+      opt.classList.add('active');
+    } else {
+      opt.classList.remove('active');
+    }
+  });
+}
+
+function initLangDropdown() {
+  const dropdown = document.getElementById('langDropdown');
+  const btn = document.getElementById('langDropdownBtn');
+  const options = document.querySelectorAll('.lang-option');
+
+  if (!dropdown || !btn) return;
+
+  // Toggle dropdown
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('open');
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!dropdown.contains(e.target)) {
+      dropdown.classList.remove('open');
+    }
+  });
+
+  // Handle option click
+  options.forEach(opt => {
+    opt.addEventListener('click', (e) => {
+      const val = opt.getAttribute('data-value');
+      if (val !== currentLang) {
+        switchLanguage(val);
+      }
+      dropdown.classList.remove('open');
+    });
+  });
+
+  updateLangDropdownUI();
+}
+
+// Override switchLanguage to also update UI
+const originalSwitchLanguage = switchLanguage;
+window.switchLanguage = function(lang) {
+  originalSwitchLanguage(lang);
+  updateLangDropdownUI();
+};
+
 // Initial setup
 document.addEventListener('DOMContentLoaded', () => {
   updateDOMText();
+  initLangDropdown();
 });

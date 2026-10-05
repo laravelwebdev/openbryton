@@ -179,36 +179,97 @@ body {
   background: rgba(192, 132, 252, 0.08);
 }
 
-/* Language Select */
-.lang-select-wrapper {
+/* Custom Language Dropdown */
+.custom-lang-dropdown {
   position: relative;
   display: inline-flex;
   align-items: center;
+  user-select: none;
 }
-.lang-select-wrapper::after {
-  content: "▼";
-  font-size: 10px;
-  color: var(--text-muted);
-  position: absolute;
-  right: 12px;
-  pointer-events: none;
-}
-.lang-select {
+
+.lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.05);
-  color: var(--text-main);
   border: 1px solid var(--bg-card-border);
-  padding: 6px 28px 6px 12px;
-  border-radius: 999px;
+  color: var(--text-main);
+  padding: 6px 14px;
+  border-radius: 9999px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  appearance: none;
-  outline: none;
   transition: var(--transition);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  outline: none;
 }
-.lang-select:hover {
+
+.lang-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.lang-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--text-muted);
+}
+
+.custom-lang-dropdown.open .lang-chevron {
+  transform: rotate(180deg);
+}
+
+.lang-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: rgba(18, 24, 38, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-md);
+  list-style: none;
+  padding: 6px;
+  min-width: 120px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px) scale(0.95);
+  transform-origin: top right;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+}
+
+.custom-lang-dropdown.open .lang-menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.lang-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.lang-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.lang-option.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #fff;
 }
 
 /* Layout */
