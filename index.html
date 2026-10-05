@@ -177,6 +177,33 @@
           <p class="setting-desc" data-i18n="smoothDesc">Menghindari deteksi belokan palsu akibat jitter/noise sinyal GPS.</p>
         </div>
 
+        <!-- ClimbPro Settings -->
+        <h3 style="font-size:14px; margin: 20px 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid var(--bg-card-border);"><i data-lucide="mountain"></i> <span data-i18n="climbTitle">Kriteria Deteksi Tanjakan</span></h3>
+        
+        <div class="setting-item">
+          <div class="setting-label-row">
+            <label for="climbMinDist" class="setting-label" data-i18n="climbMinDist">Jarak Minimal</label>
+            <span class="value-bubble" id="climbMinDistValue">500 m</span>
+          </div>
+          <input type="range" id="climbMinDist" min="100" max="2000" value="500" step="50" class="slider">
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label-row">
+            <label for="climbMinGrade" class="setting-label" data-i18n="climbMinGrade">Grade Rata-rata Minimal</label>
+            <span class="value-bubble" id="climbMinGradeValue">3.0 %</span>
+          </div>
+          <input type="range" id="climbMinGrade" min="1.0" max="10.0" value="3.0" step="0.5" class="slider">
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label-row">
+            <label for="climbMinScore" class="setting-label" data-i18n="climbMinScore">Skor Tanjakan (Jarak x Grade)</label>
+            <span class="value-bubble" id="climbMinScoreValue">1500</span>
+          </div>
+          <input type="range" id="climbMinScore" min="500" max="5000" value="1500" step="100" class="slider">
+        </div>
+
         <!-- Process Button -->
         <button type="button" class="btn btn-primary btn-block" id="btnProcess" disabled>
           <i data-lucide="refresh-cw" id="processSpinner"></i>
@@ -206,10 +233,20 @@
             style="width:100%; padding:10px; border-radius:6px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border); font-family:inherit;">
         </div>
 
-        <button type="button" class="btn btn-success btn-block btn-lg" id="btnDownloadZip" disabled>
-          <i data-lucide="download"></i>
-          <span data-i18n="btnDownloadZip">Download Bryton Route (.ZIP)</span>
-        </button>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+          <button type="button" class="btn btn-success" id="btnDownloadBryton" style="flex: 1;" disabled>
+            <i data-lucide="download"></i>
+            <span data-i18n="btnDownloadBryton">Bryton (.ZIP)</span>
+          </button>
+          <button type="button" class="btn btn-outline" id="btnDownloadKml" style="flex: 1;" disabled>
+            <i data-lucide="download"></i>
+            <span>KML</span>
+          </button>
+          <button type="button" class="btn btn-outline" id="btnDownloadGpx" style="flex: 1;" disabled>
+            <i data-lucide="download"></i>
+            <span>GPX</span>
+          </button>
+        </div>
 
         <div class="guide-box">
           <h4><i data-lucide="info"></i> <span data-i18n="guideTitle">Cara Pasang di Head Unit Bryton:</span></h4>
@@ -293,8 +330,12 @@
               <span id="btnEditRouteText" data-i18n="btnEditModeOn">Mode Edit (Geser Titik)</span>
             </button>
             <button type="button" class="btn btn-sm btn-outline" id="btnAddTurnManual">
-              <i data-lucide="plus-circle"></i>
-              <span data-i18n="btnAddTurn">Tambah Belokan Manual</span>
+              <i data-lucide="corner-up-right"></i>
+              <span data-i18n="btnAddTurn">Tambah Belokan</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline" id="btnAddPoiManual">
+              <i data-lucide="map-pin"></i>
+              <span data-i18n="btnAddPoi">Tambah POI</span>
             </button>
             <button type="button" class="btn btn-sm btn-outline hidden" id="btnSaveRouteEdit">
               <i data-lucide="check"></i>
@@ -344,10 +385,15 @@
         </div>
       </div>
 
-      <!-- Turn by Turn Table with Manual Delete -->
+      <!-- Turn by Turn, POI, and Climb Tables -->
       <div class="card turns-card">
-        <div class="card-header-flex">
-          <h2 class="card-title"><i data-lucide="list-ordered"></i> <span data-i18n="turnsTableTitle">Daftar Instruksi Turn-by-Turn</span></h2>
+        <div class="card-header-flex" style="flex-wrap: wrap; gap: 10px;">
+          <h2 class="card-title"><i data-lucide="list-ordered"></i> <span data-i18n="turnsTableTitle">Daftar Instruksi</span></h2>
+          <div class="tabs-container" style="display:flex; gap:5px;" id="tableTabs">
+            <button class="btn btn-sm btn-tab btn-primary active-tab" data-target="tab-turns-table"><span data-i18n="tabTurns">Turn-by-Turn</span> <span class="badge" id="badge-turns" style="margin-left:5px; background:rgba(255,255,255,0.2)">0</span></button>
+            <button class="btn btn-sm btn-tab btn-outline" data-target="tab-pois-table"><span data-i18n="tabPois">POI</span> <span class="badge" id="badge-pois" style="margin-left:5px; background:rgba(255,255,255,0.2)">0</span></button>
+            <button class="btn btn-sm btn-tab btn-outline" data-target="tab-climbs-table"><span data-i18n="tabClimbs">Climb</span> <span class="badge" id="badge-climbs" style="margin-left:5px; background:rgba(255,255,255,0.2)">0</span></button>
+          </div>
           <div class="turns-filter" style="display:flex; gap:10px; align-items:center;">
             <span id="turnCounterBadge" class="badge badge-secondary" data-i18n="turnCounterBadge">0 Instruksi</span>
             <button class="btn btn-icon btn-sm" id="btnToggleTableUI" title="Minimize Tabel" data-i18n-title="btnMinimizeTable"><i data-lucide="minimize-2"></i></button>
@@ -355,7 +401,8 @@
         </div>
 
         <div class="table-responsive" id="turnsTableContent">
-          <table class="turns-table" id="turnsTable">
+          <!-- Turns Table -->
+          <table class="turns-table tab-content" id="tab-turns-table">
             <thead>
               <tr>
                 <th width="45">#</th>
@@ -369,9 +416,41 @@
               </tr>
             </thead>
             <tbody id="turnsTableBody">
-              <tr class="empty-row">
-                <td colspan="8" class="text-center" data-i18n="emptyTable">Belum ada data turn-by-turn. Silakan upload file GPX terlebih dahulu.</td>
+              <tr class="empty-row"><td colspan="8" class="text-center" data-i18n="emptyTable">Belum ada data turn-by-turn.</td></tr>
+            </tbody>
+          </table>
+
+          <!-- POI Table -->
+          <table class="turns-table tab-content hidden" id="tab-pois-table">
+            <thead>
+              <tr>
+                <th width="45">#</th>
+                <th width="65" data-i18n="poiHeaderIcon">Ikon</th>
+                <th data-i18n="poiHeaderName">Nama POI</th>
+                <th width="85" data-i18n="turnHeaderDist">Jarak (m)</th>
+                <th width="115" data-i18n="turnHeaderCoord">Koordinat</th>
+                <th width="75" class="text-center" data-i18n="turnHeaderAction">Aksi</th>
               </tr>
+            </thead>
+            <tbody id="poisTableBody">
+              <tr class="empty-row"><td colspan="6" class="text-center" data-i18n="emptyPois">Belum ada data POI.</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Climbs Table -->
+          <table class="turns-table tab-content hidden" id="tab-climbs-table">
+            <thead>
+              <tr>
+                <th width="45">#</th>
+                <th width="65" data-i18n="climbHeaderIcon">Aksi</th>
+                <th data-i18n="climbHeaderName">Nama Tanjakan</th>
+                <th width="85" data-i18n="climbHeaderGrade">Grade (%)</th>
+                <th width="85" data-i18n="turnHeaderDist">Jarak (m)</th>
+                <th width="115" data-i18n="turnHeaderCoord">Koordinat</th>
+              </tr>
+            </thead>
+            <tbody id="climbsTableBody">
+              <tr class="empty-row"><td colspan="6" class="text-center" data-i18n="emptyClimbs">Belum ada data Tanjakan.</td></tr>
             </tbody>
           </table>
         </div> <!-- end turnsTableContent -->
@@ -411,23 +490,25 @@
         <label style="display:block; font-size:13px; margin-bottom:4px;" data-i18n="modalDir">Arah Belokan</label>
         <select id="manualTurnDirection"
           style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
-          <option value="-2" data-i18n="dirLeft">Belok Kiri</option>
-          <option value="2" data-i18n="dirRight">Belok Kanan</option>
-          <option value="-1" data-i18n="dirSlightLeft">Serong Kiri</option>
-          <option value="1" data-i18n="dirSlightRight">Serong Kanan</option>
-          <option value="-3" data-i18n="dirSharpLeft">Belok Tajam Kiri</option>
-          <option value="3" data-i18n="dirSharpRight">Belok Tajam Kanan</option>
-          <option value="0" data-i18n="dirStraight">Lurus</option>
-          <option value="24" data-i18n="dirUturn">Putar Balik (U-Turn)</option>
-          <optgroup label="Point of Interest (Garmin Standard)">
-            <option value="101" data-i18n="poiFood">Food / Makanan</option>
-            <option value="102" data-i18n="poiWater">Water / Air Minum</option>
-            <option value="103" data-i18n="poiSummit">Summit / Puncak</option>
-            <option value="104" data-i18n="poiDanger">Danger / Bahaya</option>
-            <option value="105" data-i18n="poiSprint">Sprint</option>
-            <option value="106" data-i18n="poiFirstAid">First Aid / Medis</option>
-            <option value="107" data-i18n="poiValley">Valley / Lembah</option>
-            <option value="108" data-i18n="poiGeneric">Generic POI</option>
+          <optgroup label="Arah Navigasi" id="optgroupTurns">
+            <option value="-2" data-i18n="dirLeft">Belok Kiri</option>
+            <option value="2" data-i18n="dirRight">Belok Kanan</option>
+            <option value="-1" data-i18n="dirSlightLeft">Serong Kiri</option>
+            <option value="1" data-i18n="dirSlightRight">Serong Kanan</option>
+            <option value="-3" data-i18n="dirSharpLeft">Belok Tajam Kiri</option>
+            <option value="3" data-i18n="dirSharpRight">Belok Tajam Kanan</option>
+            <option value="0" data-i18n="dirStraight">Lurus</option>
+            <option value="24" data-i18n="dirUturn">Putar Balik (U-Turn)</option>
+          </optgroup>
+          <optgroup label="Point of Interest (Bryton)" id="optgroupPois">
+            <option value="101" data-i18n="poiSummit">Camping</option>
+            <option value="100" data-i18n="poiTarget">Target</option>
+            <option value="102" data-i18n="poiFood">Food</option>
+            <option value="103" data-i18n="poiFirstAid">First Aid</option>
+            <option value="104" data-i18n="poiCheck">Checkpoint</option>
+            <option value="105" data-i18n="poiGroup">Group</option>
+            <option value="106" data-i18n="poiWater">Water</option>
+            <option value="107" data-i18n="poiSprint">Sprint</option>
           </optgroup>
         </select>
       </div>

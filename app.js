@@ -20,11 +20,14 @@ const state = {
   osmTurns: [],
   extraTurns: [],
   manualTurns: [],
+  climbs: [],
   combinedInstructions: [],
   isProcessing: false,
+  isProcessingMapClick: false,
   isEditingRoute: false,
   isCreatingRoute: false,
   isAddingManualTurn: false,
+  manualAddMode: 'turn',
   pendingManualCoord: null,
   history: [],
   historyIndex: -1,
@@ -34,7 +37,8 @@ const state = {
     turnMarkers: [],
     editHandles: [],
     creationPins: []
-  }
+  },
+  currentClimbHighlight: null
 };
 
 // DOM Elements
@@ -56,11 +60,19 @@ const elements = {
   dupDistanceThresholdValue: document.getElementById('dupDistanceThresholdValue'),
   smoothingRadius: document.getElementById('smoothingRadius'),
   smoothingRadiusValue: document.getElementById('smoothingRadiusValue'),
+  climbMinDist: document.getElementById('climbMinDist'),
+  climbMinDistValue: document.getElementById('climbMinDistValue'),
+  climbMinGrade: document.getElementById('climbMinGrade'),
+  climbMinGradeValue: document.getElementById('climbMinGradeValue'),
+  climbMinScore: document.getElementById('climbMinScore'),
+  climbMinScoreValue: document.getElementById('climbMinScoreValue'),
   elevationCanvas: document.getElementById('elevationCanvas'),
   brytonRouteName: document.getElementById('brytonRouteName'),
   btnProcess: document.getElementById('btnProcess'),
   processSpinner: document.getElementById('processSpinner'),
-  btnDownloadZip: document.getElementById('btnDownloadZip'),
+  btnDownloadBryton: document.getElementById('btnDownloadBryton'),
+  btnDownloadKml: document.getElementById('btnDownloadKml'),
+  btnDownloadGpx: document.getElementById('btnDownloadGpx'),
   btnToggleSidebarUI: document.getElementById('btnToggleSidebarUI'),
   btnToggleTableUI: document.getElementById('btnToggleTableUI'),
   sidebarContent: document.getElementById('sidebarContent'),
@@ -85,6 +97,7 @@ const elements = {
   btnEditRouteText: document.getElementById('btnEditRouteText'),
   btnCreateManualRoute: document.getElementById('btnCreateManualRoute'),
   btnAddTurnManual: document.getElementById('btnAddTurnManual'),
+  btnAddPoiManual: document.getElementById('btnAddPoiManual'),
   btnSaveRouteEdit: document.getElementById('btnSaveRouteEdit'),
   editStatusBar: document.getElementById('editStatusBar'),
   createStatusBar: document.getElementById('createStatusBar'),
@@ -105,9 +118,36 @@ const elements = {
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
   initIcons();
+  initTabs();
   initMapWithLayers();
   bindEvents();
 });
+
+function initTabs() {
+  const tabs = document.querySelectorAll('.btn-tab');
+  const contents = document.querySelectorAll('.tab-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Remove active from all tabs and hide contents
+      tabs.forEach(t => t.classList.remove('active-tab', 'btn-primary'));
+      tabs.forEach(t => t.classList.add('btn-outline'));
+      contents.forEach(c => c.classList.add('hidden'));
+
+      // Add active to clicked tab and show target
+      tab.classList.add('active-tab', 'btn-primary');
+      tab.classList.remove('btn-outline');
+      const target = document.getElementById(tab.getAttribute('data-target'));
+      if (target) {
+        target.classList.remove('hidden');
+      }
+
+      // Clear highlights when changing tabs
+      clearClimbHighlight();
+      document.querySelectorAll('.active-row').forEach(row => row.classList.remove('active-row'));
+    });
+  });
+}
 
 function initIcons() {
   if (window.lucide) {
@@ -213,6 +253,10 @@ function initMapWithLayers() {
     zoomControl: true,
     layers: [osmStandard]
   }).setView([-6.2088, 106.8456], 12);
+
+  // Try to locate user on startup
+  state.map.locate({ setView: true, maxZoom: 14 });
+
   state.map.on('locationfound', function (e) {
     if (state.mapLayers.locationMarker) {
       state.map.removeLayer(state.mapLayers.locationMarker);
@@ -341,6 +385,18 @@ function bindEvents() {
     elements.smoothingRadiusValue.textContent = `${e.target.value} m`;
   });
 
+  elements.climbMinDist.addEventListener('input', (e) => {
+    elements.climbMinDistValue.textContent = `${e.target.value} m`;
+  });
+
+  elements.climbMinGrade.addEventListener('input', (e) => {
+    elements.climbMinGradeValue.textContent = `${parseFloat(e.target.value).toFixed(1)} %`;
+  });
+
+  elements.climbMinScore.addEventListener('input', (e) => {
+    elements.climbMinScoreValue.textContent = `${e.target.value}`;
+  });
+
   elements.fileInput.addEventListener('change', handleFileSelect);
 
   // Prevent global drag/drop to avoid browser opening the file
@@ -377,7 +433,9 @@ function bindEvents() {
   });
 
   elements.btnProcess.addEventListener('click', runTurnAnalysis);
-  elements.btnDownloadZip.addEventListener('click', generateBrytonZip);
+  elements.btnDownloadBryton.addEventListener('click', generateBrytonZip);
+  elements.btnDownloadKml.addEventListener('click', generateKmlFile);
+  elements.btnDownloadGpx.addEventListener('click', generateGpxFile);
 
   elements.btnLocateMe.addEventListener('click', () => {
     state.map.locate({ setView: true, maxZoom: 16 });
@@ -401,7 +459,8 @@ function bindEvents() {
       }
     }
   });
-  elements.btnAddTurnManual.addEventListener('click', toggleAddManualTurnMode);
+  elements.btnAddTurnManual.addEventListener('click', () => toggleAddManualTurnMode('turn'));
+  elements.btnAddPoiManual.addEventListener('click', () => toggleAddManualTurnMode('poi'));
 
   elements.btnManualSnap.addEventListener('click', async () => {
     await snapGpxToOsmRoads(true);
@@ -476,7 +535,10 @@ function resetState() {
   state.osmTurns = [];
   state.extraTurns = [];
   state.manualTurns = [];
+  state.climbs = [];
   state.combinedInstructions = [];
+
+  clearClimbHighlight();
 
   if (state.isEditingRoute) toggleRouteEditing();
   if (state.isAddingManualTurn) toggleAddManualTurnMode();
@@ -488,7 +550,9 @@ function resetState() {
   elements.dropZone.querySelector('.drop-zone-content').classList.remove('hidden');
   elements.btnProcess.disabled = true;
   elements.btnManualSnap.disabled = true;
-  elements.btnDownloadZip.disabled = true;
+  elements.btnDownloadBryton.disabled = true;
+  elements.btnDownloadKml.disabled = true;
+  elements.btnDownloadGpx.disabled = true;
 
   if (state.mapLayers.trackLine) {
     state.map.removeLayer(state.mapLayers.trackLine);
@@ -591,7 +655,7 @@ function parseGpx() {
   renderElevationChart();
 }
 
-function renderElevationChart() {
+function renderElevationChart(highlightClimbObj = null) {
   if (state.points.length === 0 || !elements.elevationCanvas) return;
   const canvas = elements.elevationCanvas;
   const ctx = canvas.getContext('2d');
@@ -660,6 +724,39 @@ function renderElevationChart() {
   ctx.strokeStyle = '#3b82f6';
   ctx.lineWidth = 1.5;
   ctx.stroke();
+
+  // Draw Highlighted Climb
+  if (highlightClimbObj) {
+    const startPt = state.points[highlightClimbObj.startIndex];
+    const endPt = state.points[highlightClimbObj.endIndex];
+    
+    const startX = padLeft + (totalDist > 0 ? (startPt.distFromStart / totalDist) * drawWidth : 0);
+    const endX = padLeft + (totalDist > 0 ? (endPt.distFromStart / totalDist) * drawWidth : 0);
+    
+    // draw vertical red separator lines
+    ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(startX, padTop); ctx.lineTo(startX, padTop + drawHeight);
+    ctx.moveTo(endX, padTop); ctx.lineTo(endX, padTop + drawHeight);
+    ctx.stroke();
+
+    // draw red segment
+    ctx.beginPath();
+    for (let i = highlightClimbObj.startIndex; i <= highlightClimbObj.endIndex; i++) {
+      const p = state.points[i];
+      const x = padLeft + (totalDist > 0 ? (p.distFromStart / totalDist) * drawWidth : 0);
+      const y = padTop + drawHeight - ((p.ele - minEle) / eleRange) * drawHeight;
+      if (i === highlightClimbObj.startIndex) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.strokeStyle = '#ef4444'; // Red color
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+  }
   
   // Draw Axes Grid and Text
   ctx.fillStyle = '#94a3b8';
@@ -1190,7 +1287,7 @@ async function saveRouteEditing() {
  * Manual Turn Feature:
  * Allows user to add a custom turn by clicking on the map.
  */
-function toggleAddManualTurnMode() {
+function toggleAddManualTurnMode(mode = 'turn') {
   if (state.points.length === 0) {
     showToast(t('toastUploadFirst'), 'error');
     return;
@@ -1200,25 +1297,45 @@ function toggleAddManualTurnMode() {
     toggleRouteEditing();
   }
 
-  state.isAddingManualTurn = !state.isAddingManualTurn;
+  // If already adding and clicking the same mode, toggle off
+  if (state.isAddingManualTurn && state.manualAddMode === mode) {
+    state.isAddingManualTurn = false;
+  } else {
+    // Enable adding with new mode
+    state.isAddingManualTurn = true;
+    state.manualAddMode = mode;
+  }
+
+  // Reset UI
+  elements.btnAddTurnManual.classList.remove('active');
+  elements.btnAddTurnManual.querySelector('span').setAttribute('data-i18n', 'btnAddTurn');
+  elements.btnAddTurnManual.querySelector('span').textContent = t('btnAddTurn');
+  elements.btnAddPoiManual.classList.remove('active');
+  elements.btnAddPoiManual.querySelector('span').textContent = 'Tambah POI';
+  elements.addTurnStatusBar.classList.add('hidden');
 
   if (state.isAddingManualTurn) {
-    elements.btnAddTurnManual.classList.add('active');
-    elements.btnAddTurnManual.querySelector('span').setAttribute('data-i18n', 'btnCancelAddTurn');
-    elements.btnAddTurnManual.querySelector('span').textContent = t('btnCancelAddTurn');
+    if (mode === 'turn') {
+      elements.btnAddTurnManual.classList.add('active');
+      elements.btnAddTurnManual.querySelector('span').setAttribute('data-i18n', 'btnCancelAddTurn');
+      elements.btnAddTurnManual.querySelector('span').textContent = t('btnCancelAddTurn');
+    } else {
+      elements.btnAddPoiManual.classList.add('active');
+      elements.btnAddPoiManual.querySelector('span').textContent = 'Batal Tambah POI';
+    }
+    
     elements.addTurnStatusBar.classList.remove('hidden');
+    elements.addTurnStatusBar.querySelector('span').textContent = mode === 'turn' ? 'Mode Tambah Belokan Aktif: Klik pada garis rute di peta untuk memasang belokan manual.' : 'Mode Tambah POI Aktif: Klik pada rute untuk meletakkan POI.';
     showToast(t('toastClickManualTurn'), 'info');
-  } else {
-    elements.btnAddTurnManual.classList.remove('active');
-    elements.btnAddTurnManual.querySelector('span').setAttribute('data-i18n', 'btnAddTurn');
-    elements.btnAddTurnManual.querySelector('span').textContent = t('btnAddTurn');
-    elements.addTurnStatusBar.classList.add('hidden');
   }
 }
 
 async function handleMapClick(e) {
-  if (state.isEditingRoute) {
-    insertWaypointAtLatLng(e.latlng);
+  if (state.isProcessingMapClick) return;
+  state.isProcessingMapClick = true;
+  try {
+    if (state.isEditingRoute) {
+      await insertWaypointAtLatLng(e.latlng);
   } else if (state.isAddingManualTurn) {
     openAddManualTurnModal(e.latlng);
   } else if (state.isCreatingRoute) {
@@ -1265,6 +1382,11 @@ async function handleMapClick(e) {
       if (elements.chkManualSnap.checked) showToast(t('toastPointSnapped'), 'success');
       else showToast(t('toastPointOffroad'), 'success');
     }
+  } else {
+    clearClimbHighlight();
+  }
+  } finally {
+    state.isProcessingMapClick = false;
   }
 }
 
@@ -1320,7 +1442,6 @@ function toggleCreateManualRoute() {
       elements.dropZone.querySelector('.drop-zone-content').classList.add('hidden');
       elements.btnProcess.disabled = false;
       elements.btnManualSnap.disabled = false;
-      runTurnAnalysis();
     }
   }
 }
@@ -1329,6 +1450,20 @@ function openAddManualTurnModal(latlng) {
   state.pendingManualCoord = latlng;
   elements.manualTurnCoords.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
   elements.manualTurnText.value = '';
+
+  const optTurns = document.getElementById('optgroupTurns');
+  const optPois = document.getElementById('optgroupPois');
+  
+  if (state.manualAddMode === 'turn') {
+    if (optTurns) optTurns.style.display = 'block';
+    if (optPois) optPois.style.display = 'none';
+    elements.manualTurnDirection.value = "0"; // Straight as default
+  } else {
+    if (optTurns) optTurns.style.display = 'none';
+    if (optPois) optPois.style.display = 'block';
+    elements.manualTurnDirection.value = "106"; // Water as default POI
+  }
+
   elements.modalAddTurn.classList.remove('hidden');
   elements.modalAddTurn.style.display = 'flex';
 }
@@ -1338,7 +1473,7 @@ function closeModal() {
   elements.modalAddTurn.style.display = 'none';
   state.pendingManualCoord = null;
   if (state.isAddingManualTurn) {
-    toggleAddManualTurnMode();
+    toggleAddManualTurnMode(state.manualAddMode);
   }
 }
 
@@ -1367,7 +1502,8 @@ function confirmAddManualTurn() {
   showToast(t('toastTurnAdded').replace('{text}', text), 'success');
 
   // Re-finalize instructions & re-render
-  state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns);
+  state.climbs = detectClimbs(state.points);
+  state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbs);
   updateStatsAndUI();
 }
 
@@ -1420,7 +1556,8 @@ async function runTurnAnalysis() {
 
     state.extraTurns = detectAngleTurns(state.points, state.osmTurns, angleThresh, dupDistThresh, smoothingDist);
 
-    let combined = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns);
+    state.climbs = detectClimbs(state.points);
+    let combined = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbs);
 
     if (elements.enableOsmNames.checked && combined.length > 0) {
       showToast(t('toastFetchOsmNames'), 'info', false);
@@ -1430,7 +1567,9 @@ async function runTurnAnalysis() {
     state.combinedInstructions = combined;
     updateStatsAndUI();
 
-    elements.btnDownloadZip.disabled = false;
+    elements.btnDownloadBryton.disabled = false;
+    elements.btnDownloadKml.disabled = false;
+    elements.btnDownloadGpx.disabled = false;
     initIcons();
     showToast(t('toastAnalysisDone').replace('{count}', state.combinedInstructions.length), 'success');
   } catch (error) {
@@ -1636,6 +1775,66 @@ async function fetchOsmTurnByTurn(points) {
   return allOsmTurns;
 }
 
+function detectClimbs(points) {
+  const climbs = [];
+  let inClimb = false;
+  let startIndex = 0;
+  
+  for (let i = 1; i < points.length; i++) {
+    if (!inClimb) {
+      // Check if starting a climb: gradient > 2% over next 100m
+      let futureIdx = i;
+      while(futureIdx < points.length && points[futureIdx].distFromStart - points[i].distFromStart < 100) futureIdx++;
+      if (futureIdx < points.length) {
+         let d = points[futureIdx].distFromStart - points[i].distFromStart;
+         let e = points[futureIdx].ele - points[i].ele;
+         if ((e/d)*100 >= 2.0) {
+           inClimb = true;
+           startIndex = i;
+         }
+      }
+    } else {
+      // Check if climb has ended: gradient <= 0% over next 150m (allow small flat sections), or reached end of route
+      let isEnd = false;
+      let futureIdx = i;
+      while(futureIdx < points.length && points[futureIdx].distFromStart - points[i].distFromStart < 150) futureIdx++;
+      
+      if (futureIdx < points.length) {
+         let d = points[futureIdx].distFromStart - points[i].distFromStart;
+         let e = points[futureIdx].ele - points[i].ele;
+         if ((e/d)*100 <= -1.0) { // drops significantly
+           isEnd = true;
+         }
+      } else {
+         isEnd = true; // end of route
+      }
+      
+      if (isEnd) {
+         let totalDist = points[i].distFromStart - points[startIndex].distFromStart;
+         let totalEle = points[i].ele - points[startIndex].ele;
+         let avgGrad = (totalEle / totalDist) * 100;
+         let score = totalDist * avgGrad;
+         
+         const minD = parseFloat(elements.climbMinDist ? elements.climbMinDist.value : 500);
+         const minG = parseFloat(elements.climbMinGrade ? elements.climbMinGrade.value : 3.0);
+         const minS = parseFloat(elements.climbMinScore ? elements.climbMinScore.value : 1500);
+         
+         if (totalDist >= minD && avgGrad >= minG && score >= minS) {
+           climbs.push({
+             startIndex: startIndex,
+             endIndex: i,
+             dist: totalDist,
+             eleGain: totalEle,
+             avgGrad: avgGrad
+           });
+         }
+         inClimb = false;
+      }
+    }
+  }
+  return climbs;
+}
+
 async function enrichStreetNamesFromOsm(instructions) {
   const enriched = [...instructions];
   const toEnrich = enriched.filter(inst => !inst.instruction.includes('Jl.') && !inst.instruction.includes('Jalan')).slice(0, 10);
@@ -1764,8 +1963,30 @@ function detectAngleTurns(points, existingOsmTurns, angleThreshold, dupDistThres
   return extraTurns;
 }
 
-function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = []) {
-  const all = [...osmTurns, ...extraTurns, ...manualTurns];
+function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = [], climbs = []) {
+  const climbTurns = [];
+  climbs.forEach((c, idx) => {
+    climbTurns.push({
+      source: 'climb',
+      index: c.startIndex,
+      lat: points[c.startIndex].lat,
+      lon: points[c.startIndex].lon,
+      directionCode: 190,
+      instruction: `Climb ${idx+1} Start`,
+      distFromStart: points[c.startIndex].distFromStart
+    });
+    climbTurns.push({
+      source: 'climb',
+      index: c.endIndex,
+      lat: points[c.endIndex].lat,
+      lon: points[c.endIndex].lon,
+      directionCode: 191,
+      instruction: `Climb ${idx+1} End`,
+      distFromStart: points[c.endIndex].distFromStart
+    });
+  });
+
+  const all = [...osmTurns, ...extraTurns, ...manualTurns, ...climbTurns];
 
   if (!all.some(item => item.index === 0)) {
     all.push({
@@ -1789,7 +2010,7 @@ function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = []) {
     } else {
       const prev = deduplicated[deduplicated.length - 1];
       const dist = cur.distFromStart - prev.distFromStart;
-      if (dist >= 12 || cur.source === 'manual' || cur.source === 'extra') {
+      if (dist >= 12 || cur.source === 'manual' || cur.source === 'extra' || cur.source === 'climb') {
         deduplicated.push(cur);
       }
     }
@@ -1908,10 +2129,26 @@ function renderTurnMarkersOnMap(instructions) {
  * Automatically scrolls table to matching row and applies animated highlight
  */
 function scrollToTableRow(rowIndex) {
-  const rows = elements.turnsTableBody.querySelectorAll('tr');
-  if (rows[rowIndex]) {
-    rows.forEach(r => r.classList.remove('highlighted-row'));
-    const targetRow = rows[rowIndex];
+  const targetRow = document.getElementById(`turn-row-${rowIndex}`);
+  if (targetRow) {
+    // Determine which tab content this row belongs to
+    const parentTab = targetRow.closest('.tab-content');
+    if (parentTab) {
+      const targetId = parentTab.id; // e.g. tab-turns-table
+      const tabButton = document.querySelector(`.btn-tab[data-target="${targetId}"]`);
+      if (tabButton && !tabButton.classList.contains('active-tab')) {
+        tabButton.click(); // Switch to the tab!
+      }
+    }
+
+    const rows = document.querySelectorAll('.turns-table tr');
+    rows.forEach(r => {
+      r.classList.remove('highlighted-row');
+      r.classList.remove('active-row');
+    });
+    
+    clearClimbHighlight();
+    
     targetRow.classList.add('highlighted-row');
     targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -1955,61 +2192,106 @@ function getTranslatedInstruction(text, dirCode) {
  * Populates table with turn-by-turn items and action delete buttons.
  */
 function renderTurnsTable(instructions) {
+  const turnsBody = document.getElementById('turnsTableBody');
+  const poisBody = document.getElementById('poisTableBody');
+  const climbsBody = document.getElementById('climbsTableBody');
+
+  turnsBody.innerHTML = '';
+  poisBody.innerHTML = '';
+  climbsBody.innerHTML = '';
+
+  let tIdx = 1, pIdx = 1, cIdx = 1;
+
   if (instructions.length === 0) {
-    elements.turnsTableBody.innerHTML = `
-      <tr class="empty-row">
-        <td colspan="8" class="text-center">${t('noTurnsDetected')}</td>
-      </tr>
-    `;
+    turnsBody.innerHTML = `<tr class="empty-row"><td colspan="8" class="text-center">${typeof t === 'function' ? t('emptyTable') : 'Belum ada data.'}</td></tr>`;
+    poisBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyPois') : 'Belum ada data.'}</td></tr>`;
+    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
     return;
   }
-
-  elements.turnsTableBody.innerHTML = '';
 
   instructions.forEach((inst, idx) => {
     const tr = document.createElement('tr');
     tr.id = `turn-row-${idx}`;
     tr.style.cursor = 'pointer';
-
     tr.addEventListener('click', (e) => {
       if (e.target.closest('.btn-del-turn')) return;
+      document.querySelectorAll('.active-row').forEach(row => row.classList.remove('active-row'));
+      tr.classList.add('active-row');
+      clearClimbHighlight();
       state.map.setView([inst.lat, inst.lon], 16, { animate: true });
       if (state.mapLayers.turnMarkers[idx]) {
         state.mapLayers.turnMarkers[idx].openPopup();
       }
     });
 
-    let badgeClass = 'turn-badge-osm';
-    let badgeText = t('badgeOsm');
-    if (inst.source === 'extra') {
-      badgeClass = 'turn-badge-extra';
-      badgeText = t('badgeExtra');
-    } else if (inst.source === 'manual') {
-      badgeClass = 'turn-badge-manual';
-      badgeText = t('badgeManual');
-    }
-
     const arrow = getDirectionArrow(inst.directionCode);
+    const instructionText = escapeHtml(getTranslatedInstruction(inst.instruction, inst.directionCode));
+    const btnDel = `<button type="button" class="btn-del-turn" data-index="${idx}"><i data-lucide="trash-2"></i></button>`;
 
-    tr.innerHTML = `
-      <td>${idx + 1}</td>
-      <td><div class="turn-icon-cell">${arrow}</div></td>
-      <td><strong>${escapeHtml(getTranslatedInstruction(inst.instruction, inst.directionCode))}</strong></td>
-      <td><span class="turn-badge ${badgeClass}">${badgeText}</span></td>
-      <td>${Math.round(inst.distance)}</td>
-      <td>${formatTime(inst.time)}</td>
-      <td class="coord-cell">${inst.lat.toFixed(5)}, ${inst.lon.toFixed(5)}</td>
-      <td class="text-center">
-        <button type="button" class="btn-del-turn" data-index="${idx}" title="${t('delTurnTitle')}">
-          <i data-lucide="trash-2"></i>
-        </button>
-      </td>
-    `;
-
-    elements.turnsTableBody.appendChild(tr);
+    if (inst.directionCode === 190 || inst.directionCode === 191) {
+      return; // Skip, climbs are handled below
+    } else if (inst.directionCode >= 100 && inst.directionCode <= 108) {
+      tr.innerHTML = `
+        <td>${pIdx++}</td>
+        <td><div class="turn-icon-cell">${arrow}</div></td>
+        <td><strong>${instructionText}</strong></td>
+        <td>${Math.round(inst.distance || 0)}</td>
+        <td class="coord-cell">${inst.lat.toFixed(5)}, ${inst.lon.toFixed(5)}</td>
+        <td class="text-center">${btnDel}</td>
+      `;
+      poisBody.appendChild(tr);
+    } else {
+      let badgeClass = 'turn-badge-osm';
+      let badgeText = t('badgeOsm');
+      if (inst.source === 'extra') {
+        badgeClass = 'turn-badge-extra';
+        badgeText = t('badgeExtra');
+      } else if (inst.source === 'manual') {
+        badgeClass = 'turn-badge-manual';
+        badgeText = t('badgeManual');
+      }
+      tr.innerHTML = `
+        <td>${tIdx++}</td>
+        <td><div class="turn-icon-cell">${arrow}</div></td>
+        <td><strong>${instructionText}</strong></td>
+        <td><span class="turn-badge ${badgeClass}">${badgeText}</span></td>
+        <td>${Math.round(inst.distance || 0)}</td>
+        <td>${formatTime(inst.time || 0)}</td>
+        <td class="coord-cell">${inst.lat.toFixed(5)}, ${inst.lon.toFixed(5)}</td>
+        <td class="text-center">${btnDel}</td>
+      `;
+      turnsBody.appendChild(tr);
+    }
   });
 
-  elements.turnsTableBody.querySelectorAll('.btn-del-turn').forEach(btn => {
+  // Render Climbs separately
+  if (state.climbs.length === 0) {
+    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data Tanjakan.'}</td></tr>`;
+  } else {
+    const climbPrefix = typeof t === 'function' ? t('climbPrefix') : 'Tanjakan';
+    state.climbs.forEach((climb, idx) => {
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.addEventListener('click', () => {
+        document.querySelectorAll('.active-row').forEach(row => row.classList.remove('active-row'));
+        tr.classList.add('active-row');
+        highlightClimb(climb);
+      });
+
+      tr.innerHTML = `
+        <td>${idx + 1}</td>
+        <td><div class="turn-icon-cell">🧗</div></td>
+        <td><strong>${climbPrefix} ${idx + 1}</strong></td>
+        <td>${climb.avgGrad.toFixed(1)}%</td>
+        <td>${Math.round(climb.dist)}</td>
+        <td class="coord-cell">${state.points[climb.startIndex].lat.toFixed(5)}, ${state.points[climb.startIndex].lon.toFixed(5)}</td>
+      `;
+      climbsBody.appendChild(tr);
+    });
+    cIdx = state.climbs.length + 1; // For badge
+  }
+
+  document.querySelectorAll('.btn-del-turn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const idx = parseInt(btn.getAttribute('data-index'), 10);
@@ -2017,7 +2299,42 @@ function renderTurnsTable(instructions) {
     });
   });
 
+  const bTurns = document.getElementById('badge-turns');
+  const bPois = document.getElementById('badge-pois');
+  const bClimbs = document.getElementById('badge-climbs');
+  if (bTurns) bTurns.textContent = (tIdx - 1).toString();
+  if (bPois) bPois.textContent = (pIdx - 1).toString();
+  if (bClimbs) bClimbs.textContent = (cIdx - 1).toString();
+
   initIcons();
+}
+
+function highlightClimb(climb) {
+  if (state.currentClimbHighlight) {
+    state.map.removeLayer(state.currentClimbHighlight);
+  }
+
+  const climbPoints = state.points.slice(climb.startIndex, climb.endIndex + 1);
+  const latlngs = climbPoints.map(p => [p.lat, p.lon]);
+
+  state.currentClimbHighlight = L.polyline(latlngs, {
+    color: '#ef4444',
+    weight: 6,
+    opacity: 0.9
+  }).addTo(state.map);
+
+  state.map.fitBounds(state.currentClimbHighlight.getBounds(), { padding: [20, 20] });
+
+  // Render Elevation chart with this climb highlighted
+  renderElevationChart(climb);
+}
+
+function clearClimbHighlight() {
+  if (state.currentClimbHighlight) {
+    state.map.removeLayer(state.currentClimbHighlight);
+    state.currentClimbHighlight = null;
+    renderElevationChart(); // redraw without highlight
+  }
 }
 
 /**
@@ -2055,11 +2372,24 @@ async function generateBrytonZip() {
     const tinfoBuffer = createTinfoBuffer(state.combinedInstructions);
     zip.file(`${prefix}.tinfo`, tinfoBuffer);
 
-    const gpxString = createGpxString(state.points, prefix);
-    zip.file(`${prefix}.gpx`, gpxString);
-
-    const kmlString = createKmlString(state.points, prefix);
-    zip.file(`${prefix}.kml`, kmlString);
+    const folder = zip.folder(prefix);
+    
+    const zinfoBuffer = new ArrayBuffer(16);
+    const zview = new DataView(zinfoBuffer);
+    zview.setUint32(0, 2, true);
+    zview.setUint32(4, 12, true);
+    folder.file(`${prefix}.zinfo`, zinfoBuffer);
+    
+    folder.file(`dupli.track`, trackBuffer);
+    folder.file(`dupli2.track`, trackBuffer);
+    
+    const sortBuffer = new ArrayBuffer(16);
+    const sview = new DataView(sortBuffer);
+    sview.setUint32(0, 0, true);
+    sview.setUint32(4, state.points.length > 0 ? state.points.length - 1 : 0, true);
+    sview.setUint32(8, 0x103a1a41, true);
+    sview.setUint32(12, 0, true);
+    folder.file(`sort1.path`, sortBuffer);
 
     showToast(t('toastCreatingZip'), 'info', false);
     const content = await zip.generateAsync({ type: 'blob' });
@@ -2070,6 +2400,28 @@ async function generateBrytonZip() {
     console.error('Failed to generate ZIP:', error);
     showToast(t('toastZipError') + error.message, 'error');
   }
+}
+
+async function generateGpxFile() {
+  if (state.points.length === 0) return;
+  let prefix = elements.brytonRouteName.value.trim() || state.baseName || 'bryton-route';
+  prefix = prefix.replace(/[^a-zA-Z0-9_-]/g, '_');
+  
+  const gpxString = createGpxString(state.points, prefix);
+  const blob = new Blob([gpxString], { type: 'application/gpx+xml' });
+  saveAs(blob, `${prefix}.gpx`);
+  showToast('GPX file downloaded successfully!', 'success');
+}
+
+async function generateKmlFile() {
+  if (state.points.length === 0) return;
+  let prefix = elements.brytonRouteName.value.trim() || state.baseName || 'bryton-route';
+  prefix = prefix.replace(/[^a-zA-Z0-9_-]/g, '_');
+  
+  const kmlString = createKmlString(state.points, prefix);
+  const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
+  saveAs(blob, `${prefix}.kml`);
+  showToast('KML file downloaded successfully!', 'success');
 }
 
 /**
@@ -2110,9 +2462,13 @@ function createTrackBuffer(points) {
     const offset = i * 16;
     const lat = Math.round(points[i].lat * 1000000);
     const lon = Math.round(points[i].lon * 1000000);
+    const dist = Math.round(points[i].distFromStart || 0);
+    const ele = Math.round(points[i].ele || 0); // basic meters (or if bryton uses cm, could be *100, but standard track format often stores in meters or cm, meters is safer)
 
     view.setInt32(offset, lat, true);
     view.setInt32(offset + 4, lon, true);
+    view.setInt32(offset + 8, ele, true);
+    view.setUint32(offset + 12, dist, true);
   }
 
   return buffer;
@@ -2122,13 +2478,13 @@ function createTrackBuffer(points) {
  * Creates TINFO Buffer (42 bytes per instruction)
  */
 function createTinfoBuffer(instructions) {
-  const buffer = new ArrayBuffer(instructions.length * 42);
+  const buffer = new ArrayBuffer(instructions.length * 44);
   const view = new DataView(buffer);
   const bytes = new Uint8Array(buffer);
 
   for (let i = 0; i < instructions.length; i++) {
     const inst = instructions[i];
-    const offset = i * 42;
+    const offset = i * 44;
 
     view.setUint16(offset, inst.index, true);
 
@@ -2142,26 +2498,24 @@ function createTinfoBuffer(instructions) {
       case 2: dirByte = 0x02; break;
       case 3: dirByte = 0x06; break;
       case 24: dirByte = 0x18; break;
-      case 101: dirByte = 0x16; break; // Food
-      case 102: dirByte = 0x15; break; // Water
-      case 103: dirByte = 0x0F; break; // Summit
-      case 104: dirByte = 0x17; break; // Danger
-      case 105: dirByte = 0x14; break; // Sprint
-      case 106: dirByte = 0x1B; break; // First Aid
-      case 107: dirByte = 0x1C; break; // Valley
-      case 108: dirByte = 0x1E; break; // Generic
+      case 100: dirByte = 100; break; // Target
+      case 101: dirByte = 101; break; // Summit
+      case 102: dirByte = 102; break; // Food
+      case 103: dirByte = 103; break; // First Aid
+      case 104: dirByte = 104; break; // Checkpoint
+      case 105: dirByte = 105; break; // Group
+      case 106: dirByte = 106; break; // Water
+      case 107: dirByte = 107; break; // Sprint
+      case 190: dirByte = 190; break; // Climb Start
+      case 191: dirByte = 191; break; // Climb End
       default: dirByte = 0x01; break;
     }
     view.setUint8(offset + 2, dirByte);
     view.setUint8(offset + 3, 0x00);
 
-    view.setUint16(offset + 4, Math.min(65535, Math.round(inst.distance)), true);
-    view.setUint8(offset + 6, 0x00);
-    view.setUint8(offset + 7, 0x00);
-
-    view.setUint16(offset + 8, Math.min(65535, Math.round(inst.time)), true);
-    view.setUint8(offset + 10, 0x00);
-    view.setUint8(offset + 11, 0x00);
+    // Bryton TINFO uses 32-bit (4 bytes) for distance and time
+    view.setUint32(offset + 4, Math.round(inst.distance), true);
+    view.setUint32(offset + 8, Math.round(inst.time), true);
 
     const encoder = new TextEncoder();
     const rawBytes = encoder.encode(inst.instruction || '');
@@ -2268,14 +2622,16 @@ function getDirectionArrow(code) {
     case 2: return '→';
     case 3: return '↱';
     case 24: return '↩';
-    case 101: return '🍽️';
-    case 102: return '💧';
-    case 103: return '⛰️';
-    case 104: return '⚠️';
-    case 105: return '🚩';
-    case 106: return '⚕️';
-    case 107: return '🏞️';
-    case 108: return '📍';
+    case 100: return '🎯';
+    case 101: return '⛺';
+    case 102: return '🍴';
+    case 103: return '➕';
+    case 104: return '☑️';
+    case 105: return '👥';
+    case 106: return '💧';
+    case 107: return '⚡';
+    case 190: return '🧗'; // Climb Start
+    case 191: return '📉'; // Climb End
     default: return '↑';
   }
 }
