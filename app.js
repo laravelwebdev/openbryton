@@ -2244,8 +2244,18 @@ function updateStatsAndUI() {
 function deleteTurn(index) {
   if (index < 0 || index >= state.combinedInstructions.length) return;
 
-  const removed = state.combinedInstructions.splice(index, 1);
-  showToast(t('toastTurnDeleted').replace('{text}', removed[0].instruction), 'info');
+  const removed = state.combinedInstructions.splice(index, 1)[0];
+  
+  const filterFn = t => t !== removed && (t.index !== removed.index || t.directionCode !== removed.directionCode);
+  if (removed.source === 'osm') {
+    state.osmTurns = state.osmTurns.filter(filterFn);
+  } else if (removed.source === 'extra') {
+    state.extraTurns = state.extraTurns.filter(filterFn);
+  } else if (removed.source === 'manual') {
+    state.manualTurns = state.manualTurns.filter(filterFn);
+  }
+
+  showToast(t('toastTurnDeleted').replace('{text}', removed.instruction), 'info');
 
   for (let i = 0; i < state.combinedInstructions.length; i++) {
     const cur = state.combinedInstructions[i];
