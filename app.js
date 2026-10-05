@@ -73,6 +73,7 @@ const elements = {
   btnDownloadBryton: document.getElementById('btnDownloadBryton'),
   btnDownloadKml: document.getElementById('btnDownloadKml'),
   btnDownloadGpx: document.getElementById('btnDownloadGpx'),
+  btnDownloadFit: document.getElementById('btnDownloadFit'),
   btnToggleSidebarUI: document.getElementById('btnToggleSidebarUI'),
   btnToggleTableUI: document.getElementById('btnToggleTableUI'),
   sidebarContent: document.getElementById('sidebarContent'),
@@ -436,6 +437,7 @@ function bindEvents() {
   elements.btnDownloadBryton.addEventListener('click', generateBrytonZip);
   elements.btnDownloadKml.addEventListener('click', generateKmlFile);
   elements.btnDownloadGpx.addEventListener('click', generateGpxFile);
+  elements.btnDownloadFit.addEventListener('click', generateFitFile);
 
   elements.btnLocateMe.addEventListener('click', () => {
     state.map.locate({ setView: true, maxZoom: 16 });
@@ -553,6 +555,7 @@ function resetState() {
   elements.btnDownloadBryton.disabled = true;
   elements.btnDownloadKml.disabled = true;
   elements.btnDownloadGpx.disabled = true;
+  elements.btnDownloadFit.disabled = true;
 
   if (state.mapLayers.trackLine) {
     state.map.removeLayer(state.mapLayers.trackLine);
@@ -1586,6 +1589,7 @@ async function runTurnAnalysis() {
     elements.btnDownloadBryton.disabled = false;
     elements.btnDownloadKml.disabled = false;
     elements.btnDownloadGpx.disabled = false;
+    elements.btnDownloadFit.disabled = false;
     initIcons();
     showToast(t('toastAnalysisDone').replace('{count}', state.combinedInstructions.length), 'success');
   } catch (error) {
@@ -2709,6 +2713,99 @@ function escapeXml(text) {
       case '&': return '&amp;';
       case '\'': return '&apos;';
       case '"': return '&quot;';
+}
+
+// ==========================================
+// Fit File Generator using @garmin/fitsdk
+// ==========================================
+async function generateFitFile() {
+  if (state.points.length === 0) return;
+  
+  const origBtnText = elements.btnDownloadFit.innerHTML;
+  elements.btnDownloadFit.innerHTML = '<i class="lucide lucide-loader spinner"></i>';
+  elements.btnDownloadFit.disabled = true;
+  
+  try {
+    const fitSdk = await import('https://esm.sh/@garmin/fitsdk@21.217.0');
+    const Encoder = fitSdk.Encoder;
+    const Profile = fitSdk.Profile;
+    
+    const encoder = new Encoder();
+
+    encoder.onMesg(Profile.MesgNum.FILE_ID, {
+      type: Profile.types.file.course,
+      manufacturer: Profile.types.manufacturer.development,
+      product: 0,
+      timeCreated: new Date(),
+      serialNumber: Math.floor(Math.random() * 0xFFFFFFFF)
+    });
+
+    let routeName = elements.brytonRouteName.value.trim() || state.baseName || 'BrytonRoute';
+    encoder.onMesg(Profile.MesgNum.COURSE, {
+      name: routeName.substring(0, 15),
+      sport: Profile.types.sport.cycling
+    });
+
+    const baseTime = Date.now();
+    
+    state.points.forEach((pt, i) => {
+      pt._fitDate = new Date(baseTime + i * 1000);
+      encoder.onMesg(Profile.MesgNum.RECORD, {
+        timestamp: pt._fitDate,
+        positionLat: Math.round(pt.lat * (0x7FFFFFFF / 180)),
+        positionLong: Math.round(pt.lon * (0x7FFFFFFF / 180)),
+        altitude: pt.ele,
+        distance: pt.distFromStart
+      });
+    });
+
+    function mapToFitCp(code) {
+      switch(code) {
+        case -3: return Profile.types.coursePoint.sharpLeft;
+        case -2: return Profile.types.coursePoint.left;
+        case -1: return Profile.types.coursePoint.slightLeft;
+        case 0: return Profile.types.coursePoint.straight;
+        case 1: return Profile.types.coursePoint.slightRight;
+        case 2: return Profile.types.coursePoint.right;
+        case 3: return Profile.types.coursePoint.sharpRight;
+        case 24: return Profile.types.coursePoint.uTurn;
+        case 101: return Profile.types.coursePoint.summit;
+        case 102: return Profile.types.coursePoint.valley;
+        case 106: return Profile.types.coursePoint.water;
+        case 107: return Profile.types.coursePoint.food;
+        case 108: return Profile.types.coursePoint.danger;
+        case 112: return Profile.types.coursePoint.firstAid;
+        case 117: return Profile.types.coursePoint.sprint;
+        case 190: return Profile.types.coursePoint.segmentStart;
+        case 191: return Profile.types.coursePoint.segmentEnd;
+        default: return Profile.types.coursePoint.generic;
+      }
     }
-  });
+
+    state.combinedInstructions.forEach((inst) => {
+      const pt = state.points[inst.index];
+      if (!pt || !pt._fitDate) return;
+      encoder.onMesg(Profile.MesgNum.COURSE_POINT, {
+        timestamp: pt._fitDate,
+        positionLat: Math.round(pt.lat * (0x7FFFFFFF / 180)),
+        positionLong: Math.round(pt.lon * (0x7FFFFFFF / 180)),
+        distance: pt.distFromStart,
+        type: mapToFitCp(inst.directionCode),
+        name: (inst.instruction || '').substring(0, 15)
+      });
+    });
+
+    const uint8Array = encoder.close();
+    const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
+    let prefix = routeName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    saveAs(blob, `${prefix}.fit`);
+    
+    showToast('Download file FIT berhasil!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal memproses file FIT: ' + err.message, 'error');
+  } finally {
+    elements.btnDownloadFit.innerHTML = origBtnText;
+    elements.btnDownloadFit.disabled = false;
+  }
 }
