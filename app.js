@@ -20,6 +20,7 @@ const state = {
   osmTurns: [],
   extraTurns: [],
   manualTurns: [],
+  climbTurns: [],
   climbs: [],
   combinedInstructions: [],
   isProcessing: false,
@@ -63,14 +64,17 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
   
   if (data.instructions) {
     state.combinedInstructions = JSON.parse(data.instructions);
+    state.combinedInstructions.forEach(t => { if (!t.id) t.id = Math.random().toString(36).substr(2, 9); });
     state.osmTurns = state.combinedInstructions.filter(i => i.source === 'osm');
     state.extraTurns = state.combinedInstructions.filter(i => i.source === 'extra');
     state.manualTurns = state.combinedInstructions.filter(i => i.source === 'manual');
+    state.climbTurns = state.combinedInstructions.filter(i => i.source === 'climb');
   } else {
     state.combinedInstructions = [];
     state.osmTurns = [];
     state.extraTurns = [];
     state.manualTurns = [];
+    state.climbTurns = [];
   }
   
   recalculateRouteDistances();
@@ -614,6 +618,7 @@ function resetState() {
   state.osmTurns = [];
   state.extraTurns = [];
   state.manualTurns = [];
+  state.climbTurns = [];
   state.climbs = [];
   state.combinedInstructions = [];
 
@@ -1140,6 +1145,7 @@ function setupRouteEditHandles() {
 
     marker.on('contextmenu', (e) => {
       e.originalEvent.preventDefault();
+      shiftTurnIndices(pointIndex + 1, -1);
       state.points.splice(pointIndex, 1);
       recalculateRouteDistances();
       saveHistoryState();
@@ -1149,6 +1155,19 @@ function setupRouteEditHandles() {
 
     state.mapLayers.editHandles.push(marker);
   }
+}
+
+function shiftTurnIndices(startIndex, amount) {
+  const shiftArr = (arr) => {
+    for (let i = arr.length - 1; i >= 0; i--) {
+      if (arr[i].index >= startIndex) arr[i].index += amount;
+    }
+  };
+  shiftArr(state.osmTurns);
+  shiftArr(state.extraTurns);
+  shiftArr(state.manualTurns);
+  shiftArr(state.climbTurns);
+  shiftArr(state.combinedInstructions);
 }
 
 /**
@@ -1169,13 +1188,17 @@ async function insertWaypointAtLatLng(latlng) {
     ];
     const routedPoints = await routeSegmentOSRM(coords);
     if (routedPoints && routedPoints.length > 0) {
+      const shiftAmount = routedPoints.length - (nextIndex - prevIndex + 1);
+      shiftTurnIndices(nextIndex + 1, shiftAmount);
       state.points.splice(prevIndex, nextIndex - prevIndex + 1, ...routedPoints);
     } else {
+      shiftTurnIndices(insertIdx, 1);
       const newPt = { lat: latlng.lat, lon: latlng.lng, ele: 0, distFromStart: 0 };
       await fetchElevationForSinglePoint(newPt);
       state.points.splice(insertIdx, 0, newPt);
     }
   } else {
+    shiftTurnIndices(insertIdx, 1);
     const newPt = { lat: latlng.lat, lon: latlng.lng, ele: 0, distFromStart: 0 };
     await fetchElevationForSinglePoint(newPt);
     state.points.splice(insertIdx, 0, newPt);
@@ -1275,7 +1298,21 @@ function saveHistoryState() {
   const clone = state.points.map(p => ({ ...p }));
   const pinsClone = state.mapLayers.creationPins.map(marker => marker.getLatLng());
 
-  state.history.push({ points: clone, pins: pinsClone });
+  const osmClone = state.osmTurns.map(t => ({...t}));
+  const extraClone = state.extraTurns.map(t => ({...t}));
+  const manualClone = state.manualTurns.map(t => ({...t}));
+  const climbClone = state.climbTurns.map(t => ({...t}));
+  const combinedClone = state.combinedInstructions.map(t => ({...t}));
+
+  state.history.push({ 
+    points: clone, 
+    pins: pinsClone,
+    osmTurns: osmClone,
+    extraTurns: extraClone,
+    manualTurns: manualClone,
+    climbTurns: climbClone,
+    combinedInstructions: combinedClone
+  });
   if (state.history.length > 20) {
     state.history.shift();
   } else {
@@ -1309,6 +1346,11 @@ function redoEdit() {
 
 function restoreHistoryState(historyItem) {
   state.points = historyItem.points.map(p => ({ ...p }));
+  if (historyItem.osmTurns) state.osmTurns = historyItem.osmTurns.map(t => ({...t}));
+  if (historyItem.extraTurns) state.extraTurns = historyItem.extraTurns.map(t => ({...t}));
+  if (historyItem.manualTurns) state.manualTurns = historyItem.manualTurns.map(t => ({...t}));
+  if (historyItem.climbTurns) state.climbTurns = historyItem.climbTurns.map(t => ({...t}));
+  if (historyItem.combinedInstructions) state.combinedInstructions = historyItem.combinedInstructions.map(t => ({...t}));
 
   if (state.isCreatingRoute) {
     clearCreationPins();
@@ -1641,6 +1683,7 @@ function confirmAddManualTurn() {
   const pt = state.points[closestIdx];
 
   state.manualTurns.push({
+    id: Math.random().toString(36).substr(2, 9),
     source: 'manual',
     index: closestIdx,
     lat: pt.lat,
@@ -1654,8 +1697,7 @@ function confirmAddManualTurn() {
   showToast(t('toastTurnAdded').replace('{text}', text), 'success');
 
   // Re-finalize instructions & re-render
-  state.climbs = detectClimbs(state.points);
-  state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbs);
+  state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
   updateStatsAndUI();
 }
 
@@ -1709,7 +1751,29 @@ async function runTurnAnalysis() {
     state.extraTurns = detectAngleTurns(state.points, state.osmTurns, angleThresh, dupDistThresh, smoothingDist);
 
     state.climbs = detectClimbs(state.points);
-    let combined = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbs);
+    state.climbTurns = [];
+    state.climbs.forEach((c, idx) => {
+      state.climbTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'climb', index: c.startIndex, lat: state.points[c.startIndex].lat, lon: state.points[c.startIndex].lon,
+        directionCode: 190, instruction: `Climb ${idx + 1} Start`, distFromStart: state.points[c.startIndex].distFromStart
+      });
+      state.climbTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'climb', index: c.endIndex, lat: state.points[c.endIndex].lat, lon: state.points[c.endIndex].lon,
+        directionCode: 191, instruction: `Climb ${idx + 1} End`, distFromStart: state.points[c.endIndex].distFromStart
+      });
+    });
+
+    if (!state.osmTurns.some(item => item.index === 0)) {
+      state.osmTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'osm', index: 0, lat: state.points[0].lat, lon: state.points[0].lon,
+        directionCode: 0, instruction: typeof t === 'function' ? t('startRoute') : 'Mulai Rute', distFromStart: 0
+      });
+    }
+
+    let combined = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
 
     if (elements.enableOsmNames.checked && combined.length > 0) {
       showToast(t('toastFetchOsmNames'), 'info', false);
@@ -2157,54 +2221,22 @@ function detectAngleTurns(points, existingOsmTurns, angleThreshold, dupDistThres
   return extraTurns;
 }
 
-function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = [], climbs = []) {
-  const climbTurns = [];
-  climbs.forEach((c, idx) => {
-    climbTurns.push({
-      source: 'climb',
-      index: c.startIndex,
-      lat: points[c.startIndex].lat,
-      lon: points[c.startIndex].lon,
-      directionCode: 190,
-      instruction: `Climb ${idx + 1} Start`,
-      distFromStart: points[c.startIndex].distFromStart
-    });
-    climbTurns.push({
-      source: 'climb',
-      index: c.endIndex,
-      lat: points[c.endIndex].lat,
-      lon: points[c.endIndex].lon,
-      directionCode: 191,
-      instruction: `Climb ${idx + 1} End`,
-      distFromStart: points[c.endIndex].distFromStart
-    });
-  });
-
+function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = [], climbTurns = []) {
   const all = [...osmTurns, ...extraTurns, ...manualTurns, ...climbTurns];
-
-  if (!all.some(item => item.index === 0)) {
-    all.push({
-      source: 'osm',
-      index: 0,
-      lat: points[0].lat,
-      lon: points[0].lon,
-      directionCode: 0,
-      instruction: t('startRoute'),
-      distFromStart: 0
-    });
-  }
 
   all.sort((a, b) => a.index - b.index);
 
   const deduplicated = [];
   for (let i = 0; i < all.length; i++) {
     const cur = all[i];
+    if (!cur.id) cur.id = Math.random().toString(36).substr(2, 9);
+    
     if (deduplicated.length === 0) {
       deduplicated.push(cur);
     } else {
       const prev = deduplicated[deduplicated.length - 1];
       const dist = cur.distFromStart - prev.distFromStart;
-      if (dist >= 12 || cur.source === 'manual' || cur.source === 'extra' || cur.source === 'climb') {
+      if (dist >= 12 || cur.source !== 'osm' || cur.instruction !== prev.instruction) {
         deduplicated.push(cur);
       }
     }
@@ -2246,13 +2278,15 @@ function deleteTurn(index) {
 
   const removed = state.combinedInstructions.splice(index, 1)[0];
   
-  const filterFn = t => t !== removed && (t.index !== removed.index || t.directionCode !== removed.directionCode);
+  const filterFn = t => t.id !== removed.id;
   if (removed.source === 'osm') {
     state.osmTurns = state.osmTurns.filter(filterFn);
   } else if (removed.source === 'extra') {
     state.extraTurns = state.extraTurns.filter(filterFn);
   } else if (removed.source === 'manual') {
     state.manualTurns = state.manualTurns.filter(filterFn);
+  } else if (removed.source === 'climb') {
+    state.climbTurns = state.climbTurns.filter(filterFn);
   }
 
   showToast(t('toastTurnDeleted').replace('{text}', removed.instruction), 'info');
