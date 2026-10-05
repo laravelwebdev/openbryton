@@ -1785,15 +1785,22 @@ async function fetchOrsTurnByTurn(points, apiKey) {
 
 function mapOrsTypeToDirectionCode(orsType) {
   switch (orsType) {
-    case 0: return -2; // Left
-    case 1: return 2;  // Right
-    case 2: return -3; // Sharp Left
-    case 3: return 3;  // Sharp Right
-    case 4: return -1; // Slight Left
-    case 5: return 1;  // Slight Right
-    case 6: return 0;  // Straight
-    case 7: return 24; // U-turn
-    default: return 0;
+    case 0: return 3;   // left
+    case 1: return 2;   // right
+    case 2: return 7;   // close left
+    case 3: return 6;   // close right
+    case 4: return 5;   // slight left
+    case 5: return 4;   // slight right
+    case 6: return 10;  // continue straight
+    case 7: return 10;  // roundabout -> continue straight
+    case 8: return 9;   // exit left
+    case 9: return 11;  // uturn right
+    case 10: return 1;  // go ahead
+    case 11: return 1;  // go ahead
+    case 12: return 5;  // keep left -> slight left
+    case 13: return 4;  // keep right -> slight right
+    case 14: return 1;  // unknown -> go ahead
+    default: return 1;
   }
 }
 
@@ -1831,10 +1838,10 @@ async function fetchOsmOverpassIntersections(points) {
     const pt = points[c.index];
     const absAngle = Math.abs(c.angleDiff);
 
-    let dirCode = 0;
-    if (absAngle >= 135) dirCode = c.angleDiff < 0 ? -3 : 3;
-    else if (absAngle >= 55) dirCode = c.angleDiff < 0 ? -2 : 2;
-    else dirCode = c.angleDiff < 0 ? -1 : 1;
+    let dirCode = 1;
+    if (absAngle >= 135) dirCode = c.angleDiff < 0 ? 7 : 6;
+    else if (absAngle >= 55) dirCode = c.angleDiff < 0 ? 3 : 2;
+    else dirCode = c.angleDiff < 0 ? 5 : 4;
 
     let originName = '';
     let destName = '';
@@ -2040,19 +2047,19 @@ async function enrichStreetNamesFromOsm(instructions) {
 }
 
 function mapOsrmManeuverToDirectionCode(type, modifier) {
-  if (type === 'depart') return 0;
-  if (type === 'arrive') return 0;
+  if (type === 'depart') return 1;
+  if (type === 'arrive') return 1;
 
-  if (modifier === 'uturn') return 24;
-  if (modifier === 'sharp left') return -3;
-  if (modifier === 'left') return -2;
-  if (modifier === 'slight left') return -1;
-  if (modifier === 'straight') return 0;
-  if (modifier === 'slight right') return 1;
+  if (modifier === 'uturn') return 11;
+  if (modifier === 'sharp left') return 7;
+  if (modifier === 'left') return 3;
+  if (modifier === 'slight left') return 5;
+  if (modifier === 'straight') return 10;
+  if (modifier === 'slight right') return 4;
   if (modifier === 'right') return 2;
-  if (modifier === 'sharp right') return 3;
+  if (modifier === 'sharp right') return 6;
 
-  return 0;
+  return 1;
 }
 
 function detectAngleTurns(points, existingOsmTurns, angleThreshold, dupDistThreshold, smoothingDist) {
@@ -2085,23 +2092,25 @@ function detectAngleTurns(points, existingOsmTurns, angleThreshold, dupDistThres
     const absAngle = Math.abs(angleDiff);
 
     if (absAngle >= angleThreshold) {
-      let dirCode = 0;
+      let dirCode = 1;
       let label = '';
       if (absAngle >= 135) {
-        dirCode = angleDiff < 0 ? -3 : 3;
+        dirCode = angleDiff < 0 ? 7 : 6;
         label = angleDiff < 0 ? `Belok Tajam Kiri` : `Belok Tajam Kanan`;
       } else if (absAngle >= 55) {
-        dirCode = angleDiff < 0 ? -2 : 2;
+        dirCode = angleDiff < 0 ? 3 : 2;
         label = angleDiff < 0 ? `Belok Kiri` : `Belok Kanan`;
       } else {
-        dirCode = angleDiff < 0 ? -1 : 1;
+        dirCode = angleDiff < 0 ? 5 : 4;
         label = angleDiff < 0 ? `Serong Kiri` : `Serong Kanan`;
       }
 
       const isAlreadyInOsm = existingOsmTurns.some(osm => {
         const distToOsm = haversineDistance(curPoint.lat, curPoint.lon, osm.lat, osm.lon);
         if (distToOsm <= dupDistThreshold) {
-          if ((dirCode < 0 && osm.directionCode > 0) || (dirCode > 0 && osm.directionCode < 0)) {
+          const isLeft = (c) => [3, 5, 7, 9, 12].includes(c);
+          const isRight = (c) => [2, 4, 6, 8, 11].includes(c);
+          if ((isLeft(dirCode) && isRight(osm.directionCode)) || (isRight(dirCode) && isLeft(osm.directionCode))) {
             return false;
           }
           return true;
@@ -2668,26 +2677,22 @@ function createTinfoBuffer(instructions) {
     view.setUint16(offset, inst.index, true);
 
     let dirByte = 0x01;
-    switch (inst.directionCode) {
-      case -3: dirByte = 0x07; break;
-      case -2: dirByte = 0x03; break;
-      case -1: dirByte = 0x05; break;
-      case 0: dirByte = 0x01; break;
-      case 1: dirByte = 0x04; break;
-      case 2: dirByte = 0x02; break;
-      case 3: dirByte = 0x06; break;
-      case 24: dirByte = 0x18; break;
-      case 100: dirByte = 100; break; // Target
-      case 101: dirByte = 101; break; // Summit
-      case 102: dirByte = 102; break; // Food
-      case 103: dirByte = 103; break; // First Aid
-      case 104: dirByte = 104; break; // Checkpoint
-      case 105: dirByte = 105; break; // Group
-      case 106: dirByte = 106; break; // Water
-      case 107: dirByte = 107; break; // Sprint
-      case 190: dirByte = 190; break; // Climb Start
-      case 191: dirByte = 191; break; // Climb End
-      default: dirByte = 0x01; break;
+    if (inst.directionCode >= 1 && inst.directionCode <= 13) {
+      dirByte = inst.directionCode;
+    } else {
+      switch (inst.directionCode) {
+        case 100: dirByte = 100; break; // Target
+        case 101: dirByte = 101; break; // Summit
+        case 102: dirByte = 102; break; // Food
+        case 103: dirByte = 103; break; // First Aid
+        case 104: dirByte = 104; break; // Checkpoint
+        case 105: dirByte = 105; break; // Group
+        case 106: dirByte = 106; break; // Water
+        case 107: dirByte = 107; break; // Sprint
+        case 190: dirByte = 190; break; // Climb Start
+        case 191: dirByte = 191; break; // Climb End
+        default: dirByte = 0x01; break;
+      }
     }
     view.setUint8(offset + 2, dirByte);
     view.setUint8(offset + 3, 0x00);
@@ -2771,14 +2776,18 @@ function findClosestPointIndex(points, lat, lon) {
 
 function getDirectionLabel(code) {
   switch (code) {
-    case -3: return t('dirSharpLeft');
-    case -2: return t('dirLeft');
-    case -1: return t('dirSlightLeft');
-    case 0: return t('dirStraight');
-    case 1: return t('dirSlightRight');
-    case 2: return t('dirRight');
-    case 3: return t('dirSharpRight');
-    case 24: return t('dirUturn');
+    case 7: return t('dirSharpLeft') || 'Belok Tajam Kiri';
+    case 3: return t('dirLeft') || 'Belok Kiri';
+    case 5: return t('dirSlightLeft') || 'Serong Kiri';
+    case 10: return t('dirStraight') || 'Lurus';
+    case 1: return t('dirGoAhead') || 'Go Ahead';
+    case 4: return t('dirSlightRight') || 'Serong Kanan';
+    case 2: return t('dirRight') || 'Belok Kanan';
+    case 6: return t('dirSharpRight') || 'Belok Tajam Kanan';
+    case 8: return t('dirExitRight') || 'Exit Kanan';
+    case 9: return t('dirExitLeft') || 'Exit Kiri';
+    case 11: return t('dirUturn') || 'U-Turn Kanan';
+    case 12: return t('dirUturnLeft') || 'U-Turn Kiri';
     case 101: return t('poiFood');
     case 102: return t('poiWater');
     case 103: return t('poiSummit');
@@ -2793,14 +2802,18 @@ function getDirectionLabel(code) {
 
 function getDirectionArrow(code) {
   switch (code) {
-    case -3: return '↰';
-    case -2: return '←';
-    case -1: return '↖';
-    case 0: return '↑';
-    case 1: return '↗';
+    case 7: return '↰';
+    case 3: return '←';
+    case 5: return '↖';
+    case 10: return '↑';
+    case 1: return '↑';
+    case 4: return '↗';
     case 2: return '→';
-    case 3: return '↱';
-    case 24: return '↩';
+    case 6: return '↱';
+    case 8: return '⬈';
+    case 9: return '⬉';
+    case 11: return '↩';
+    case 12: return '↪';
     case 100: return '🎯';
     case 101: return '⛺';
     case 102: return '🍴';
@@ -2890,14 +2903,18 @@ async function generateFitFile() {
 
     function mapToFitCp(code) {
       switch(code) {
-        case -3: return Profile.types.coursePoint.sharpLeft;
-        case -2: return Profile.types.coursePoint.left;
-        case -1: return Profile.types.coursePoint.slightLeft;
-        case 0: return Profile.types.coursePoint.straight;
-        case 1: return Profile.types.coursePoint.slightRight;
+        case 7: return Profile.types.coursePoint.sharpLeft;
+        case 3: return Profile.types.coursePoint.left;
+        case 5: return Profile.types.coursePoint.slightLeft;
+        case 10: return Profile.types.coursePoint.straight;
+        case 1: return Profile.types.coursePoint.straight;
+        case 4: return Profile.types.coursePoint.slightRight;
         case 2: return Profile.types.coursePoint.right;
-        case 3: return Profile.types.coursePoint.sharpRight;
-        case 24: return Profile.types.coursePoint.uTurn;
+        case 6: return Profile.types.coursePoint.sharpRight;
+        case 8: return Profile.types.coursePoint.slightRight; // Exit Right -> mapped to slight right
+        case 9: return Profile.types.coursePoint.slightLeft; // Exit Left -> mapped to slight left
+        case 11: return Profile.types.coursePoint.uTurn; // uturn right
+        case 12: return Profile.types.coursePoint.uTurn; // uturn left
         case 101: return Profile.types.coursePoint.summit;
         case 102: return Profile.types.coursePoint.valley;
         case 106: return Profile.types.coursePoint.water;
