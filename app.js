@@ -1455,12 +1455,28 @@ function openAddManualTurnModal(latlng) {
   const optPois = document.getElementById('optgroupPois');
 
   if (state.manualAddMode === 'turn') {
-    if (optTurns) optTurns.style.display = 'block';
-    if (optPois) optPois.style.display = 'none';
+    if (optTurns) {
+      optTurns.style.display = '';
+      optTurns.hidden = false;
+      optTurns.disabled = false;
+    }
+    if (optPois) {
+      optPois.style.display = 'none';
+      optPois.hidden = true;
+      optPois.disabled = true;
+    }
     elements.manualTurnDirection.value = "0"; // Straight as default
   } else {
-    if (optTurns) optTurns.style.display = 'none';
-    if (optPois) optPois.style.display = 'block';
+    if (optTurns) {
+      optTurns.style.display = 'none';
+      optTurns.hidden = true;
+      optTurns.disabled = true;
+    }
+    if (optPois) {
+      optPois.style.display = '';
+      optPois.hidden = false;
+      optPois.disabled = false;
+    }
     elements.manualTurnDirection.value = "106"; // Water as default POI
   }
 
