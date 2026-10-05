@@ -1369,6 +1369,7 @@ function restoreHistoryState(historyItem) {
     setupRouteEditHandles();
   }
   updateUndoRedoUI();
+  updateStatsAndUI();
 }
 
 function recalculateRouteDistances() {
@@ -2367,7 +2368,15 @@ function renderTurnMarkersOnMap(instructions) {
  * Automatically scrolls table to matching row and applies animated highlight
  */
 function scrollToTableRow(rowIndex) {
-  const targetRow = document.getElementById(`turn-row-${rowIndex}`);
+  let targetRow = document.getElementById(`turn-row-${rowIndex}`);
+  const turn = state.combinedInstructions[rowIndex];
+  if (turn && (turn.directionCode === 190 || turn.directionCode === 191)) {
+    const climbIdx = state.climbs.findIndex(c => c.startIndex === turn.index || c.endIndex === turn.index);
+    if (climbIdx !== -1) {
+      targetRow = document.getElementById(`climb-row-${climbIdx}`);
+    }
+  }
+
   if (targetRow) {
     // Determine which tab content this row belongs to
     const parentTab = targetRow.closest('.tab-content');
@@ -2509,6 +2518,7 @@ function renderTurnsTable(instructions) {
     const climbPrefix = typeof t === 'function' ? t('climbPrefix') : 'Tanjakan';
     state.climbs.forEach((climb, idx) => {
       const tr = document.createElement('tr');
+      tr.id = `climb-row-${idx}`;
       tr.style.cursor = 'pointer';
       tr.addEventListener('click', () => {
         document.querySelectorAll('.active-row').forEach(row => row.classList.remove('active-row'));
@@ -2965,13 +2975,15 @@ async function generateFitFile() {
         case 9: return Profile.types.coursePoint.slightLeft; // Exit Left -> mapped to slight left
         case 11: return Profile.types.coursePoint.uTurn; // uturn right
         case 12: return Profile.types.coursePoint.uTurn; // uturn left
-        case 101: return Profile.types.coursePoint.summit;
-        case 102: return Profile.types.coursePoint.valley;
-        case 106: return Profile.types.coursePoint.water;
-        case 107: return Profile.types.coursePoint.food;
-        case 108: return Profile.types.coursePoint.danger;
-        case 112: return Profile.types.coursePoint.firstAid;
-        case 117: return Profile.types.coursePoint.sprint;
+        case 100: return Profile.types.coursePoint.generic; // Target -> generic
+        case 101: return Profile.types.coursePoint.food;
+        case 102: return Profile.types.coursePoint.water;
+        case 103: return Profile.types.coursePoint.summit;
+        case 104: return Profile.types.coursePoint.danger;
+        case 105: return Profile.types.coursePoint.sprint;
+        case 106: return Profile.types.coursePoint.firstAid;
+        case 107: return Profile.types.coursePoint.valley;
+        case 108: return Profile.types.coursePoint.generic;
         case 190: return Profile.types.coursePoint.segmentStart;
         case 191: return Profile.types.coursePoint.segmentEnd;
         default: return Profile.types.coursePoint.generic;
