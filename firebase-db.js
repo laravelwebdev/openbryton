@@ -125,6 +125,8 @@ function switchPage(pageId) {
           window.state.map.invalidateSize();
           if (window.state.mapLayers && window.state.mapLayers.trackLine) {
             window.state.map.fitBounds(window.state.mapLayers.trackLine.getBounds(), { padding: [40, 40] });
+          } else if (!window.state.points || window.state.points.length === 0) {
+            window.state.map.locate({ setView: true, maxZoom: 14 });
           }
         }
       };

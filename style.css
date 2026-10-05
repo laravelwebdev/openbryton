@@ -1431,4 +1431,23 @@ body {
   body {
     padding-bottom: 60px;
   }
+  
+  .map-container {
+    min-height: 400px;
+    height: 60vh;
+  }
+  
+  .map-container.map-expanded {
+    height: 70vh;
+  }
+  
+  .card-header-flex {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .map-tools {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }

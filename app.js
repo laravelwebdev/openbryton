@@ -175,6 +175,7 @@ const elements = {
   addTurnStatusBar: document.getElementById('addTurnStatusBar'),
   modalAddTurn: document.getElementById('modalAddTurn'),
   btnCloseModal: document.getElementById('btnCloseModal'),
+  btnCloseRoute: document.getElementById('btnCloseRoute'),
   btnCancelAddTurn: document.getElementById('btnCancelAddTurn'),
   btnConfirmAddTurn: document.getElementById('btnConfirmAddTurn'),
   manualTurnDirection: document.getElementById('manualTurnDirection'),
@@ -514,6 +515,7 @@ function bindEvents() {
 
   elements.btnToggleEditRoute.addEventListener('click', toggleRouteEditing);
   elements.btnCreateManualRoute.addEventListener('click', toggleCreateManualRoute);
+  if (elements.btnCloseRoute) elements.btnCloseRoute.addEventListener('click', closeRouteLoop);
   elements.btnSaveRouteEdit.addEventListener('click', saveRouteEditing);
 
   if (elements.btnUndoEdit) elements.btnUndoEdit.addEventListener('click', undoEdit);
@@ -1462,6 +1464,54 @@ async function handleMapClick(e) {
   }
 }
 
+async function closeRouteLoop() {
+  if (state.points.length < 2) {
+    showToast("Rute harus memiliki minimal 2 titik untuk bisa ditutup.", "error");
+    return;
+  }
+  state.isProcessing = true;
+  elements.btnProcess.disabled = true;
+
+  try {
+    const firstPt = state.points[0];
+    const lastPt = state.points[state.points.length - 1];
+
+    if (firstPt.lat === lastPt.lat && firstPt.lon === lastPt.lon) {
+      showToast("Rute sudah tertutup (Loop).", "info");
+      return;
+    }
+
+    const lat = firstPt.lat;
+    const lon = firstPt.lon;
+
+    if (elements.chkManualSnap && elements.chkManualSnap.checked) {
+      showToast("Menutup rute ke titik awal (Snap)...", "info", false);
+      const routedPoints = await routeSegmentOSRM([lastPt, { lat, lon }]);
+      if (routedPoints && routedPoints.length > 0) {
+        state.points.push(...routedPoints.slice(1));
+      } else {
+        const newPt = { lat, lon, ele: firstPt.ele, distFromStart: 0 };
+        state.points.push(newPt);
+      }
+    } else {
+      const newPt = { lat, lon, ele: firstPt.ele, distFromStart: 0 };
+      state.points.push(newPt);
+    }
+    
+    recalculateRouteDistances();
+    renderTrackOnMap(false);
+    saveHistoryState();
+    updateStatsAndUI();
+    showToast("Rute berhasil ditutup (Loop)!", "success");
+  } catch (err) {
+    console.error(err);
+    showToast("Gagal menutup rute.", "error");
+  } finally {
+    state.isProcessing = false;
+    elements.btnProcess.disabled = false;
+  }
+}
+
 function toggleCreateManualRoute() {
   if (state.isEditingRoute) toggleRouteEditing();
   if (state.isAddingManualTurn) toggleAddManualTurnMode();
@@ -1571,7 +1621,15 @@ function confirmAddManualTurn() {
   const lat = state.pendingManualCoord.lat;
   const lon = state.pendingManualCoord.lng;
   const dirCode = parseInt(elements.manualTurnDirection.value, 10);
-  const text = elements.manualTurnText.value.trim() || getDirectionLabel(dirCode);
+  let text = elements.manualTurnText.value.trim();
+  if (!text) {
+    if (dirCode >= 100) {
+      let poiCount = state.manualTurns.filter(t => t.directionCode >= 100).length;
+      text = `POI ${poiCount + 1}`;
+    } else {
+      text = getDirectionLabel(dirCode);
+    }
+  }
 
   const closestIdx = findClosestPointIndex(state.points, lat, lon);
   const pt = state.points[closestIdx];

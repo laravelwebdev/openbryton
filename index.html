@@ -57,7 +57,7 @@
       <div class="header-badges">
         <!-- Auth UI -->
         <div id="authContainer" style="display:flex; align-items:center; gap:10px;">
-          <button id="btnLogin" class="btn btn-outline btn-sm" onclick="loginWithGoogle()"><i data-lucide="log-in"></i> Login</button>
+
           <div id="userProfile" style="display:none; align-items:center; gap:8px;">
             <img id="userAvatar" src="" alt="User" style="width:28px; height:28px; border-radius:50%;">
             <button id="btnLogout" class="btn btn-icon btn-sm" onclick="logout()" title="Logout"><i data-lucide="log-out"></i></button>
@@ -391,6 +391,10 @@
             <button type="button" class="btn btn-sm btn-outline" id="btnCreateManualRoute">
               <i data-lucide="pen-tool"></i>
               <span data-i18n="btnCreateRoute">Buat Rute Manual</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline" id="btnCloseRoute" title="Tutup Rute (Sambung ke Awal)">
+              <i data-lucide="refresh-ccw"></i>
+              <span>Close Route</span>
             </button>
             <button type="button" class="btn btn-sm btn-outline" id="btnToggleEditRoute">
               <i data-lucide="move"></i>
