@@ -64,11 +64,12 @@
           </div>
         </div>
 
-        <select id="langToggle" onchange="switchLanguage(this.value)"
-          style="background:var(--bg-card); color:var(--text-main); border:1px solid var(--bg-card-border); padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer;">
-          <option value="id">🇮🇩 ID</option>
-          <option value="en">🇬🇧 EN</option>
-        </select>
+        <div class="lang-select-wrapper">
+          <select id="langToggle" class="lang-select" onchange="switchLanguage(this.value)">
+            <option value="id">🇮🇩 ID</option>
+            <option value="en">🇬🇧 EN</option>
+          </select>
+        </div>
       </div>
     </div>
   </header>
