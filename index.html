@@ -44,11 +44,27 @@
         </div>
         <div>
           <h1 class="logo-title">OpenBryton <span>Pro</span></h1>
-          <p class="logo-subtitle"><span data-i18n-html="true" data-i18n="appSubtitle">GPX &rarr; Bryton Rider Route
-              (.zip) with Road Snap, OSM TBT & Editor</span></p>
+          <p class="logo-subtitle"><span data-i18n-html="true" data-i18n="appSubtitle">GPX &rarr; Bryton Route Creator</span></p>
         </div>
       </div>
+      
+      <!-- Top Navigation -->
+      <nav class="top-nav" id="mainNav" style="display:none;">
+        <button class="nav-link" onclick="switchPage('create')" id="nav-create"><i data-lucide="pen-tool"></i> <span>Create</span></button>
+        <button class="nav-link" onclick="switchPage('explore')" id="nav-explore"><i data-lucide="compass"></i> <span>Explore</span></button>
+        <button class="nav-link" onclick="switchPage('myroutes')" id="nav-myroutes"><i data-lucide="library"></i> <span>My Routes</span></button>
+      </nav>
+
       <div class="header-badges">
+        <!-- Auth UI -->
+        <div id="authContainer" style="display:flex; align-items:center; gap:10px;">
+          <button id="btnLogin" class="btn btn-outline btn-sm" onclick="loginWithGoogle()"><i data-lucide="log-in"></i> Login</button>
+          <div id="userProfile" style="display:none; align-items:center; gap:8px;">
+            <img id="userAvatar" src="" alt="User" style="width:28px; height:28px; border-radius:50%;">
+            <button id="btnLogout" class="btn btn-icon btn-sm" onclick="logout()" title="Logout"><i data-lucide="log-out"></i></button>
+          </div>
+        </div>
+
         <select id="langToggle" onchange="switchLanguage(this.value)"
           style="background:var(--bg-card); color:var(--text-main); border:1px solid var(--bg-card-border); padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer;">
           <option value="id">🇮🇩 ID</option>
@@ -58,8 +74,28 @@
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="container main-layout">
+  <!-- Router Container -->
+  <div id="appContainer">
+
+    <!-- PAGE: LOGIN -->
+    <main class="container page-view active" id="page-login" style="display:flex; align-items:center; justify-content:center; min-height: calc(100vh - 100px);">
+      <div class="card" style="max-width: 420px; width: 100%; padding: 40px 30px; text-align: center; background: rgba(18, 24, 38, 0.6); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);">
+        <div style="width: 72px; height: 72px; background: linear-gradient(135deg, var(--primary), var(--accent-cyan)); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; box-shadow: 0 10px 25px var(--primary-glow);">
+          <i data-lucide="navigation" style="width: 36px; height: 36px; color: #fff;"></i>
+        </div>
+        <h2 style="font-size: 26px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px;">Welcome to OpenBryton</h2>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 32px; line-height: 1.6;">
+          Your ultimate companion for snapping GPX routes to OSM roads, planning Turn-by-Turn, and exporting perfectly to Bryton devices.
+        </p>
+        <button class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 10px; background: #fff; color: #000; border: none; box-shadow: 0 4px 15px rgba(255,255,255,0.2);" onclick="loginWithGoogle()">
+          <svg style="width:20px; height:20px;" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/><path fill="none" d="M1 1h22v22H1z"/></svg>
+          Continue with Google
+        </button>
+      </div>
+    </main>
+
+    <!-- PAGE: CREATE (Editor) -->
+    <main class="container main-layout page-view hidden" id="page-create" style="display:none;">
     <!-- Left Column: Controls & Upload -->
     <aside class="sidebar-panel">
       <!-- Sidebar Header / Minimize Button -->
@@ -248,6 +284,11 @@
               data-i18n="routeNamePlaceholder"
               style="width:100%; padding:10px; border-radius:6px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border); font-family:inherit;">
           </div>
+
+          <button type="button" class="btn btn-primary btn-block" id="btnSaveRoute" style="margin-bottom: 16px;" disabled>
+            <i data-lucide="save"></i>
+            <span>Simpan ke Database</span>
+          </button>
 
           <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
             <button type="button" class="btn btn-success" id="btnDownloadBryton" style="flex: 1;" disabled>
@@ -580,8 +621,37 @@
   </div>
   <button id="btnCloseModal" style="display:none;"></button>
 
+  </div> <!-- End page-create -->
+
+  <!-- PAGE: EXPLORE -->
+  <main class="container page-view hidden" id="page-explore" style="padding: 20px;">
+    <h2>Explore Public Routes</h2>
+    <div class="filters-bar" style="display:flex; gap:10px; margin-bottom:20px; background:var(--bg-card); padding:10px; border-radius:8px;">
+      <input type="text" id="exploreSearch" placeholder="Search routes..." style="flex:1; padding:8px; border-radius:4px; background:var(--bg-input); border:1px solid var(--bg-card-border); color:#fff;">
+    </div>
+    <div id="exploreGrid" class="route-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+      <!-- Cards rendered here -->
+    </div>
+  </main>
+
+  <!-- PAGE: MY ROUTES -->
+  <main class="container page-view hidden" id="page-myroutes" style="padding: 20px;">
+    <h2>My Saved Routes</h2>
+    <div id="myroutesGrid" class="route-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+      <!-- Cards rendered here -->
+    </div>
+  </main>
+
+  </div> <!-- End appContainer -->
+
   <!-- App Script -->
+  <!-- Firebase Scripts (v9 Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <script src="lang.js"></script>
+  <script src="firebase-db.js"></script>
   <script src="app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {

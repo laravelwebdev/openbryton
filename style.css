@@ -1297,3 +1297,138 @@ body {
     height: 300px;
   }
 }
+
+/* =======================================
+   Firebase App Pages & Nav
+======================================= */
+.top-nav {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.nav-link {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+
+.nav-link.active {
+  color: var(--primary);
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.nav-link i {
+  width: 16px;
+  height: 16px;
+}
+
+.page-view.hidden {
+  display: none !important;
+}
+
+.route-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.route-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.route-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  border-color: rgba(255,255,255,0.15);
+}
+
+.route-map-thumbnail {
+  height: 150px;
+  background: #1e293b;
+  position: relative;
+}
+
+.route-card-body {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.route-title {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.route-stats {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.route-meta {
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 15px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.card-actions .btn {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .top-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-dark);
+    padding: 10px;
+    justify-content: space-around;
+    z-index: 1000;
+    border-top: 1px solid var(--bg-card-border);
+  }
+  .nav-link {
+    flex-direction: column;
+    font-size: 11px;
+    gap: 4px;
+  }
+  .app-header .header-content {
+    padding-bottom: 10px;
+  }
+  body {
+    padding-bottom: 60px;
+  }
+}

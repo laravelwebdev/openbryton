@@ -41,6 +41,63 @@ const state = {
   currentClimbHighlight: null
 };
 
+// Expose state globally for firebase-db.js
+window.state = state;
+
+window.loadRouteFromFirebase = function(data, isOwner = true) {
+  state.fileName = data.title;
+  state.baseName = data.title;
+  if (elements.brytonRouteName) elements.brytonRouteName.value = data.title;
+  if (elements.brytonRouteName) elements.brytonRouteName.readOnly = !isOwner;
+  
+  const parsedPoints = JSON.parse(data.points);
+  state.points = parsedPoints.map(p => ({
+    lat: parseFloat(p[0]),
+    lon: parseFloat(p[1]),
+    ele: p[2] ? parseFloat(p[2]) : 0,
+    distFromStart: 0
+  }));
+  
+  if (data.instructions) {
+    state.combinedInstructions = JSON.parse(data.instructions);
+  } else {
+    state.combinedInstructions = [];
+  }
+  
+  recalculateRouteDistances();
+  
+  state.totalDistance = state.points.length > 0 ? state.points[state.points.length-1].distFromStart : 0;
+  if (elements.statDistance) elements.statDistance.textContent = `${(state.totalDistance / 1000).toFixed(2)} km`;
+  if (elements.statPoints) elements.statPoints.textContent = state.points.length.toLocaleString();
+  
+  state.rawBackupPoints = JSON.parse(JSON.stringify(state.points));
+  
+  // Update map bounds and render track
+  if (state.points.length > 0) {
+    const lats = state.points.map(p => p.lat);
+    const lons = state.points.map(p => p.lon);
+    state.boundingBox = {
+      latMin: Math.min(...lats), latMax: Math.max(...lats),
+      lonMin: Math.min(...lons), lonMax: Math.max(...lons)
+    };
+  }
+  
+  renderTrackOnMap(true);
+  updateStatsAndUI();
+  
+  // Toggle editing controls based on ownership
+  const btnSave = document.getElementById('btnSaveRoute');
+  if (btnSave) btnSave.style.display = isOwner ? 'flex' : 'none';
+  if (elements.btnToggleEdit) elements.btnToggleEdit.style.display = isOwner ? 'flex' : 'none';
+  if (elements.btnToggleAddTurn) elements.btnToggleAddTurn.style.display = isOwner ? 'flex' : 'none';
+  if (elements.btnToggleAddPoi) elements.btnToggleAddPoi.style.display = isOwner ? 'flex' : 'none';
+  if (elements.btnManualSnap) elements.btnManualSnap.style.display = isOwner ? 'flex' : 'none';
+  
+  if (typeof showToast === 'function') {
+    showToast(isOwner ? 'Rute dimuat ke Editor!' : 'Mode Lihat: Hanya bisa mengunduh', 'success');
+  }
+};
+
 // DOM Elements
 const elements = {
   fileInput: document.getElementById('fileInput'),
