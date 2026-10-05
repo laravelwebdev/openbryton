@@ -1024,6 +1024,37 @@ async function snapGpxToOsmRoads(showNotification = true) {
       elements.statDistance.textContent = `${(runningDist / 1000).toFixed(2)} km`;
       elements.statPoints.textContent = newPoints.length.toLocaleString();
 
+      // Fix: Resnap all existing turns to the new point geometry so they don't break!
+      const snapTurns = (arr) => {
+        if (!arr) return;
+        arr.forEach(t => {
+          let closestIdx = 0;
+          let minD = Infinity;
+          for (let k = 0; k < newPoints.length; k++) {
+            const d = haversineDistance(newPoints[k].lat, newPoints[k].lon, t.lat, t.lon);
+            if (d < minD) {
+              minD = d;
+              closestIdx = k;
+            }
+          }
+          t.index = closestIdx;
+          t.lat = newPoints[closestIdx].lat;
+          t.lon = newPoints[closestIdx].lon;
+          t.distFromStart = newPoints[closestIdx].distFromStart;
+        });
+      };
+      
+      snapTurns(state.osmTurns);
+      snapTurns(state.extraTurns);
+      snapTurns(state.manualTurns);
+      snapTurns(state.climbTurns);
+
+      if (state.combinedInstructions && state.combinedInstructions.length > 0) {
+        state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+        renderTurnMarkersOnMap(state.combinedInstructions);
+        renderTurnsTable(state.combinedInstructions);
+      }
+
       renderTrackOnMap();
       if (showNotification) {
         showToast(t('toastSmoothSuccess'), 'success');
@@ -1137,6 +1168,27 @@ function setupRouteEditHandles() {
     });
 
     marker.on('dragend', async (e) => {
+      if (elements.chkManualSnap && elements.chkManualSnap.checked) {
+        showToast(t('toastRoutingNewPoint') || 'Routing via OSM...', 'info', false);
+        const prevIndex = Math.max(0, pointIndex - step);
+        const nextIndex = Math.min(state.points.length - 1, pointIndex + step);
+        
+        if (prevIndex !== nextIndex) {
+          const coords = [
+            state.points[prevIndex],
+            { lat: state.points[pointIndex].lat, lon: state.points[pointIndex].lon },
+            state.points[nextIndex]
+          ];
+          
+          const routedPoints = await routeSegmentOSRM(coords);
+          if (routedPoints && routedPoints.length > 0) {
+            const shiftAmount = routedPoints.length - (nextIndex - prevIndex + 1);
+            shiftTurnIndices(nextIndex + 1, shiftAmount);
+            state.points.splice(prevIndex, nextIndex - prevIndex + 1, ...routedPoints);
+          }
+        }
+      }
+
       recalculateRouteDistances();
       saveHistoryState();
       renderTrackOnMap(false);
@@ -1395,6 +1447,28 @@ function recalculateRouteDistances() {
 
   elements.statDistance.textContent = `${(runningDist / 1000).toFixed(2)} km`;
   elements.statPoints.textContent = state.points.length.toLocaleString();
+
+  // Sync turn positions and distances!
+  const syncTurns = (arr) => {
+    if (!arr) return;
+    arr.forEach(t => {
+      if (t.index >= 0 && t.index < state.points.length) {
+        const pt = state.points[t.index];
+        t.distFromStart = pt.distFromStart;
+        t.lat = pt.lat;
+        t.lon = pt.lon;
+      }
+    });
+  };
+  
+  syncTurns(state.osmTurns);
+  syncTurns(state.extraTurns);
+  syncTurns(state.manualTurns);
+  syncTurns(state.climbTurns);
+
+  if (state.combinedInstructions && state.combinedInstructions.length > 0) {
+    state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+  }
 
   renderElevationChart();
 }
