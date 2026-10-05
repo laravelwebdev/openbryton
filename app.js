@@ -1587,7 +1587,7 @@ function openAddManualTurnModal(latlng) {
       optPois.hidden = true;
       optPois.disabled = true;
     }
-    elements.manualTurnDirection.value = "0"; // Straight as default
+    elements.manualTurnDirection.value = "10"; // Straight as default
   } else {
     if (optTurns) {
       optTurns.style.display = 'none';
