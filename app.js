@@ -1976,10 +1976,13 @@ async function fetchOsmOverpassIntersections(points) {
     }
   }
 
-  // Sample top 8 key turns to query OSM Nominatim/Overpass
-  const selected = candidateIndices.slice(0, 10);
+  // Query OSM Nominatim/Overpass for turns
+  const selected = candidateIndices;
 
   for (const c of selected) {
+    // Tambahkan delay 1 detik agar tidak diblokir server Nominatim
+    await new Promise(r => setTimeout(r, 1000));
+
     const pt = points[c.index];
     const absAngle = Math.abs(c.angleDiff);
 
@@ -2152,9 +2155,12 @@ function detectClimbs(points) {
 
 async function enrichStreetNamesFromOsm(instructions) {
   const enriched = [...instructions];
-  const toEnrich = enriched.filter(inst => !inst.instruction.includes('Jl.') && !inst.instruction.includes('Jalan')).slice(0, 10);
+  const toEnrich = enriched.filter(inst => !inst.instruction.includes('Jl.') && !inst.instruction.includes('Jalan'));
 
   for (const inst of toEnrich) {
+    // Tambahkan delay 1 detik agar tidak diblokir server Nominatim
+    await new Promise(r => setTimeout(r, 1000));
+
     try {
       const originPt = state.points[Math.max(0, inst.index - 3)];
       const destPt = state.points[Math.min(state.points.length - 1, inst.index + 3)];
