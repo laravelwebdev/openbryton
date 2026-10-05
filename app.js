@@ -158,7 +158,7 @@ function initIcons() {
 let toastTimeout;
 function showToast(message, type = 'info', autoHide = true) {
   let translatedMsg = message;
-  
+
   if (currentLang === 'en') {
     const toEn = {
       'Gagal mendapatkan lokasi Anda. Pastikan izin GPS (Lokasi) diaktifkan di browser.': 'Failed to get location. Ensure GPS (Location) permission is enabled in browser.',
@@ -189,7 +189,7 @@ function showToast(message, type = 'info', autoHide = true) {
       'Sedang membuat file ZIP Bryton...': 'Generating Bryton ZIP file...',
       'Download ZIP berhasil! Silakan salin file ke Bryton Anda.': 'ZIP download successful! Please copy the files to your Bryton.'
     };
-    
+
     if (toEn[message]) {
       translatedMsg = toEn[message];
     } else if (message.startsWith('Titik baru ditambahkan di indeks')) {
@@ -339,7 +339,7 @@ function createCustomLayerControl() {
       options.forEach(opt => {
         opt.addEventListener('click', () => {
           const selected = opt.getAttribute('data-layer');
-          
+
           if (selected === currentLayer) {
             panel.classList.remove('show');
             return;
@@ -543,7 +543,7 @@ function resetState() {
   if (state.isEditingRoute) toggleRouteEditing();
   if (state.isAddingManualTurn) toggleAddManualTurnMode();
   if (state.isCreatingRoute) toggleCreateManualRoute();
-  
+
   elements.brytonRouteName.value = '';
   elements.fileInput.value = '';
   elements.fileInfo.classList.add('hidden');
@@ -659,22 +659,22 @@ function renderElevationChart(highlightClimbObj = null) {
   if (state.points.length === 0 || !elements.elevationCanvas) return;
   const canvas = elements.elevationCanvas;
   const ctx = canvas.getContext('2d');
-  
+
   // Make visible BEFORE measuring so getBoundingClientRect() returns true dimensions
   canvas.style.display = 'block';
-  
+
   // Set internal resolution based on devicePixelRatio to avoid blur
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   const logicalWidth = rect.width || 350;
   const logicalHeight = rect.height || 90;
-  
+
   canvas.width = logicalWidth * dpr;
   canvas.height = logicalHeight * dpr;
   ctx.scale(dpr, dpr);
-  
+
   ctx.clearRect(0, 0, logicalWidth, logicalHeight);
-  
+
   // Find min and max elevation
   let minEle = Infinity;
   let maxEle = -Infinity;
@@ -682,45 +682,45 @@ function renderElevationChart(highlightClimbObj = null) {
     if (p.ele < minEle) minEle = p.ele;
     if (p.ele > maxEle) maxEle = p.ele;
   }
-  
+
   if (minEle === Infinity || maxEle === -Infinity) return;
   if (maxEle - minEle < 10) {
     maxEle += 5;
     minEle -= 5;
   }
-  
+
   const eleRange = maxEle - minEle;
   const totalDist = state.totalDistance; // in meters
-  
+
   // Define padding for axes
   const padLeft = 40;
   const padBottom = 20;
   const padTop = 10;
   const padRight = 10;
-  
+
   const drawWidth = logicalWidth - padLeft - padRight;
   const drawHeight = logicalHeight - padTop - padBottom;
-  
+
   ctx.beginPath();
   ctx.moveTo(padLeft, padTop + drawHeight);
-  
+
   for (let i = 0; i < state.points.length; i++) {
     const p = state.points[i];
     const x = padLeft + (totalDist > 0 ? (p.distFromStart / totalDist) * drawWidth : 0);
     const y = padTop + drawHeight - ((p.ele - minEle) / eleRange) * drawHeight;
     ctx.lineTo(x, y);
   }
-  
+
   ctx.lineTo(padLeft + drawWidth, padTop + drawHeight);
   ctx.closePath();
-  
+
   const gradient = ctx.createLinearGradient(0, padTop, 0, padTop + drawHeight);
   gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
   gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
-  
+
   ctx.fillStyle = gradient;
   ctx.fill();
-  
+
   ctx.strokeStyle = '#3b82f6';
   ctx.lineWidth = 1.5;
   ctx.stroke();
@@ -729,10 +729,10 @@ function renderElevationChart(highlightClimbObj = null) {
   if (highlightClimbObj) {
     const startPt = state.points[highlightClimbObj.startIndex];
     const endPt = state.points[highlightClimbObj.endIndex];
-    
+
     const startX = padLeft + (totalDist > 0 ? (startPt.distFromStart / totalDist) * drawWidth : 0);
     const endX = padLeft + (totalDist > 0 ? (endPt.distFromStart / totalDist) * drawWidth : 0);
-    
+
     // draw vertical red separator lines
     ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
     ctx.lineWidth = 1;
@@ -757,34 +757,34 @@ function renderElevationChart(highlightClimbObj = null) {
     ctx.lineWidth = 2.5;
     ctx.stroke();
   }
-  
+
   // Draw Axes Grid and Text
   ctx.fillStyle = '#94a3b8';
   ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
   ctx.lineWidth = 1;
   ctx.font = '10px Inter, sans-serif';
-  
+
   // Y-axis (Altitude)
   ctx.textAlign = 'right';
   ctx.textBaseline = 'middle';
-  
+
   // Max Elevation
   ctx.fillText(Math.round(maxEle) + 'm', padLeft - 5, padTop);
   ctx.beginPath(); ctx.moveTo(padLeft, padTop); ctx.lineTo(padLeft + drawWidth, padTop); ctx.stroke();
-  
+
   // Min Elevation
   ctx.fillText(Math.round(minEle) + 'm', padLeft - 5, padTop + drawHeight);
   ctx.beginPath(); ctx.moveTo(padLeft, padTop + drawHeight); ctx.lineTo(padLeft + drawWidth, padTop + drawHeight); ctx.stroke();
-  
+
   // Mid Elevation
   const midEle = (minEle + maxEle) / 2;
   ctx.fillText(Math.round(midEle) + 'm', padLeft - 5, padTop + drawHeight / 2);
   ctx.beginPath(); ctx.moveTo(padLeft, padTop + drawHeight / 2); ctx.lineTo(padLeft + drawWidth, padTop + drawHeight / 2); ctx.stroke();
-  
+
   // X-axis (Distance in km)
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  
+
   const totalKm = totalDist / 1000;
   const numTicks = 4;
   for (let i = 0; i <= numTicks; i++) {
@@ -793,7 +793,7 @@ function renderElevationChart(highlightClimbObj = null) {
     const val = (frac * totalKm).toFixed(1);
     ctx.fillText(val, x, padTop + drawHeight + 5);
   }
-  
+
   canvas.style.display = 'block';
 }
 
@@ -984,7 +984,7 @@ function toggleRouteEditing() {
     state.history = [];
     state.historyIndex = -1;
     saveHistoryState();
-    
+
     // Save original state for cancel
     state.originalPointsBeforeEdit = state.points.map(p => ({ ...p }));
 
@@ -1323,7 +1323,7 @@ function toggleAddManualTurnMode(mode = 'turn') {
       elements.btnAddPoiManual.classList.add('active');
       elements.btnAddPoiManual.querySelector('span').textContent = 'Batal Tambah POI';
     }
-    
+
     elements.addTurnStatusBar.classList.remove('hidden');
     elements.addTurnStatusBar.querySelector('span').textContent = mode === 'turn' ? 'Mode Tambah Belokan Aktif: Klik pada garis rute di peta untuk memasang belokan manual.' : 'Mode Tambah POI Aktif: Klik pada rute untuk meletakkan POI.';
     showToast(t('toastClickManualTurn'), 'info');
@@ -1336,55 +1336,55 @@ async function handleMapClick(e) {
   try {
     if (state.isEditingRoute) {
       await insertWaypointAtLatLng(e.latlng);
-  } else if (state.isAddingManualTurn) {
-    openAddManualTurnModal(e.latlng);
-  } else if (state.isCreatingRoute) {
-    const lat = e.latlng.lat;
-    const lon = e.latlng.lng;
+    } else if (state.isAddingManualTurn) {
+      openAddManualTurnModal(e.latlng);
+    } else if (state.isCreatingRoute) {
+      const lat = e.latlng.lat;
+      const lon = e.latlng.lng;
 
-    const pin = L.circleMarker([lat, lon], {
-      radius: 6,
-      fillColor: "#ef4444",
-      color: "#ffffff",
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 1
-    }).addTo(state.map);
-    state.mapLayers.creationPins.push(pin);
+      const pin = L.circleMarker([lat, lon], {
+        radius: 6,
+        fillColor: "#ef4444",
+        color: "#ffffff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 1
+      }).addTo(state.map);
+      state.mapLayers.creationPins.push(pin);
 
-    if (state.points.length === 0) {
-      const newPt = { lat, lon, ele: 0, distFromStart: 0 };
-      await fetchElevationForSinglePoint(newPt);
-      state.points.push(newPt);
-      renderTrackOnMap(false);
-      saveHistoryState();
-      showToast(t('toastStartPointAdded'), 'success');
-    } else {
-      const lastPt = state.points[state.points.length - 1];
-      if (elements.chkManualSnap.checked) {
-        showToast(t('toastRoutingRoad'), 'info', false);
-        const routedPoints = await routeSegmentOSRM([lastPt, { lat, lon }]);
-        if (routedPoints && routedPoints.length > 0) {
-          state.points.push(...routedPoints.slice(1));
+      if (state.points.length === 0) {
+        const newPt = { lat, lon, ele: 0, distFromStart: 0 };
+        await fetchElevationForSinglePoint(newPt);
+        state.points.push(newPt);
+        renderTrackOnMap(false);
+        saveHistoryState();
+        showToast(t('toastStartPointAdded'), 'success');
+      } else {
+        const lastPt = state.points[state.points.length - 1];
+        if (elements.chkManualSnap.checked) {
+          showToast(t('toastRoutingRoad'), 'info', false);
+          const routedPoints = await routeSegmentOSRM([lastPt, { lat, lon }]);
+          if (routedPoints && routedPoints.length > 0) {
+            state.points.push(...routedPoints.slice(1));
+          } else {
+            const newPt = { lat, lon, ele: 0, distFromStart: 0 };
+            await fetchElevationForSinglePoint(newPt);
+            state.points.push(newPt);
+          }
         } else {
           const newPt = { lat, lon, ele: 0, distFromStart: 0 };
           await fetchElevationForSinglePoint(newPt);
           state.points.push(newPt);
         }
-      } else {
-        const newPt = { lat, lon, ele: 0, distFromStart: 0 };
-        await fetchElevationForSinglePoint(newPt);
-        state.points.push(newPt);
+        recalculateRouteDistances();
+        renderTrackOnMap(false);
+        saveHistoryState();
+        if (elements.chkManualSnap.checked) showToast(t('toastPointSnapped'), 'success');
+        else showToast(t('toastPointOffroad'), 'success');
       }
-      recalculateRouteDistances();
-      renderTrackOnMap(false);
-      saveHistoryState();
-      if (elements.chkManualSnap.checked) showToast(t('toastPointSnapped'), 'success');
-      else showToast(t('toastPointOffroad'), 'success');
+    } else {
+      clearClimbHighlight();
     }
-  } else {
-    clearClimbHighlight();
-  }
   } finally {
     state.isProcessingMapClick = false;
   }
@@ -1453,7 +1453,7 @@ function openAddManualTurnModal(latlng) {
 
   const optTurns = document.getElementById('optgroupTurns');
   const optPois = document.getElementById('optgroupPois');
-  
+
   if (state.manualAddMode === 'turn') {
     if (optTurns) optTurns.style.display = 'block';
     if (optPois) optPois.style.display = 'none';
@@ -1689,21 +1689,37 @@ async function fetchOsmOverpassIntersections(points) {
     else if (absAngle >= 55) dirCode = c.angleDiff < 0 ? -2 : 2;
     else dirCode = c.angleDiff < 0 ? -1 : 1;
 
-    let streetName = '';
+    let originName = '';
+    let destName = '';
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pt.lat.toFixed(6)}&lon=${pt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
-      const res = await fetch(url, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.address) {
-          streetName = data.address.road || data.address.neighbourhood || '';
+      const originPt = points[Math.max(0, c.index - 3)];
+      const destPt = points[Math.min(points.length - 1, c.index + 3)];
+
+      if (originPt) {
+        const urlO = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${originPt.lat.toFixed(6)}&lon=${originPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
+        const resO = await fetch(urlO, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
+        if (resO.ok) {
+          const dataO = await resO.json();
+          if (dataO && dataO.address) originName = dataO.address.road || dataO.address.neighbourhood || '';
+        }
+      }
+
+      if (destPt) {
+        const urlD = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${destPt.lat.toFixed(6)}&lon=${destPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
+        const resD = await fetch(urlD, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
+        if (resD.ok) {
+          const dataD = await resD.json();
+          if (dataD && dataD.address) destName = dataD.address.road || dataD.address.neighbourhood || '';
         }
       }
     } catch (e) {
       // ignore
     }
 
-    const text = streetName ? `${getDirectionLabel(dirCode)} ke ${streetName}` : getDirectionLabel(dirCode);
+    let text = getDirectionLabel(dirCode);
+    if (destName && destName !== originName) {
+      text = `${getDirectionLabel(dirCode)} ke ${destName}`;
+    }
 
     osmTurns.push({
       source: 'osm',
@@ -1779,56 +1795,56 @@ function detectClimbs(points) {
   const climbs = [];
   let inClimb = false;
   let startIndex = 0;
-  
+
   for (let i = 1; i < points.length; i++) {
     if (!inClimb) {
       // Check if starting a climb: gradient > 2% over next 100m
       let futureIdx = i;
-      while(futureIdx < points.length && points[futureIdx].distFromStart - points[i].distFromStart < 100) futureIdx++;
+      while (futureIdx < points.length && points[futureIdx].distFromStart - points[i].distFromStart < 100) futureIdx++;
       if (futureIdx < points.length) {
-         let d = points[futureIdx].distFromStart - points[i].distFromStart;
-         let e = points[futureIdx].ele - points[i].ele;
-         if ((e/d)*100 >= 2.0) {
-           inClimb = true;
-           startIndex = i;
-         }
+        let d = points[futureIdx].distFromStart - points[i].distFromStart;
+        let e = points[futureIdx].ele - points[i].ele;
+        if ((e / d) * 100 >= 2.0) {
+          inClimb = true;
+          startIndex = i;
+        }
       }
     } else {
       // Check if climb has ended: gradient <= 0% over next 150m (allow small flat sections), or reached end of route
       let isEnd = false;
       let futureIdx = i;
-      while(futureIdx < points.length && points[futureIdx].distFromStart - points[i].distFromStart < 150) futureIdx++;
-      
+      while (futureIdx < points.length && points[futureIdx].distFromStart - points[i].distFromStart < 150) futureIdx++;
+
       if (futureIdx < points.length) {
-         let d = points[futureIdx].distFromStart - points[i].distFromStart;
-         let e = points[futureIdx].ele - points[i].ele;
-         if ((e/d)*100 <= -1.0) { // drops significantly
-           isEnd = true;
-         }
+        let d = points[futureIdx].distFromStart - points[i].distFromStart;
+        let e = points[futureIdx].ele - points[i].ele;
+        if ((e / d) * 100 <= -1.0) { // drops significantly
+          isEnd = true;
+        }
       } else {
-         isEnd = true; // end of route
+        isEnd = true; // end of route
       }
-      
+
       if (isEnd) {
-         let totalDist = points[i].distFromStart - points[startIndex].distFromStart;
-         let totalEle = points[i].ele - points[startIndex].ele;
-         let avgGrad = (totalEle / totalDist) * 100;
-         let score = totalDist * avgGrad;
-         
-         const minD = parseFloat(elements.climbMinDist ? elements.climbMinDist.value : 500);
-         const minG = parseFloat(elements.climbMinGrade ? elements.climbMinGrade.value : 3.0);
-         const minS = parseFloat(elements.climbMinScore ? elements.climbMinScore.value : 1500);
-         
-         if (totalDist >= minD && avgGrad >= minG && score >= minS) {
-           climbs.push({
-             startIndex: startIndex,
-             endIndex: i,
-             dist: totalDist,
-             eleGain: totalEle,
-             avgGrad: avgGrad
-           });
-         }
-         inClimb = false;
+        let totalDist = points[i].distFromStart - points[startIndex].distFromStart;
+        let totalEle = points[i].ele - points[startIndex].ele;
+        let avgGrad = (totalEle / totalDist) * 100;
+        let score = totalDist * avgGrad;
+
+        const minD = parseFloat(elements.climbMinDist ? elements.climbMinDist.value : 500);
+        const minG = parseFloat(elements.climbMinGrade ? elements.climbMinGrade.value : 3.0);
+        const minS = parseFloat(elements.climbMinScore ? elements.climbMinScore.value : 1500);
+
+        if (totalDist >= minD && avgGrad >= minG && score >= minS) {
+          climbs.push({
+            startIndex: startIndex,
+            endIndex: i,
+            dist: totalDist,
+            eleGain: totalEle,
+            avgGrad: avgGrad
+          });
+        }
+        inClimb = false;
       }
     }
   }
@@ -1841,16 +1857,32 @@ async function enrichStreetNamesFromOsm(instructions) {
 
   for (const inst of toEnrich) {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${inst.lat.toFixed(6)}&lon=${inst.lon.toFixed(6)}&zoom=18&addressdetails=1`;
-      const res = await fetch(url, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.address) {
-          const road = data.address.road || data.address.pedestrian || data.address.cycleway;
-          if (road) {
-            inst.instruction = `${getDirectionLabel(inst.directionCode)} ke ${road}`;
-          }
+      const originPt = state.points[Math.max(0, inst.index - 3)];
+      const destPt = state.points[Math.min(state.points.length - 1, inst.index + 3)];
+
+      let originName = '';
+      let destName = '';
+
+      if (originPt) {
+        const urlO = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${originPt.lat.toFixed(6)}&lon=${originPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
+        const resO = await fetch(urlO, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
+        if (resO.ok) {
+          const dataO = await resO.json();
+          if (dataO && dataO.address) originName = dataO.address.road || dataO.address.pedestrian || dataO.address.cycleway || '';
         }
+      }
+
+      if (destPt) {
+        const urlD = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${destPt.lat.toFixed(6)}&lon=${destPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
+        const resD = await fetch(urlD, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
+        if (resD.ok) {
+          const dataD = await resD.json();
+          if (dataD && dataD.address) destName = dataD.address.road || dataD.address.pedestrian || dataD.address.cycleway || '';
+        }
+      }
+
+      if (destName && destName !== originName) {
+        inst.instruction = `${getDirectionLabel(inst.directionCode)} ke ${destName}`;
       }
     } catch (e) {
       // ignore
@@ -1972,7 +2004,7 @@ function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = [], cl
       lat: points[c.startIndex].lat,
       lon: points[c.startIndex].lon,
       directionCode: 190,
-      instruction: `Climb ${idx+1} Start`,
+      instruction: `Climb ${idx + 1} Start`,
       distFromStart: points[c.startIndex].distFromStart
     });
     climbTurns.push({
@@ -1981,7 +2013,7 @@ function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = [], cl
       lat: points[c.endIndex].lat,
       lon: points[c.endIndex].lon,
       directionCode: 191,
-      instruction: `Climb ${idx+1} End`,
+      instruction: `Climb ${idx + 1} End`,
       distFromStart: points[c.endIndex].distFromStart
     });
   });
@@ -2146,9 +2178,9 @@ function scrollToTableRow(rowIndex) {
       r.classList.remove('highlighted-row');
       r.classList.remove('active-row');
     });
-    
+
     clearClimbHighlight();
-    
+
     targetRow.classList.add('highlighted-row');
     targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -2160,22 +2192,22 @@ function scrollToTableRow(rowIndex) {
 
 function getTranslatedInstruction(text, dirCode) {
   if (!text) return getDirectionLabel(dirCode);
-  
+
   let result = text;
   // Replace standard phrases if they match
   const keys = ['dirSharpLeft', 'dirSharpRight', 'dirSlightLeft', 'dirSlightRight', 'dirLeft', 'dirRight', 'dirStraight', 'dirUturn', 'startRoute', 'poiFood', 'poiWater', 'poiSummit', 'poiDanger', 'poiSprint', 'poiFirstAid', 'poiValley', 'poiGeneric'];
-  
+
   for (const key of keys) {
     const idText = translations.id[key];
     const enText = translations.en[key];
-    
+
     if (currentLang === 'en') {
       if (result.includes(idText)) result = result.replace(idText, enText);
     } else {
       if (result.includes(enText)) result = result.replace(enText, idText);
     }
   }
-  
+
   // Handle some edge cases with " ke " / " to "
   if (currentLang === 'en') {
     result = result.replace(' ke ', ' to ');
@@ -2184,7 +2216,7 @@ function getTranslatedInstruction(text, dirCode) {
     result = result.replace(' to ', ' ke ');
     result = result.replace('Continue to ', 'Lanjut ke ');
   }
-  
+
   return result;
 }
 
@@ -2354,12 +2386,12 @@ async function generateBrytonZip() {
   try {
     const zip = new JSZip();
     let prefix = elements.brytonRouteName.value.trim();
-    
+
     // Fallback to original base name if input is empty
     if (!prefix) {
       prefix = state.baseName || 'bryton-route';
     }
-    
+
     // Sanitize prefix to be safe for filenames
     prefix = prefix.replace(/[^a-zA-Z0-9_-]/g, '_');
 
@@ -2373,16 +2405,16 @@ async function generateBrytonZip() {
     zip.file(`${prefix}.tinfo`, tinfoBuffer);
 
     const folder = zip.folder(prefix);
-    
+
     const zinfoBuffer = new ArrayBuffer(16);
     const zview = new DataView(zinfoBuffer);
     zview.setUint32(0, 2, true);
     zview.setUint32(4, 12, true);
     folder.file(`${prefix}.zinfo`, zinfoBuffer);
-    
+
     folder.file(`dupli.track`, trackBuffer);
     folder.file(`dupli2.track`, trackBuffer);
-    
+
     const sortBuffer = new ArrayBuffer(16);
     const sview = new DataView(sortBuffer);
     sview.setUint32(0, 0, true);
@@ -2406,7 +2438,7 @@ async function generateGpxFile() {
   if (state.points.length === 0) return;
   let prefix = elements.brytonRouteName.value.trim() || state.baseName || 'bryton-route';
   prefix = prefix.replace(/[^a-zA-Z0-9_-]/g, '_');
-  
+
   const gpxString = createGpxString(state.points, prefix);
   const blob = new Blob([gpxString], { type: 'application/gpx+xml' });
   saveAs(blob, `${prefix}.gpx`);
@@ -2417,7 +2449,7 @@ async function generateKmlFile() {
   if (state.points.length === 0) return;
   let prefix = elements.brytonRouteName.value.trim() || state.baseName || 'bryton-route';
   prefix = prefix.replace(/[^a-zA-Z0-9_-]/g, '_');
-  
+
   const kmlString = createKmlString(state.points, prefix);
   const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
   saveAs(blob, `${prefix}.kml`);
