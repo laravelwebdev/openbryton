@@ -118,6 +118,9 @@ function switchPage(pageId) {
     activePage.classList.remove('hidden');
     activePage.classList.add('active');
     if (pageId === 'create') {
+      if (typeof window.resetState === 'function') {
+        window.resetState();
+      }
       activePage.style.display = 'grid'; // .main-layout uses grid
       // Fix map rendering issue when unhidden
       const fixMap = () => {

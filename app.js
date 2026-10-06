@@ -2173,6 +2173,29 @@ async function enrichStreetNamesFromOsm(instructions) {
     }
   }
 
+  // Enrich Climbs
+  for (let i = 0; i < state.climbs.length; i++) {
+    const climb = state.climbs[i];
+    if (!climb.name) {
+      await new Promise(r => setTimeout(r, 1000));
+      try {
+        const pt = state.points[climb.startIndex];
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pt.lat.toFixed(6)}&lon=${pt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
+        if (res.ok) {
+          const data = await res.json();
+          let roadName = '';
+          if (data && data.address) roadName = data.address.road || data.address.pedestrian || data.address.cycleway || '';
+          
+          if (roadName) {
+            const climbPrefix = typeof t === 'function' ? t('climbPrefix') : 'Tanjakan';
+            climb.name = `${climbPrefix} ${roadName}`;
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
   return enriched;
 }
 
@@ -2537,13 +2560,14 @@ function renderTurnsTable(instructions) {
     if (inst.directionCode === 190 || inst.directionCode === 191) {
       return; // Skip, climbs are handled below
     } else if (inst.directionCode >= 100 && inst.directionCode <= 108) {
+      const btnEdit = `<button type="button" class="btn-edit-item" data-type="turn" data-index="${idx}" style="margin-right: 5px;"><i data-lucide="edit-2"></i></button>`;
       tr.innerHTML = `
         <td>${pIdx++}</td>
         <td><div class="turn-icon-cell">${arrow}</div></td>
         <td><strong>${instructionText}</strong></td>
         <td>${Math.round(inst.distance || 0)}</td>
         <td class="coord-cell">${inst.lat.toFixed(5)}, ${inst.lon.toFixed(5)}</td>
-        <td class="text-center">${btnDel}</td>
+        <td class="text-center">${btnEdit}${btnDel}</td>
       `;
       poisBody.appendChild(tr);
     } else {
@@ -2556,6 +2580,7 @@ function renderTurnsTable(instructions) {
         badgeClass = 'turn-badge-manual';
         badgeText = t('badgeManual');
       }
+      const btnEdit = `<button type="button" class="btn-edit-item" data-type="turn" data-index="${idx}" style="margin-right: 5px;"><i data-lucide="edit-2"></i></button>`;
       tr.innerHTML = `
         <td>${tIdx++}</td>
         <td><div class="turn-icon-cell">${arrow}</div></td>
@@ -2564,7 +2589,7 @@ function renderTurnsTable(instructions) {
         <td>${Math.round(inst.distance || 0)}</td>
         <td>${formatTime(inst.time || 0)}</td>
         <td class="coord-cell">${inst.lat.toFixed(5)}, ${inst.lon.toFixed(5)}</td>
-        <td class="text-center">${btnDel}</td>
+        <td class="text-center">${btnEdit}${btnDel}</td>
       `;
       turnsBody.appendChild(tr);
     }
@@ -2585,13 +2610,16 @@ function renderTurnsTable(instructions) {
         highlightClimb(climb);
       });
 
+      const climbName = climb.name || `${climbPrefix} ${idx + 1}`;
+      const btnEdit = `<button type="button" class="btn-edit-item" data-type="climb" data-index="${idx}"><i data-lucide="edit-2"></i></button>`;
       tr.innerHTML = `
         <td>${idx + 1}</td>
         <td><div class="turn-icon-cell">🧗</div></td>
-        <td><strong>${climbPrefix} ${idx + 1}</strong></td>
+        <td><strong>${climbName}</strong></td>
         <td>${climb.avgGrad.toFixed(1)}%</td>
         <td>${Math.round(climb.dist)}</td>
         <td class="coord-cell">${state.points[climb.startIndex].lat.toFixed(5)}, ${state.points[climb.startIndex].lon.toFixed(5)}</td>
+        <td class="text-center">${btnEdit}</td>
       `;
       climbsBody.appendChild(tr);
     });
@@ -2613,7 +2641,65 @@ function renderTurnsTable(instructions) {
   if (bPois) bPois.textContent = (pIdx - 1).toString();
   if (bClimbs) bClimbs.textContent = (cIdx - 1).toString();
 
+  document.querySelectorAll('.btn-edit-item').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const type = btn.getAttribute('data-type');
+      const idx = parseInt(btn.getAttribute('data-index'), 10);
+      if (type === 'climb') {
+        const climb = state.climbs[idx];
+        const currentName = climb.name || 'Tanjakan ' + (idx + 1);
+        const newName = prompt("Edit Nama Tanjakan:", currentName);
+        if (newName !== null && newName.trim() !== '') {
+          climb.name = newName.trim();
+          renderTurnsTable(state.combinedInstructions);
+        }
+      } else if (type === 'turn') {
+        state.editingItem = { type, idx };
+        const inst = state.combinedInstructions[idx];
+        document.getElementById('modalEditTitle').innerText = (inst.directionCode >= 100) ? 'Edit POI' : 'Edit Belokan';
+        document.getElementById('editTurnDirection').value = inst.directionCode;
+        document.getElementById('editTurnText').value = getTranslatedInstruction(inst.instruction, inst.directionCode);
+        document.getElementById('modalEditItem').classList.remove('hidden');
+        document.getElementById('modalEditItem').style.display = 'flex';
+      }
+    });
+  });
+
   initIcons();
+}
+
+function confirmEditItem() {
+  if (!state.editingItem) return;
+  const { type, idx } = state.editingItem;
+  
+  if (type === 'turn') {
+    const inst = state.combinedInstructions[idx];
+    const newDirCode = parseInt(document.getElementById('editTurnDirection').value, 10);
+    const newText = document.getElementById('editTurnText').value.trim();
+    
+    inst.directionCode = newDirCode;
+    inst.instruction = newText;
+    
+    // Attempt to update the original turn as well based on id/source
+    if (inst.source === 'osm') {
+      const match = state.osmTurns.find(t => t.id === inst.id);
+      if (match) { match.directionCode = newDirCode; match.instruction = newText; }
+    } else if (inst.source === 'extra') {
+      const match = state.extraTurns.find(t => t.id === inst.id);
+      if (match) { match.directionCode = newDirCode; match.instruction = newText; }
+    } else if (inst.source === 'manual') {
+      const match = state.manualTurns.find(t => t.id === inst.id);
+      if (match) { match.directionCode = newDirCode; match.instruction = newText; }
+    }
+    
+    renderTurnsTable(state.combinedInstructions);
+    renderTurnMarkersOnMap(state.combinedInstructions);
+  }
+  
+  document.getElementById('modalEditItem').style.display = 'none';
+  document.getElementById('modalEditItem').classList.add('hidden');
+  state.editingItem = null;
 }
 
 function highlightClimb(climb) {

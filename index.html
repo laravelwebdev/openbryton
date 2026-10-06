@@ -198,7 +198,7 @@
                 <label for="enableOsmTbt" class="setting-label">
                   <i data-lucide="globe"></i> <span data-i18n="tbtOsmAuto">Turn-by-Turn OpenStreetMap (OSRM)</span>
                 </label>
-                <input type="checkbox" id="enableOsmTbt" checked class="switch-checkbox">
+                <input type="checkbox" id="enableOsmTbt" class="switch-checkbox">
               </div>
               <p class="setting-desc" data-i18n="tbtOsmDesc">Mengambil nama jalan resmi & manuver belokan dari
                 OpenStreetMap OSRM Routing Engine.</p>
@@ -241,9 +241,9 @@
                 <label for="dupDistanceThreshold" class="setting-label">
                   <i data-lucide="shield-check"></i> <span data-i18n="dupRadius">Radius Proteksi Duplikasi</span>
                 </label>
-                <span class="value-bubble" id="dupDistanceThresholdValue">40 m</span>
+                <span class="value-bubble" id="dupDistanceThresholdValue">15 m</span>
               </div>
-              <input type="range" id="dupDistanceThreshold" min="15" max="100" value="40" step="5" class="slider">
+              <input type="range" id="dupDistanceThreshold" min="15" max="100" value="15" step="5" class="slider">
               <p class="setting-desc" data-i18n="dupDesc">Jarak toleransi (meter) agar belokan sudut tidak menduplikasi
                 belokan yang sudah terdaftar di OSM.</p>
             </div>
@@ -660,6 +660,57 @@
         </div>
       </div>
     </div>
+    
+    <!-- Modal Edit Item -->
+    <div id="modalEditItem" class="modal-backdrop hidden"
+      style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span id="modalEditTitle">Edit Item</span></h3>
+
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Arah / Ikon</label>
+          <select id="editTurnDirection"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            <optgroup label="Arah Navigasi">
+              <option value="1">Lurus (Go Ahead)</option>
+              <option value="2">Belok Kanan</option>
+              <option value="3">Belok Kiri</option>
+              <option value="4">Serong Kanan</option>
+              <option value="5">Serong Kiri</option>
+              <option value="6">Belok Tajam Kanan</option>
+              <option value="7">Belok Tajam Kiri</option>
+              <option value="8">Exit Kanan</option>
+              <option value="9">Exit Kiri</option>
+              <option value="10">Continue Straight</option>
+              <option value="11">Putar Balik Kanan</option>
+              <option value="12">Putar Balik Kiri</option>
+            </optgroup>
+            <optgroup label="Point of Interest (Bryton)">
+              <option value="101">Camping</option>
+              <option value="100">Target</option>
+              <option value="102">Food</option>
+              <option value="103">First Aid</option>
+              <option value="104">Checkpoint</option>
+              <option value="105">Group</option>
+              <option value="106">Water</option>
+              <option value="107">Sprint</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Jalan / Instruksi</label>
+          <input type="text" id="editTurnText"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-outline" onclick="document.getElementById('modalEditItem').style.display='none'; document.getElementById('modalEditItem').classList.add('hidden');">Batal</button>
+          <button type="button" class="btn btn-primary" onclick="confirmEditItem()">Simpan</button>
+        </div>
+      </div>
+    </div>
+    
     <button id="btnCloseModal" style="display:none;"></button>
 
   </div> <!-- End page-create -->
