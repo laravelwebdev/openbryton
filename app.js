@@ -576,8 +576,9 @@ function bindEvents() {
   const btnConfirmAddPoi = document.getElementById('btnConfirmAddPoi');
   if (btnConfirmAddPoi) btnConfirmAddPoi.addEventListener('click', confirmAddPoi);
 
-  if (elements.btnSimplifyRdp) {
-    elements.btnSimplifyRdp.addEventListener('click', () => {
+  const btnRdp = document.getElementById('btnSimplifyRdp');
+  if (btnRdp) {
+    btnRdp.addEventListener('click', () => {
       if (state.points.length === 0) {
         showToast(t('toastRdpNoRoute'), "error");
         return;
