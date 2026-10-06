@@ -1778,10 +1778,149 @@ function _addManualItem(lat, lon, dirCode, text) {
  * 3. Fallback: Directly queries OpenStreetMap Overpass API for real street intersections.
  * 4. Merges with Smart Angle Detection and Manual Turns.
  */
+async function runTurnAnalysis() {
+  if (state.points.length === 0) return;
+
+  state.isProcessing = true;
+  elements.btnProcess.disabled = true;
+  elements.processSpinner.classList.add('spinning');
+  showToast(t('toastAnalyzing'), 'info', false);
+
+  try {
+
+
+    state.osmTurns = [];
+    state.extraTurns = [];
+
+    const useOsm = elements.enableOsmTbt.checked;
+    if (useOsm) {
+      const orsKey = elements.orsApiKey.value.trim();
+      if (orsKey) {
+        showToast(t('toastFetchORS'), 'info', false);
+        state.osmTurns = await fetchOrsTurnByTurn(state.points, orsKey);
+      } else {
+        try {
+          state.osmTurns = await fetchOsmTurnByTurn(state.points);
+        } catch (e) {
+          console.warn('OSRM Match failed, falling back to OSM Overpass Intersection engine...', e);
+        }
+
+        // If OSRM returned 0, run our built-in OSM Overpass Intersection Engine!
+        if (state.osmTurns.length === 0) {
+          showToast(t('toastFetchOverpass'), 'info', false);
+          state.osmTurns = await fetchOsmOverpassIntersections(state.points);
+        }
+      }
+    }
+
+    const angleThresh = parseInt(elements.angleThreshold.value, 10);
+    const dupDistThresh = parseInt(elements.dupDistanceThreshold.value, 10);
+    const smoothingDist = parseInt(elements.smoothingRadius.value, 10);
+
+    state.extraTurns = detectAngleTurns(state.points, state.osmTurns, angleThresh, dupDistThresh, smoothingDist);
+
+    state.climbs = detectClimbs(state.points);
+    state.climbTurns = [];
+    state.climbs.forEach((c, idx) => {
+      state.climbTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'climb', index: c.startIndex, lat: state.points[c.startIndex].lat, lon: state.points[c.startIndex].lon,
+        directionCode: 190, instruction: `Climb ${idx + 1} Start`, distFromStart: state.points[c.startIndex].distFromStart
+      });
+      state.climbTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'climb', index: c.endIndex, lat: state.points[c.endIndex].lat, lon: state.points[c.endIndex].lon,
+        directionCode: 191, instruction: `Climb ${idx + 1} End`, distFromStart: state.points[c.endIndex].distFromStart
+      });
+    });
+
+    if (!state.osmTurns.some(item => item.index === 0)) {
+      state.osmTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'osm', index: 0, lat: state.points[0].lat, lon: state.points[0].lon,
+        directionCode: 0, instruction: typeof t === 'function' ? t('startRoute') : 'Mulai Rute', distFromStart: 0
+      });
+    }
+
+    let combined = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+
+    if (elements.enableOsmNames.checked && combined.length > 0) {
+      showToast(t('toastFetchOsmNames'), 'info', false);
+      combined = await enrichStreetNamesFromOsm(combined);
+    }
+
+    state.combinedInstructions = combined;
+    updateStatsAndUI();
+
+    elements.btnDownloadBryton.disabled = false;
+    elements.btnDownloadKml.disabled = false;
+    elements.btnDownloadGpx.disabled = false;
+    elements.btnDownloadFit.disabled = false;
+    initIcons();
+    showToast(t('toastAnalysisDone').replace('{count}', state.combinedInstructions.length), 'success');
+  } catch (error) {
+    console.error('Analysis failed:', error);
+    showToast(t('toastAnalyzeError') + error.message, 'error');
+  } finally {
+    state.isProcessing = false;
+    elements.btnProcess.disabled = false;
+    elements.processSpinner.classList.remove('spinning');
+  }
+}
 
 /**
  * OpenRouteService (ORS) Directions API Integration (when user supplies API key)
  */
+async function fetchOrsTurnByTurn(points, apiKey) {
+  if (points.length < 2) return [];
+
+  const sampled = [points[0]];
+  const step = Math.max(1, Math.floor(points.length / 35));
+  for (let i = step; i < points.length - 1; i += step) {
+    sampled.push(points[i]);
+  }
+  sampled.push(points[points.length - 1]);
+
+  const coords = sampled.map(p => [p.lon, p.lat]);
+
+  const res = await fetch('https://api.openrouteservice.org/v2/directions/cycling-regular', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': apiKey
+    },
+    body: JSON.stringify({ coordinates: coords, instructions: true })
+  });
+
+  if (!res.ok) throw new Error(`ORS API Error ${res.status}`);
+
+  const data = await res.json();
+  const turns = [];
+
+  if (data.routes && data.routes[0] && data.routes[0].segments) {
+    data.routes[0].segments.forEach(seg => {
+      seg.steps.forEach(step => {
+        const type = step.type; // 0=left, 1=right, etc.
+        const dirCode = mapOrsTypeToDirectionCode(type);
+        const loc = step.way_points; // index range
+        const approxPt = sampled[Math.min(sampled.length - 1, loc[0])];
+        const closestIdx = findClosestPointIndex(points, approxPt.lat, approxPt.lon);
+
+        turns.push({
+          source: 'osm',
+          index: closestIdx,
+          lat: points[closestIdx].lat,
+          lon: points[closestIdx].lon,
+          directionCode: dirCode,
+          instruction: step.instruction || `${getDirectionLabel(dirCode)}: ${step.name || ''}`,
+          distFromStart: points[closestIdx].distFromStart
+        });
+      });
+    });
+  }
+
+  return turns;
+}
 
 function mapOrsTypeToDirectionCode(orsType) {
   switch (orsType) {
@@ -1809,10 +1948,144 @@ function mapOrsTypeToDirectionCode(orsType) {
  * Directly queries OpenStreetMap road network around bend points to guarantee
  * genuine OSM turns & street names without third-party routing server rate limits!
  */
+async function fetchOsmOverpassIntersections(points) {
+  const osmTurns = [];
+  if (points.length < 3) return osmTurns;
+
+  // Find candidate turns from significant bends (e.g. angle >= 25)
+  const candidateIndices = [];
+  for (let i = 2; i < points.length - 2; i += 2) {
+    const pPrev = points[i - 2];
+    const pCur = points[i];
+    const pNext = points[i + 2];
+
+    const b1 = calculateBearing(pPrev.lat, pPrev.lon, pCur.lat, pCur.lon);
+    const b2 = calculateBearing(pCur.lat, pCur.lon, pNext.lat, pNext.lon);
+    let diff = b2 - b1;
+    while (diff > 180) diff -= 360;
+    while (diff < -180) diff += 360;
+
+    if (Math.abs(diff) >= 28) {
+      candidateIndices.push({ index: i, angleDiff: diff });
+    }
+  }
+
+  // Query OSM Nominatim/Overpass for turns
+  const selected = candidateIndices;
+
+  for (const c of selected) {
+    // Tambahkan delay 1 detik agar tidak diblokir server Nominatim
+    await new Promise(r => setTimeout(r, 1000));
+
+    const pt = points[c.index];
+    const absAngle = Math.abs(c.angleDiff);
+
+    let dirCode = 1;
+    if (absAngle >= 135) dirCode = c.angleDiff < 0 ? 7 : 6;
+    else if (absAngle >= 55) dirCode = c.angleDiff < 0 ? 3 : 2;
+    else dirCode = c.angleDiff < 0 ? 5 : 4;
+
+    let originName = '';
+    let destName = '';
+    try {
+      const originPt = points[Math.max(0, c.index - 3)];
+      const destPt = points[Math.min(points.length - 1, c.index + 3)];
+
+      if (originPt) {
+        const urlO = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${originPt.lat.toFixed(6)}&lon=${originPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
+        const resO = await fetch(urlO, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
+        if (resO.ok) {
+          const dataO = await resO.json();
+          if (dataO && dataO.address) originName = dataO.address.road || dataO.address.neighbourhood || '';
+        }
+      }
+
+      if (destPt) {
+        const urlD = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${destPt.lat.toFixed(6)}&lon=${destPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
+        const resD = await fetch(urlD, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
+        if (resD.ok) {
+          const dataD = await resD.json();
+          if (dataD && dataD.address) destName = dataD.address.road || dataD.address.neighbourhood || '';
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    let text = getDirectionLabel(dirCode);
+    if (destName && destName !== originName) {
+      text = `${getDirectionLabel(dirCode)} ke ${destName}`;
+    }
+
+    osmTurns.push({
+      source: 'osm',
+      index: c.index,
+      lat: pt.lat,
+      lon: pt.lon,
+      directionCode: dirCode,
+      instruction: text,
+      distFromStart: pt.distFromStart
+    });
+  }
+
+  return osmTurns;
+}
 
 /**
  * Standard OSRM Match API
  */
+async function fetchOsmTurnByTurn(points) {
+  if (points.length < 2) return [];
+
+  const chunkSize = 50;
+  const sampleStep = Math.max(1, Math.floor(points.length / 100));
+  const sampled = [];
+  for (let i = 0; i < points.length; i += sampleStep) {
+    sampled.push({ point: points[i], origIndex: i });
+  }
+
+  const allOsmTurns = [];
+  const coordString = sampled.map(s => `${s.point.lon.toFixed(6)},${s.point.lat.toFixed(6)}`).join(';');
+  const radiuses = sampled.map(() => '45').join(';');
+
+  const url = `https://router.project-osrm.org/match/v1/driving/${coordString}?overview=simplified&geometries=geojson&steps=true&annotations=false&radiuses=${radiuses}`;
+  const response = await fetch(url, { signal: AbortSignal.timeout(6000) });
+  if (!response.ok) return [];
+
+  const json = await response.json();
+  if (json.code !== 'Ok' || !json.matchings) return [];
+
+  json.matchings.forEach(matching => {
+    matching.legs.forEach(leg => {
+      leg.steps.forEach(step => {
+        const maneuver = step.maneuver;
+        if (!maneuver) return;
+
+        const dirCode = mapOsrmManeuverToDirectionCode(maneuver.type, maneuver.modifier);
+        const loc = maneuver.location;
+        const matchedIndex = findClosestPointIndex(points, loc[1], loc[0]);
+        const matchedPoint = points[matchedIndex];
+
+        let instructionText = step.name ? `Lanjut ke ${step.name}` : getDirectionLabel(dirCode);
+        if (maneuver.type === 'turn' || maneuver.type === 'fork') {
+          instructionText = `${getDirectionLabel(dirCode)} ${step.name ? 'ke ' + step.name : ''}`.trim();
+        }
+
+        allOsmTurns.push({
+          source: 'osm',
+          index: matchedIndex,
+          lat: matchedPoint.lat,
+          lon: matchedPoint.lon,
+          directionCode: dirCode,
+          instruction: instructionText,
+          distFromStart: matchedPoint.distFromStart
+        });
+      });
+    });
+  });
+
+  return allOsmTurns;
+}
 
 function detectClimbs(points) {
   const climbs = [];
@@ -1957,7 +2230,129 @@ function mapOsrmManeuverToDirectionCode(type, modifier) {
   return 1;
 }
 
+function detectAngleTurns(points, existingOsmTurns, angleThreshold, dupDistThreshold, smoothingDist) {
+  const extraTurns = [];
+  const n = points.length;
+  if (n < 3) return extraTurns;
 
+  let lastAddedDist = -9999;
+
+  for (let i = 1; i < n - 1; i++) {
+    const curPoint = points[i];
+
+    let prevIdx = i - 1;
+    while (prevIdx > 0 && (curPoint.distFromStart - points[prevIdx].distFromStart) < smoothingDist) {
+      prevIdx--;
+    }
+
+    let nextIdx = i + 1;
+    while (nextIdx < n - 1 && (points[nextIdx].distFromStart - curPoint.distFromStart) < smoothingDist) {
+      nextIdx++;
+    }
+
+    const b1 = calculateBearing(points[prevIdx].lat, points[prevIdx].lon, curPoint.lat, curPoint.lon);
+    const b2 = calculateBearing(curPoint.lat, curPoint.lon, points[nextIdx].lat, points[nextIdx].lon);
+
+    let angleDiff = b2 - b1;
+    while (angleDiff > 180) angleDiff -= 360;
+    while (angleDiff < -180) angleDiff += 360;
+
+    const absAngle = Math.abs(angleDiff);
+
+    if (absAngle >= angleThreshold) {
+      let dirCode = 1;
+      let label = '';
+      if (absAngle >= 135) {
+        dirCode = angleDiff < 0 ? 7 : 6;
+        label = angleDiff < 0 ? `Belok Tajam Kiri` : `Belok Tajam Kanan`;
+      } else if (absAngle >= 55) {
+        dirCode = angleDiff < 0 ? 3 : 2;
+        label = angleDiff < 0 ? `Belok Kiri` : `Belok Kanan`;
+      } else {
+        dirCode = angleDiff < 0 ? 5 : 4;
+        label = angleDiff < 0 ? `Serong Kiri` : `Serong Kanan`;
+      }
+
+      const isAlreadyInOsm = existingOsmTurns.some(osm => {
+        const distToOsm = haversineDistance(curPoint.lat, curPoint.lon, osm.lat, osm.lon);
+        if (distToOsm <= dupDistThreshold) {
+          const isLeft = (c) => [3, 5, 7, 9, 12].includes(c);
+          const isRight = (c) => [2, 4, 6, 8, 11].includes(c);
+          if ((isLeft(dirCode) && isRight(osm.directionCode)) || (isRight(dirCode) && isLeft(osm.directionCode))) {
+            return false;
+          }
+          return true;
+        }
+        return false;
+      });
+
+      const isAlreadyInExtra = extraTurns.some(extra => {
+        const distToExtra = haversineDistance(curPoint.lat, curPoint.lon, extra.lat, extra.lon);
+        if (distToExtra <= dupDistThreshold) {
+          if ((dirCode < 0 && extra.directionCode > 0) || (dirCode > 0 && extra.directionCode < 0)) {
+            return false;
+          }
+          return true;
+        }
+        return false;
+      });
+
+      if (isAlreadyInOsm || isAlreadyInExtra) {
+        continue;
+      }
+
+      extraTurns.push({
+        source: 'extra',
+        index: i,
+        lat: curPoint.lat,
+        lon: curPoint.lon,
+        directionCode: dirCode,
+        instruction: label,
+        distFromStart: curPoint.distFromStart,
+        angle: Math.round(angleDiff)
+      });
+
+      lastAddedDist = curPoint.distFromStart;
+    }
+  }
+
+  return extraTurns;
+}
+
+function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = [], climbTurns = []) {
+  const all = [...osmTurns, ...extraTurns, ...manualTurns, ...climbTurns];
+
+  all.sort((a, b) => a.index - b.index);
+
+  const deduplicated = [];
+  for (let i = 0; i < all.length; i++) {
+    const cur = all[i];
+    if (!cur.id) cur.id = Math.random().toString(36).substr(2, 9);
+    
+    if (deduplicated.length === 0) {
+      deduplicated.push(cur);
+    } else {
+      const prev = deduplicated[deduplicated.length - 1];
+      const dist = cur.distFromStart - prev.distFromStart;
+      if (dist >= 12 || cur.source !== 'osm' || cur.instruction !== prev.instruction) {
+        deduplicated.push(cur);
+      }
+    }
+  }
+
+  for (let i = 0; i < deduplicated.length; i++) {
+    const cur = deduplicated[i];
+    if (i < deduplicated.length - 1) {
+      const next = deduplicated[i + 1];
+      cur.distance = Math.max(0, next.distFromStart - cur.distFromStart);
+    } else {
+      cur.distance = Math.max(0, state.totalDistance - cur.distFromStart);
+    }
+    cur.time = Math.round(cur.distance * 0.722);
+  }
+
+  return deduplicated;
+}
 
 function updateStatsAndUI() {
   const osmCount = state.combinedInstructions.filter(t => t.source === 'osm').length;
@@ -2107,6 +2502,35 @@ function scrollToTableRow(rowIndex) {
   }
 }
 
+function getTranslatedInstruction(text, dirCode) {
+  if (!text) return getDirectionLabel(dirCode);
+
+  let result = text;
+  // Replace standard phrases if they match
+  const keys = ['dirSharpLeft', 'dirSharpRight', 'dirSlightLeft', 'dirSlightRight', 'dirLeft', 'dirRight', 'dirStraight', 'dirUturn', 'startRoute', 'poiFood', 'poiWater', 'poiSummit', 'poiDanger', 'poiSprint', 'poiFirstAid', 'poiValley', 'poiGeneric'];
+
+  for (const key of keys) {
+    const idText = translations.id[key];
+    const enText = translations.en[key];
+
+    if (currentLang === 'en') {
+      if (result.includes(idText)) result = result.replace(idText, enText);
+    } else {
+      if (result.includes(enText)) result = result.replace(enText, idText);
+    }
+  }
+
+  // Handle some edge cases with " ke " / " to "
+  if (currentLang === 'en') {
+    result = result.replace(' ke ', ' to ');
+    result = result.replace('Lanjut ke ', 'Continue to ');
+  } else {
+    result = result.replace(' to ', ' ke ');
+    result = result.replace('Continue to ', 'Lanjut ke ');
+  }
+
+  return result;
+}
 
 /**
  * Populates table with turn-by-turn items and action delete buttons.
@@ -2359,8 +2783,85 @@ function clearClimbHighlight() {
  * 4. [name].gpx (standard GPX track)
  * 5. [name].kml (standard KML track)
  */
+async function generateBrytonZip() {
+  if (state.points.length === 0 || state.combinedInstructions.length === 0) {
+    showToast(t('toastAnalyzeFirst'), 'error');
+    return;
+  }
 
-async 
+  try {
+    const zip = new JSZip();
+    let prefix = elements.brytonRouteName.value.trim();
+
+    // Fallback to original base name if input is empty
+    if (!prefix) {
+      prefix = state.baseName || 'bryton-route';
+    }
+
+    // Sanitize prefix to be safe for filenames
+    prefix = prefix.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    const smyBuffer = createSmyBuffer(state.points.length, state.boundingBox, state.totalDistance);
+    zip.file(`${prefix}.smy`, smyBuffer);
+
+    const trackBuffer = createTrackBuffer(state.points);
+    zip.file(`${prefix}.track`, trackBuffer);
+
+    const tinfoBuffer = createTinfoBuffer(state.combinedInstructions);
+    zip.file(`${prefix}.tinfo`, tinfoBuffer);
+
+    const folder = zip.folder(prefix);
+
+    const zinfoBuffer = new ArrayBuffer(16);
+    const zview = new DataView(zinfoBuffer);
+    zview.setUint32(0, 2, true);
+    zview.setUint32(4, 12, true);
+    folder.file(`${prefix}.zinfo`, zinfoBuffer);
+
+    folder.file(`dupli.track`, trackBuffer);
+    folder.file(`dupli2.track`, trackBuffer);
+
+    const sortBuffer = new ArrayBuffer(16);
+    const sview = new DataView(sortBuffer);
+    sview.setUint32(0, 0, true);
+    sview.setUint32(4, state.points.length > 0 ? state.points.length - 1 : 0, true);
+    sview.setUint32(8, 0x103a1a41, true);
+    sview.setUint32(12, 0, true);
+    folder.file(`sort1.path`, sortBuffer);
+
+    showToast(t('toastCreatingZip'), 'info', false);
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, `${prefix}-bryton.zip`);
+
+    showToast(t('toastZipSuccess'), 'success');
+  } catch (error) {
+    console.error('Failed to generate ZIP:', error);
+    showToast(t('toastZipError') + error.message, 'error');
+  }
+}
+
+async function generateGpxFile() {
+  if (state.points.length === 0) return;
+  let prefix = elements.brytonRouteName.value.trim() || state.baseName || 'bryton-route';
+  prefix = prefix.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  const gpxString = createGpxString(state.points, prefix);
+  const blob = new Blob([gpxString], { type: 'application/gpx+xml' });
+  saveAs(blob, `${prefix}.gpx`);
+  showToast('GPX file downloaded successfully!', 'success');
+}
+
+async function generateKmlFile() {
+  if (state.points.length === 0) return;
+  let prefix = elements.brytonRouteName.value.trim() || state.baseName || 'bryton-route';
+  prefix = prefix.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  const kmlString = createKmlString(state.points, prefix);
+  const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
+  saveAs(blob, `${prefix}.kml`);
+  showToast('KML file downloaded successfully!', 'success');
+}
+
 /**
  * Creates SMY Header Buffer (24 bytes)
  */
@@ -2523,7 +3024,59 @@ function findClosestPointIndex(points, lat, lon) {
   return closestIdx;
 }
 
+function getDirectionLabel(code) {
+  switch (code) {
+    case 7: return t('dirSharpLeft') || 'Belok Tajam Kiri';
+    case 3: return t('dirLeft') || 'Belok Kiri';
+    case 5: return t('dirSlightLeft') || 'Serong Kiri';
+    case 10: return t('dirStraight') || 'Lurus';
+    case 1: return t('dirGoAhead') || 'Go Ahead';
+    case 4: return t('dirSlightRight') || 'Serong Kanan';
+    case 2: return t('dirRight') || 'Belok Kanan';
+    case 6: return t('dirSharpRight') || 'Belok Tajam Kanan';
+    case 8: return t('dirExitRight') || 'Exit Kanan';
+    case 9: return t('dirExitLeft') || 'Exit Kiri';
+    case 11: return t('dirUturn') || 'U-Turn Kanan';
+    case 12: return t('dirUturnLeft') || 'U-Turn Kiri';
+    case 101: return t('poiFood');
+    case 102: return t('poiWater');
+    case 103: return t('poiSummit');
+    case 104: return t('poiDanger');
+    case 105: return t('poiSprint');
+    case 106: return t('poiFirstAid');
+    case 107: return t('poiValley');
+    case 108: return t('poiGeneric');
+    default: return t('dirStraight');
+  }
+}
 
+function getDirectionArrow(code) {
+  switch (code) {
+    case 7: return '↰';
+    case 3: return '←';
+    case 5: return '↖';
+    case 10: return '↑';
+    case 1: return '↑';
+    case 4: return '↗';
+    case 2: return '→';
+    case 6: return '↱';
+    case 8: return '⬈';
+    case 9: return '⬉';
+    case 11: return '↩';
+    case 12: return '↪';
+    case 100: return '🎯';
+    case 101: return '⛺';
+    case 102: return '🍴';
+    case 103: return '➕';
+    case 104: return '☑️';
+    case 105: return '👥';
+    case 106: return '💧';
+    case 107: return '⚡';
+    case 190: return '🧗'; // Climb Start
+    case 191: return '📉'; // Climb End
+    default: return '↑';
+  }
+}
 
 function formatTime(seconds) {
   if (seconds < 60) return `${seconds}s`;
@@ -2557,4 +3110,100 @@ function escapeXml(text) {
 // ==========================================
 // Fit File Generator using @garmin/fitsdk
 // ==========================================
-async 
+async function generateFitFile() {
+  if (state.points.length === 0) return;
+  
+  const origBtnText = elements.btnDownloadFit.innerHTML;
+  elements.btnDownloadFit.innerHTML = '<i class="lucide lucide-loader spinner"></i>';
+  elements.btnDownloadFit.disabled = true;
+  
+  try {
+    const fitSdk = await import('https://esm.sh/@garmin/fitsdk@21.217.0');
+    const Encoder = fitSdk.Encoder;
+    const Profile = fitSdk.Profile;
+    
+    const encoder = new Encoder();
+
+    encoder.onMesg(Profile.MesgNum.FILE_ID, {
+      type: Profile.types.file.course,
+      manufacturer: Profile.types.manufacturer.development,
+      product: 0,
+      timeCreated: new Date(),
+      serialNumber: Math.floor(Math.random() * 0xFFFFFFFF)
+    });
+
+    let routeName = elements.brytonRouteName.value.trim() || state.baseName || 'BrytonRoute';
+    encoder.onMesg(Profile.MesgNum.COURSE, {
+      name: routeName.substring(0, 15),
+      sport: Profile.types.sport.cycling
+    });
+
+    const baseTime = Date.now();
+    
+    state.points.forEach((pt, i) => {
+      pt._fitDate = new Date(baseTime + i * 1000);
+      encoder.onMesg(Profile.MesgNum.RECORD, {
+        timestamp: pt._fitDate,
+        positionLat: Math.round(pt.lat * (0x7FFFFFFF / 180)),
+        positionLong: Math.round(pt.lon * (0x7FFFFFFF / 180)),
+        altitude: pt.ele,
+        distance: pt.distFromStart
+      });
+    });
+
+    function mapToFitCp(code) {
+      switch(code) {
+        case 7: return Profile.types.coursePoint.sharpLeft;
+        case 3: return Profile.types.coursePoint.left;
+        case 5: return Profile.types.coursePoint.slightLeft;
+        case 10: return Profile.types.coursePoint.straight;
+        case 1: return Profile.types.coursePoint.straight;
+        case 4: return Profile.types.coursePoint.slightRight;
+        case 2: return Profile.types.coursePoint.right;
+        case 6: return Profile.types.coursePoint.sharpRight;
+        case 8: return Profile.types.coursePoint.slightRight; // Exit Right -> mapped to slight right
+        case 9: return Profile.types.coursePoint.slightLeft; // Exit Left -> mapped to slight left
+        case 11: return Profile.types.coursePoint.uTurn; // uturn right
+        case 12: return Profile.types.coursePoint.uTurn; // uturn left
+        case 100: return Profile.types.coursePoint.generic; // Target -> generic
+        case 101: return Profile.types.coursePoint.food;
+        case 102: return Profile.types.coursePoint.water;
+        case 103: return Profile.types.coursePoint.summit;
+        case 104: return Profile.types.coursePoint.danger;
+        case 105: return Profile.types.coursePoint.sprint;
+        case 106: return Profile.types.coursePoint.firstAid;
+        case 107: return Profile.types.coursePoint.valley;
+        case 108: return Profile.types.coursePoint.generic;
+        case 190: return Profile.types.coursePoint.segmentStart;
+        case 191: return Profile.types.coursePoint.segmentEnd;
+        default: return Profile.types.coursePoint.generic;
+      }
+    }
+
+    state.combinedInstructions.forEach((inst) => {
+      const pt = state.points[inst.index];
+      if (!pt || !pt._fitDate) return;
+      encoder.onMesg(Profile.MesgNum.COURSE_POINT, {
+        timestamp: pt._fitDate,
+        positionLat: Math.round(pt.lat * (0x7FFFFFFF / 180)),
+        positionLong: Math.round(pt.lon * (0x7FFFFFFF / 180)),
+        distance: pt.distFromStart,
+        type: mapToFitCp(inst.directionCode),
+        name: (inst.instruction || '').substring(0, 15)
+      });
+    });
+
+    const uint8Array = encoder.close();
+    const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
+    let prefix = routeName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    saveAs(blob, `${prefix}.fit`);
+    
+    showToast('Download file FIT berhasil!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Gagal memproses file FIT: ' + err.message, 'error');
+  } finally {
+    elements.btnDownloadFit.innerHTML = origBtnText;
+    elements.btnDownloadFit.disabled = false;
+  }
+}
