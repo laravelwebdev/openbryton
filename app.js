@@ -3498,21 +3498,21 @@ async function shareToBrytonActive() {
     
     showToast(window.currentLang === 'id' ? 'Mengunggah ke server sementara...' : 'Uploading to temporary server...', 'info', false);
 
-    const formData = new FormData();
-    formData.append('file', blob, fileName);
+    const binId = Math.random().toString(36).substring(2, 14);
+    const uploadUrl = `https://filebin.net/${binId}/${fileName}`;
 
-    const response = await fetch('https://tmpfiles.org/api/v1/upload', {
+    const response = await fetch(uploadUrl, {
       method: 'POST',
-      body: formData
+      body: blob,
+      headers: {
+        'Content-Type': 'application/octet-stream',
+        'Accept': 'application/json'
+      }
     });
 
     if (!response.ok) throw new Error('Failed to upload file.');
     
-    const result = await response.json();
-    if (result.status !== 'success') throw new Error('API Error');
-
-    // Convert to direct download URL (add /dl/)
-    const fileUrl = result.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+    const fileUrl = uploadUrl; // filebin directly serves the file on GET
     
     const brytonUrl = `https://www.brytonsport.com/applinkpt/#/?type=pt&fit=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(routeName)}`;
     
