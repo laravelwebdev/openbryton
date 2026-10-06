@@ -1167,6 +1167,31 @@ body {
   height: 14px;
 }
 
+.btn-edit-item {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit-item:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+  transform: scale(1.08);
+}
+
+.btn-edit-item i {
+  width: 14px;
+  height: 14px;
+}
+
 /* Footer */
 .app-footer {
   margin-top: auto;

@@ -368,8 +368,8 @@ async function editRoute(id) {
     if (!data) return alert("Rute tidak ditemukan");
     
     if (window.loadRouteFromFirebase) {
-      window.loadRouteFromFirebase(data, true);
       switchPage('create');
+      window.loadRouteFromFirebase(data, true);
     } else {
       alert("Fungsi editor belum siap. Silakan muat ulang halaman.");
     }
