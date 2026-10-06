@@ -1211,6 +1211,7 @@ function setupRouteEditHandles() {
 
 function shiftTurnIndices(startIndex, amount) {
   const shiftArr = (arr) => {
+    if (!arr) return;
     for (let i = arr.length - 1; i >= 0; i--) {
       if (arr[i].index >= startIndex) arr[i].index += amount;
     }
@@ -1219,7 +1220,7 @@ function shiftTurnIndices(startIndex, amount) {
   shiftArr(state.extraTurns);
   shiftArr(state.manualTurns);
   shiftArr(state.climbTurns);
-  shiftArr(state.combinedInstructions);
+  // Do not shift combinedInstructions to prevent double-shifting of the same object references
 }
 
 /**
@@ -2460,6 +2461,13 @@ function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = [], cl
   for (let i = 0; i < all.length; i++) {
     const cur = all[i];
     if (!cur.id) cur.id = Math.random().toString(36).substr(2, 9);
+
+    // Sync coordinates and distance with actual point to prevent stale data when points are inserted/deleted
+    if (cur.index >= 0 && cur.index < points.length) {
+      cur.lat = points[cur.index].lat;
+      cur.lon = points[cur.index].lon;
+      cur.distFromStart = points[cur.index].distFromStart;
+    }
 
     if (deduplicated.length === 0) {
       deduplicated.push(cur);
