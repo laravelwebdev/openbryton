@@ -22,6 +22,9 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
+  <!-- Flag Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+
   <!-- JSZip -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <!-- FileSaver.js -->
@@ -31,7 +34,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=33">
 </head>
 
 <body>
@@ -59,10 +62,10 @@
 
       <div class="header-badges">
         <!-- Auth UI -->
-        <div id="authContainer" style="display:flex; align-items:center; gap:10px;">
+        <div id="authContainer" class="authContainer-style">
 
-          <div id="userProfile" style="display:none; align-items:center; gap:8px;">
-            <img id="userAvatar" src="" alt="User" style="width:28px; height:28px; border-radius:50%;">
+          <div id="userProfile" class="userProfile-style">
+            <img id="userAvatar" src="" alt="User" class="userAvatar-style">
             <button id="btnLogout" class="btn btn-icon btn-sm" onclick="logout()" title="Logout"><i
                 data-lucide="log-out"></i></button>
           </div>
@@ -70,17 +73,17 @@
 
         <div class="custom-lang-dropdown" id="langDropdown">
           <button class="lang-btn" id="langDropdownBtn">
-            <span id="currentLangIcon">🇮🇩</span>
+            <span id="currentLangIcon" class="fi fi-id"></span>
             <span id="currentLangText">ID</span>
             <i data-lucide="chevron-down" class="lang-chevron"></i>
           </button>
           <ul class="lang-menu" id="langMenu">
             <li class="lang-option" data-value="id">
-              <span class="lang-icon">🇮🇩</span>
+              <span class="lang-icon fi fi-id"></span>
               <span class="lang-text">ID</span>
             </li>
             <li class="lang-option" data-value="en">
-              <span class="lang-icon">🇬🇧</span>
+              <span class="lang-icon fi fi-gb"></span>
               <span class="lang-text">EN</span>
             </li>
           </ul>
@@ -93,24 +96,20 @@
   <div id="appContainer">
 
     <!-- PAGE: LOGIN -->
-    <main class="container page-view active" id="page-login"
-      style="display:flex; align-items:center; justify-content:center; min-height: calc(100vh - 100px);">
-      <div class="card"
-        style="max-width: 420px; width: 100%; padding: 40px 30px; text-align: center; background: rgba(18, 24, 38, 0.6); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);">
+    <main class="container page-view active container-migrated-4" id="page-login">
+      <div class="card card-migrated-5">
         <div
           style="width: 72px; height: 72px; background: linear-gradient(135deg, var(--primary), var(--accent-cyan)); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; box-shadow: 0 10px 25px var(--primary-glow);">
-          <i data-lucide="navigation" style="width: 36px; height: 36px; color: #fff;"></i>
+          <i data-lucide="navigation" class="inline-style-6"></i>
         </div>
-        <h2 style="font-size: 26px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px;">Welcome to
+        <h2 class="inline-style-7">Welcome to
           OpenBryton</h2>
         <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 32px; line-height: 1.6;">
           Your ultimate companion for snapping GPX routes to OSM roads, planning Turn-by-Turn, and exporting perfectly
           to Bryton devices.
         </p>
-        <button class="btn btn-primary"
-          style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 10px; background: #fff; color: #000; border: none; box-shadow: 0 4px 15px rgba(255,255,255,0.2);"
-          onclick="loginWithGoogle()">
-          <svg style="width:20px; height:20px;" viewBox="0 0 24 24">
+        <button class="btn btn-primary btn-migrated-8" onclick="loginWithGoogle()">
+          <svg class="inline-style-9" viewBox="0 0 24 24">
             <path fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
             <path fill="#34A853"
@@ -131,201 +130,200 @@
       <!-- Left Column: Controls & Upload -->
       <aside class="sidebar-panel">
         <!-- Sidebar Header / Minimize Button -->
-        <div class="sidebar-top-bar"
-          style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; color:#f1f5f9; padding: 0 5px;">
-          <span class="sidebar-title" id="sidebarTitle"
-            style="font-weight:600; display:flex; align-items:center; gap:8px;"><i data-lucide="settings"></i>
+        <div class="sidebar-top-bar sidebar-top-bar-migrated-10">
+          <span class="sidebar-title sidebar-title-migrated-11" id="sidebarTitle"><i data-lucide="settings"></i>
             <span data-i18n="panelHeader">Panel</span></span>
-          <button class="btn btn-outline btn-sm" id="btnToggleSidebarUI" title="Minimize Panel"
-            style="padding: 4px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i
-              data-lucide="minimize-2"></i> <span>Sembunyikan</span></button>
+          <button class="btn btn-outline btn-sm btn-migrated-12" id="btnToggleSidebarUI" title="Minimize Panel"><i
+              data-lucide="minimize-2"></i> <span data-i18n="btnHidePanel">Sembunyikan</span></button>
         </div>
         <div class="sidebar-content" id="sidebarContent">
-          <!-- Upload Card -->
-          <section class="card upload-card" id="uploadCard">
-            <h2 class="card-title"><i data-lucide="upload-cloud"></i> <span data-i18n="uploadTitle">1. Unggah File
-                GPX</span></h2>
-            <div class="drop-zone" id="dropZone">
-              <input type="file" id="fileInput" accept=".gpx" class="file-input">
-              <div class="drop-zone-content">
-                <div class="upload-icon-pulse">
-                  <i data-lucide="file-up"></i>
-                </div>
-                <p class="drop-zone-text"><strong data-i18n="uploadHintClick">Klik untuk memilih</strong> <span
-                    data-i18n="uploadHintOrDrag">atau seret file <code>.gpx</code> ke sini</span></p>
-                <p class="drop-zone-hint" data-i18n="uploadHintSupport">Mendukung file GPX dari Strava, Komoot, Garmin,
-                  OSM, dll.</p>
-              </div>
-              <div class="file-info hidden" id="fileInfo" style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                  <div style="display: flex; gap: 15px; align-items: center;">
-                    <div class="file-info-icon"
-                      style="color:var(--primary); background:rgba(37,99,235,0.2); padding:10px; border-radius:8px;"><i
-                        data-lucide="file-check"></i></div>
-                    <div class="file-info-details">
-                      <div class="file-name" id="fileName"
-                        style="font-weight:600; font-size:14px; word-break:break-all;">
-                        track.gpx</div>
-                      <div class="file-meta" id="fileMeta" style="font-size:12px; color:#9ca3af;">0 KB</div>
-                    </div>
-                  </div>
-                  <button type="button" class="btn-icon" id="btnRemoveFile" title="Ganti file">
-                    <i data-lucide="x"></i>
-                  </button>
-                </div>
-              </div>
+          <input type="file" id="fileInput" accept=".gpx" style="display:none;">
+
+          <!-- Save Card -->
+          <section class="card save-card" id="saveCard">
+            <h2 class="card-title"><i data-lucide="cloud"></i> <span data-i18n="saveRouteTitle">1. Simpan Rute</span>
+            </h2>
+            <div class="inline-style-13">
+              <label class="inline-style-14" data-i18n="routeNameLabel">Nama Rute (Opsional)</label>
+              <input type="text" id="brytonRouteName" placeholder="Contoh: Gowes Sentul 50km"
+                data-i18n-placeholder="routeNamePlaceholder"
+                style="width:100%; padding:10px; border-radius:6px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border); font-family:inherit;">
             </div>
+            <button type="button" class="btn btn-primary btn-block" id="btnSaveRoute" disabled>
+              <i data-lucide="save"></i>
+              <span data-i18n="btnSaveDb">Simpan ke Database</span>
+            </button>
           </section>
 
-          <!-- Settings / Configuration Card -->
-          <section class="card settings-card">
-            <h2 class="card-title"><i data-lucide="sliders"></i> <span data-i18n="tbtTitle">2. Pengaturan
-                Turn-by-Turn</span></h2>
+          <!-- Generate Card -->
+          <section class="card" id="generateCard">
+            <h2 class="card-title"><i data-lucide="zap"></i> <span data-i18n="generateCardTitle">2. Generate Turn By
+                Turn</span></h2>
 
-            <!-- OSM TBT Toggle -->
-            <div class="setting-item">
-              <div class="setting-label-row">
-                <label for="enableOsmTbt" class="setting-label">
-                  <i data-lucide="globe"></i> <span data-i18n="tbtOsmAuto">Turn-by-Turn OpenStreetMap (OSRM)</span>
-                </label>
-                <input type="checkbox" id="enableOsmTbt" class="switch-checkbox">
-              </div>
-              <p class="setting-desc" data-i18n="tbtOsmDesc">Mengambil nama jalan resmi & manuver belokan dari
-                OpenStreetMap OSRM Routing Engine.</p>
-              <div style="margin-top:8px;">
-                <label style="font-size: 12px; color:#9ca3af; display:block; margin-bottom:4px;" data-i18n="orsKeyLabel">OpenRouteService API Key (Disarankan):</label>
-                <input type="text" id="orsApiKey" class="input-text" placeholder="Masukkan API Key ORS (opsional)..." data-i18n-placeholder="orsKeyPlaceholder"
-                  style="width:100%; padding: 6px; border-radius:4px; background:var(--bg-input); border:1px solid var(--bg-card-border); color:#fff; font-family:inherit;">
-              </div>
-            </div>
-
-            <!-- Reverse Geocode Names Toggle -->
-            <div class="setting-item">
-              <div class="setting-label-row">
-                <label for="enableOsmNames" class="setting-label">
-                  <i data-lucide="map-pin"></i> <span data-i18n="autoOsmNames">Auto Nama Jalan OSM (Reverse
-                    Geocode)</span>
-                </label>
-                <input type="checkbox" id="enableOsmNames" checked class="switch-checkbox">
-              </div>
-              <p class="setting-desc" data-i18n="autoOsmDesc">Mengambil nama jalan asli dari OpenStreetMap untuk setiap
-                titik belokan.</p>
-            </div>
-
-            <!-- Angle Threshold -->
-            <div class="setting-item">
-              <div class="setting-label-row">
-                <label for="angleThreshold" class="setting-label">
-                  <i data-lucide="corner-down-right"></i> <span data-i18n="angleThreshold">Sudut Belokan Tambahan</span>
-                </label>
-                <span class="value-bubble" id="angleThresholdValue">35°</span>
-              </div>
-              <input type="range" id="angleThreshold" min="15" max="90" value="35" step="5" class="slider">
-              <p class="setting-desc" data-i18n="angleDesc">Jika ada belokan ≥ sudut ini yang <strong>belum ada di
-                  OSM</strong>, belokan baru akan ditambahkan otomatis. Jika sudah ada di OSM, tidak diduplikasi.</p>
-            </div>
-
-            <!-- Duplicate Tolerance Radius -->
-            <div class="setting-item">
-              <div class="setting-label-row">
-                <label for="dupDistanceThreshold" class="setting-label">
-                  <i data-lucide="shield-check"></i> <span data-i18n="dupRadius">Radius Proteksi Duplikasi</span>
-                </label>
-                <span class="value-bubble" id="dupDistanceThresholdValue">15 m</span>
-              </div>
-              <input type="range" id="dupDistanceThreshold" min="15" max="100" value="15" step="5" class="slider">
-              <p class="setting-desc" data-i18n="dupDesc">Jarak toleransi (meter) agar belokan sudut tidak menduplikasi
-                belokan yang sudah terdaftar di OSM.</p>
-            </div>
-
-            <!-- Smoothing lookahead distance -->
-            <div class="setting-item">
-              <div class="setting-label-row">
-                <label for="smoothingRadius" class="setting-label">
-                  <i data-lucide="activity"></i> <span data-i18n="smoothRadius">Filter GPS Noise (Smoothing)</span>
-                </label>
-                <span class="value-bubble" id="smoothingRadiusValue">15 m</span>
-              </div>
-              <input type="range" id="smoothingRadius" min="5" max="40" value="15" step="5" class="slider">
-              <p class="setting-desc" data-i18n="smoothDesc">Menghindari deteksi belokan palsu akibat jitter/noise
-                sinyal
-                GPS.</p>
-            </div>
-
-            <!-- ClimbPro Settings -->
-            <h3
-              style="font-size:14px; margin: 20px 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid var(--bg-card-border);">
-              <i data-lucide="mountain"></i> <span data-i18n="climbTitle">Kriteria Deteksi Tanjakan</span>
-            </h3>
-
-            <div class="setting-item">
-              <div class="setting-label-row">
-                <label for="climbMinDist" class="setting-label" data-i18n="climbMinDist">Jarak Minimal</label>
-                <span class="value-bubble" id="climbMinDistValue">500 m</span>
-              </div>
-              <input type="range" id="climbMinDist" min="100" max="2000" value="500" step="50" class="slider">
-            </div>
-
-            <div class="setting-item">
-              <div class="setting-label-row">
-                <label for="climbMinGrade" class="setting-label" data-i18n="climbMinGrade">Grade Rata-rata
-                  Minimal</label>
-                <span class="value-bubble" id="climbMinGradeValue">3.0 %</span>
-              </div>
-              <input type="range" id="climbMinGrade" min="1.0" max="10.0" value="3.0" step="0.5" class="slider">
-            </div>
-
-            <div class="setting-item">
-              <div class="setting-label-row">
-                <label for="climbMinScore" class="setting-label" data-i18n="climbMinScore">Skor Tanjakan (Jarak x
-                  Grade)</label>
-                <span class="value-bubble" id="climbMinScoreValue">1500</span>
-              </div>
-              <input type="range" id="climbMinScore" min="500" max="5000" value="1500" step="100" class="slider">
-            </div>
-
-            <!-- Process Button -->
-            <button type="button" class="btn btn-primary btn-block" id="btnProcess" disabled>
+            <button type="button" class="btn btn-primary btn-block btn-migrated-15" id="btnProcess" disabled>
               <i data-lucide="refresh-cw" id="processSpinner"></i>
-              <span data-i18n="btnProcess">Analisis & Generate Route</span>
+              <span data-i18n="btnProcess">Generate Turn By Turn</span>
             </button>
+
+            <!-- Settings / Configuration Collapsible -->
+            <div id="settingsCardToggle"
+              style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-input); border-radius: 6px; border: 1px solid var(--bg-card-border); margin-bottom: 0;">
+              <span class="inline-style-16">
+                <i data-lucide="sliders" class="inline-style-17"></i>
+                <span data-i18n="tbtTitle">Advanced Options</span>
+              </span>
+              <i data-lucide="chevron-down" id="settingsCardIcon" class="settingsCardIcon-style"></i>
+            </div>
+
+            <div id="settingsCardContent" class="settingsCardContent-style">
+              <!-- OSM TBT Toggle -->
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <label for="enableOsmTbt" class="setting-label">
+                    <i data-lucide="globe"></i> <span data-i18n="tbtOsmAuto">Turn-by-Turn OpenStreetMap (OSRM)</span>
+                  </label>
+                  <input type="checkbox" id="enableOsmTbt" class="switch-checkbox">
+                </div>
+                <p class="setting-desc" data-i18n="tbtOsmDesc">Mengambil nama jalan resmi & manuver belokan dari
+                  OpenStreetMap OSRM Routing Engine.</p>
+                <div class="inline-style-20">
+                  <label class="inline-style-21" data-i18n="orsKeyLabel">OpenRouteService API Key (Disarankan):</label>
+                  <input type="text" id="orsApiKey" class="input-text" placeholder="Masukkan API Key ORS (opsional)..."
+                    data-i18n-placeholder="orsKeyPlaceholder"
+                    style="width:100%; padding: 6px; border-radius:4px; background:var(--bg-input); border:1px solid var(--bg-card-border); color:#fff; font-family:inherit;">
+                </div>
+              </div>
+
+              <!-- Reverse Geocode Names Toggle -->
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <label for="enableOsmNames" class="setting-label">
+                    <i data-lucide="map-pin"></i> <span data-i18n="autoOsmNames">Auto Nama Jalan OSM (Reverse
+                      Geocode)</span>
+                  </label>
+                  <input type="checkbox" id="enableOsmNames" checked class="switch-checkbox">
+                </div>
+                <p class="setting-desc" data-i18n="autoOsmDesc">Mengambil nama jalan asli dari OpenStreetMap untuk
+                  setiap
+                  titik belokan.</p>
+              </div>
+
+              <!-- Angle Threshold -->
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <label for="angleThreshold" class="setting-label">
+                    <i data-lucide="corner-down-right"></i> <span data-i18n="angleThreshold">Sudut Belokan
+                      Tambahan</span>
+                  </label>
+                  <span class="value-bubble" id="angleThresholdValue">35°</span>
+                </div>
+                <input type="range" id="angleThreshold" min="15" max="90" value="35" step="5" class="slider">
+                <p class="setting-desc" data-i18n="angleDesc">Jika ada belokan ≥ sudut ini yang <strong>belum ada di
+                    OSM</strong>, belokan baru akan ditambahkan otomatis. Jika sudah ada di OSM, tidak diduplikasi.</p>
+              </div>
+
+              <!-- Duplicate Tolerance Radius -->
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <label for="dupDistanceThreshold" class="setting-label">
+                    <i data-lucide="shield-check"></i> <span data-i18n="dupRadius">Radius Proteksi Duplikasi</span>
+                  </label>
+                  <span class="value-bubble" id="dupDistanceThresholdValue">15 m</span>
+                </div>
+                <input type="range" id="dupDistanceThreshold" min="15" max="100" value="15" step="5" class="slider">
+                <p class="setting-desc" data-i18n="dupDesc">Jarak toleransi (meter) agar belokan sudut tidak
+                  menduplikasi
+                  belokan yang sudah terdaftar di OSM.</p>
+              </div>
+
+              <!-- Smoothing lookahead distance -->
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <label for="smoothingRadius" class="setting-label">
+                    <i data-lucide="activity"></i> <span data-i18n="smoothRadius">Filter GPS Noise (Smoothing)</span>
+                  </label>
+                  <span class="value-bubble" id="smoothingRadiusValue">15 m</span>
+                </div>
+                <input type="range" id="smoothingRadius" min="5" max="40" value="15" step="5" class="slider">
+                <p class="setting-desc" data-i18n="smoothDesc">Menghindari deteksi belokan palsu akibat jitter/noise
+                  sinyal
+                  GPS.</p>
+              </div>
+
+              <!-- ClimbPro Settings -->
+              <h3
+                style="font-size:14px; margin: 20px 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid var(--bg-card-border);">
+                <i data-lucide="mountain"></i> <span data-i18n="climbTitle">Kriteria Deteksi Tanjakan</span>
+              </h3>
+
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <label for="climbMinDist" class="setting-label" data-i18n="climbMinDist">Jarak Minimal</label>
+                  <span class="value-bubble" id="climbMinDistValue">500 m</span>
+                </div>
+                <input type="range" id="climbMinDist" min="100" max="2000" value="500" step="50" class="slider">
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <label for="climbMinGrade" class="setting-label" data-i18n="climbMinGrade">Grade Rata-rata
+                    Minimal</label>
+                  <span class="value-bubble" id="climbMinGradeValue">3.0 %</span>
+                </div>
+                <input type="range" id="climbMinGrade" min="1.0" max="10.0" value="3.0" step="0.5" class="slider">
+              </div>
+
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <label for="climbMinScore" class="setting-label" data-i18n="climbMinScore">Skor Tanjakan (Jarak x
+                    Grade)</label>
+                  <span class="value-bubble" id="climbMinScoreValue">1500</span>
+                </div>
+                <input type="range" id="climbMinScore" min="500" max="5000" value="1500" step="100" class="slider">
+              </div>
+            </div>
           </section>
 
           <!-- Download Bryton ZIP Card -->
           <section class="card download-card" id="downloadCard">
             <h2 class="card-title"><i data-lucide="package-check"></i> <span data-i18n="downloadTitle">3. Download Paket
                 Bryton</span></h2>
-            <div style="margin-bottom: 16px; margin-top: 16px;">
-              <label style="display:block; font-size:13px; margin-bottom:6px; font-weight:600;"
-                data-i18n="routeNameLabel">Nama Rute di Perangkat Bryton (Opsional)</label>
-              <input type="text" id="brytonRouteName" placeholder="Contoh: Gowes Sentul 50km"
-                data-i18n-placeholder="routeNamePlaceholder"
-                style="width:100%; padding:10px; border-radius:6px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border); font-family:inherit;">
-            </div>
 
-            <button type="button" class="btn btn-primary btn-block" id="btnSaveRoute" style="margin-bottom: 16px;"
-              disabled>
-              <i data-lucide="save"></i>
-              <span data-i18n="btnSaveDb">Simpan ke Database</span>
-            </button>
-
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
-              <button type="button" class="btn btn-success" id="btnDownloadBryton" style="flex: 1;" disabled>
-                <i data-lucide="download"></i>
-                <span data-i18n="btnDownloadBryton">Bryton (.ZIP)</span>
+            <div class="custom-dropdown" id="downloadDropdownContainer" style="width: 100%; margin-bottom: 16px;">
+              <button type="button" class="btn btn-primary btn-block" id="btnToggleDownload" disabled style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="display: flex; align-items: center; gap: 8px;">
+                  <i data-lucide="download"></i>
+                  <span data-i18n="btnDownloadMenu">Pilih Format Unduhan</span>
+                </span>
+                <i data-lucide="chevron-down" class="dropdown-chevron"></i>
               </button>
-              <button type="button" class="btn btn-outline" id="btnDownloadFit" style="flex: 1;" disabled>
-                <i data-lucide="download"></i>
-                <span data-i18n="btnDownloadFit">FIT</span>
-              </button>
-              <button type="button" class="btn btn-outline" id="btnDownloadKml" style="flex: 1;" disabled>
-                <i data-lucide="download"></i>
-                <span data-i18n="btnDownloadKml">KML</span>
-              </button>
-              <button type="button" class="btn btn-outline" id="btnDownloadGpx" style="flex: 1;" disabled>
-                <i data-lucide="download"></i>
-                <span data-i18n="btnDownloadGpx">GPX</span>
-              </button>
+              
+              <ul class="dropdown-menu" id="downloadMenu">
+                <li>
+                  <button type="button" class="dropdown-item" id="btnDownloadBryton">
+                    <i data-lucide="package-check"></i>
+                    <span data-i18n="btnDownloadBryton">Bryton (.ZIP)</span>
+                  </button>
+                </li>
+                <li>
+                  <button type="button" class="dropdown-item" id="btnDownloadFit">
+                    <i data-lucide="activity"></i>
+                    <span data-i18n="btnDownloadFit">FIT</span>
+                  </button>
+                </li>
+                <li>
+                  <button type="button" class="dropdown-item" id="btnDownloadKml">
+                    <i data-lucide="map"></i>
+                    <span data-i18n="btnDownloadKml">KML</span>
+                  </button>
+                </li>
+                <li>
+                  <button type="button" class="dropdown-item" id="btnDownloadGpx">
+                    <i data-lucide="map-pin"></i>
+                    <span data-i18n="btnDownloadGpx">GPX</span>
+                  </button>
+                </li>
+              </ul>
             </div>
 
             <div class="guide-box">
@@ -391,7 +389,7 @@
         <div class="card map-card">
           <div class="card-header-flex">
             <div class="map-title-group">
-              <h2 class="card-title" style="margin-bottom:0;"><i data-lucide="map"></i> <span
+              <h2 class="card-title card-title-migrated-27"><i data-lucide="map"></i> <span
                   data-i18n="mapTitle">Visualisasi Rute & Titik Belokan</span>
               </h2>
             </div>
@@ -408,6 +406,11 @@
               <button type="button" class="btn btn-sm btn-outline hidden" id="btnRedoEdit" title="Redo (Ctrl+Y)"
                 data-i18n-title="btnRedoEdit">
                 <i data-lucide="redo"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnUploadGpxToolbar" title="Upload file GPX"
+                data-i18n-title="uploadHintClick">
+                <i data-lucide="upload"></i>
+                <span>Upload GPX</span>
               </button>
               <button type="button" class="btn btn-sm btn-outline" id="btnCreateManualRoute">
                 <i data-lucide="pen-tool"></i>
@@ -451,8 +454,7 @@
           <div class="map-status-bar hidden" id="createStatusBar">
             <i data-lucide="pen-tool"></i>
             <span data-i18n="modeCreateActive">Mode Buat Rute Aktif: Klik pada peta untuk menggambar.</span>
-            <label
-              style="display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; cursor: pointer;">
+            <label class="inline-style-28">
               <input type="checkbox" id="chkManualSnap" checked> <span data-i18n="chkSnapToRoad">Snap to Road
                 (OSM)</span>
             </label>
@@ -472,8 +474,11 @@
                   Manual</strong> untuk memulai</p>
             </div>
           </div>
-          <canvas id="elevationCanvas"
-            style="width: 100%; height: 90px; display: none; background: #1e293b; border-radius: 8px; margin-top: 15px;"></canvas>
+          <div id="elevationTitleContainer" class="elevationTitleContainer-style">
+            <i data-lucide="activity" style="color: var(--primary); width: 18px; height: 18px;"></i>
+            <h3 class="inline-style-30"><span data-i18n="elevationChartTitle">Profil Elevasi</span></h3>
+          </div>
+          <canvas id="elevationCanvas" class="elevationCanvas-style"></canvas>
 
           <div class="map-footer-info">
             <div class="map-legend">
@@ -484,31 +489,25 @@
               <span class="legend-item"><span class="legend-line"></span> <span data-i18n="legendTrack">Track Path
                   (Blue)</span></span>
             </div>
-            <div class="layer-hint">
-              <i data-lucide="layers"></i> <span data-i18n="layerHint" data-i18n-html="true">Gunakan ikon layer di pojok
-                kanan atas peta untuk beralih ke
-                <strong>Satelit</strong> / <strong>CyclOSM</strong> / <strong>Street</strong>.</span>
-            </div>
           </div>
         </div>
 
         <!-- Turn by Turn, POI, and Climb Tables -->
         <div class="card turns-card">
-          <div class="card-header-flex" style="flex-wrap: wrap; gap: 10px;">
+          <div class="card-header-flex card-header-flex-migrated-32">
             <h2 class="card-title"><i data-lucide="list-ordered"></i> <span data-i18n="turnsTableTitle">Daftar
                 Instruksi</span></h2>
-            <div class="tabs-container" style="display:flex; gap:5px;" id="tableTabs">
+            <div class="tabs-container tabs-container-migrated-33" id="tableTabs">
               <button class="btn btn-sm btn-tab btn-primary active-tab" data-target="tab-turns-table"><span
-                  data-i18n="tabTurns">Turn-by-Turn</span> <span class="badge" id="badge-turns"
-                  style="margin-left:5px; background:rgba(255,255,255,0.2)">0</span></button>
+                  data-i18n="tabTurns">Turn-by-Turn</span> <span class="badge badge-migrated-34"
+                  id="badge-turns">0</span></button>
               <button class="btn btn-sm btn-tab btn-outline" data-target="tab-pois-table"><span
-                  data-i18n="tabPois">POI</span> <span class="badge" id="badge-pois"
-                  style="margin-left:5px; background:rgba(255,255,255,0.2)">0</span></button>
+                  data-i18n="tabPois">POI</span> <span class="badge badge-migrated-35" id="badge-pois">0</span></button>
               <button class="btn btn-sm btn-tab btn-outline" data-target="tab-climbs-table"><span
-                  data-i18n="tabClimbs">Climb</span> <span class="badge" id="badge-climbs"
-                  style="margin-left:5px; background:rgba(255,255,255,0.2)">0</span></button>
+                  data-i18n="tabClimbs">Climb</span> <span class="badge badge-migrated-36"
+                  id="badge-climbs">0</span></button>
             </div>
-            <div class="turns-filter" style="display:flex; gap:10px; align-items:center;">
+            <div class="turns-filter turns-filter-migrated-37">
               <span id="turnCounterBadge" class="badge badge-secondary" data-i18n="turnCounterBadge">0 Instruksi</span>
               <button class="btn btn-icon btn-sm" id="btnToggleTableUI" title="Minimize Tabel"
                 data-i18n-title="btnMinimizeTable"><i data-lucide="minimize-2"></i></button>
@@ -579,13 +578,28 @@
       </section>
     </main>
 
+    <!-- PAGE: MY ROUTES -->
+    <main class="container page-view hidden container-migrated-73" id="page-myroutes">
+      <h2>My Saved Routes</h2>
+      <div id="myroutesGrid" class="route-grid route-grid-migrated-74">
+        <!-- Cards rendered here -->
+      </div>
+    </main>
+
     <!-- Footer -->
     <footer class="app-footer">
       <div class="container footer-content">
-        <p>OpenBryton Pro &copy; 2026. Berdasarkan format Bryton Rider SMY/TRACK/TINFO.</p>
+        <p>OpenBryton Pro &copy; 2026.</p>
         <div class="footer-links">
-          <a href="https://github.com/erosinnocenti/openbryton" target="_blank" rel="noopener noreferrer">
-            <i data-lucide="github"></i> Original OpenBryton
+          <a href="https://github.com/laravelwebdev/openbryton" target="_blank" rel="noopener noreferrer"
+            title="Github">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              class="lucide lucide-github">
+              <path
+                d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+              <path d="M9 18c-4.51 2-5-2-7-2" />
+            </svg>
           </a>
           <a href="https://openstreetmap.org" target="_blank" rel="noopener noreferrer">
             <i data-lucide="map"></i> OpenStreetMap
@@ -601,46 +615,50 @@
     </div>
 
     <!-- Modal Add TBT -->
-    <div id="modalAddTurn" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+    <div id="modalAddTurn" class="modal-backdrop hidden modal-backdrop-migrated-38">
       <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="corner-up-right"></i> <span data-i18n="modalTitleTbt">Tambah Belokan (TBT)</span></h3>
-        <p style="font-size:13px; color:#9ca3af; margin-bottom:15px;">Koordinat: <span id="addTurnCoords"></span></p>
-        <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Arah Belokan</label>
-          <select id="addTurnDirection" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
-            <option value="1">Lurus (Go Ahead)</option>
-            <option value="2">Belok Kanan</option>
-            <option value="3">Belok Kiri</option>
-            <option value="4">Serong Kanan</option>
-            <option value="5">Serong Kiri</option>
-            <option value="6">Belok Tajam Kanan</option>
-            <option value="7">Belok Tajam Kiri</option>
-            <option value="8">Exit Kanan</option>
-            <option value="9">Exit Kiri</option>
+        <h3 class="inline-style-39"><i data-lucide="corner-up-right"></i> <span data-i18n="modalTitleTbt">Tambah Belokan
+            (TBT)</span></h3>
+        <p class="inline-style-40">Koordinat: <span id="addTurnCoords"></span></p>
+        <div class="inline-style-41">
+          <label class="inline-style-42" data-i18n="turnDirectionLabel">Arah Belokan</label>
+          <select id="addTurnDirection"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            <option value="1" data-i18n="optStraight">Lurus (Go Ahead)</option>
+            <option value="2" data-i18n="optRight">Belok Kanan</option>
+            <option value="3" data-i18n="optLeft">Belok Kiri</option>
+            <option value="4" data-i18n="optSlightRight">Serong Kanan</option>
+            <option value="5" data-i18n="optSlightLeft">Serong Kiri</option>
+            <option value="6" data-i18n="optSharpRight">Belok Tajam Kanan</option>
+            <option value="7" data-i18n="optSharpLeft">Belok Tajam Kiri</option>
+            <option value="8" data-i18n="optExitRight">Exit Kanan</option>
+            <option value="9" data-i18n="optExitLeft">Exit Kiri</option>
             <option value="10">Continue Straight</option>
-            <option value="11">Putar Balik Kanan</option>
-            <option value="12">Putar Balik Kiri</option>
+            <option value="11" data-i18n="optUturnRight">Putar Balik Kanan</option>
+            <option value="12" data-i18n="optUturnLeft">Putar Balik Kiri</option>
           </select>
         </div>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Jalan / Instruksi</label>
-          <input type="text" id="addTurnText" placeholder="Contoh: Jl. Sudirman" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <div class="inline-style-43">
+          <label class="inline-style-44" data-i18n="turnNameLabel">Nama Jalan / Instruksi</label>
+          <input type="text" id="addTurnText" placeholder="Contoh: Jl. Sudirman" data-i18n-placeholder="turnNamePlaceholder"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
-          <button type="button" class="btn btn-primary" id="btnConfirmAddTurn">Tambahkan</button>
+        <div class="inline-style-45">
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmAddTurn" data-i18n="btnAdd">Tambahkan</button>
         </div>
       </div>
     </div>
 
     <!-- Modal Add POI -->
-    <div id="modalAddPoi" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+    <div id="modalAddPoi" class="modal-backdrop hidden modal-backdrop-migrated-46">
       <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="map-pin"></i> <span data-i18n="modalTitlePoi">Tambah POI</span></h3>
-        <p style="font-size:13px; color:#9ca3af; margin-bottom:15px;">Koordinat: <span id="addPoiCoords"></span></p>
-        <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Ikon POI</label>
-          <select id="addPoiDirection" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <h3 class="inline-style-47"><i data-lucide="map-pin"></i> <span data-i18n="modalTitlePoi">Tambah POI</span></h3>
+        <p class="inline-style-48">Koordinat: <span id="addPoiCoords"></span></p>
+        <div class="inline-style-49">
+          <label class="inline-style-50" data-i18n="poiIconLabel">Ikon POI</label>
+          <select id="addPoiDirection"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
             <option value="106">Water</option>
             <option value="101">Camping</option>
             <option value="100">Target</option>
@@ -651,56 +669,60 @@
             <option value="107">Sprint</option>
           </select>
         </div>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama POI</label>
-          <input type="text" id="addPoiText" placeholder="Contoh: Warung Kopi" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <div class="inline-style-51">
+          <label class="inline-style-52" data-i18n="poiNameLabel">Nama POI</label>
+          <input type="text" id="addPoiText" placeholder="Contoh: Warung Kopi" data-i18n-placeholder="poiNamePlaceholder"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
-          <button type="button" class="btn btn-primary" id="btnConfirmAddPoi">Tambahkan</button>
+        <div class="inline-style-53">
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmAddPoi" data-i18n="btnAdd">Tambahkan</button>
         </div>
       </div>
     </div>
 
     <!-- Modal Edit TBT -->
-    <div id="modalEditTurn" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+    <div id="modalEditTurn" class="modal-backdrop hidden modal-backdrop-migrated-54">
       <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span>Edit Belokan</span></h3>
-        <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Arah Belokan</label>
-          <select id="editTurnDirectionOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
-            <option value="1">Lurus (Go Ahead)</option>
-            <option value="2">Belok Kanan</option>
-            <option value="3">Belok Kiri</option>
-            <option value="4">Serong Kanan</option>
-            <option value="5">Serong Kiri</option>
-            <option value="6">Belok Tajam Kanan</option>
-            <option value="7">Belok Tajam Kiri</option>
-            <option value="8">Exit Kanan</option>
-            <option value="9">Exit Kiri</option>
+        <h3 class="inline-style-55"><i data-lucide="edit"></i> <span data-i18n="modalEditTitleTbt">Edit Belokan</span></h3>
+        <div class="inline-style-56">
+          <label class="inline-style-57" data-i18n="turnDirectionLabel">Arah Belokan</label>
+          <select id="editTurnDirectionOnly"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            <option value="1" data-i18n="optStraight">Lurus (Go Ahead)</option>
+            <option value="2" data-i18n="optRight">Belok Kanan</option>
+            <option value="3" data-i18n="optLeft">Belok Kiri</option>
+            <option value="4" data-i18n="optSlightRight">Serong Kanan</option>
+            <option value="5" data-i18n="optSlightLeft">Serong Kiri</option>
+            <option value="6" data-i18n="optSharpRight">Belok Tajam Kanan</option>
+            <option value="7" data-i18n="optSharpLeft">Belok Tajam Kiri</option>
+            <option value="8" data-i18n="optExitRight">Exit Kanan</option>
+            <option value="9" data-i18n="optExitLeft">Exit Kiri</option>
             <option value="10">Continue Straight</option>
-            <option value="11">Putar Balik Kanan</option>
-            <option value="12">Putar Balik Kiri</option>
+            <option value="11" data-i18n="optUturnRight">Putar Balik Kanan</option>
+            <option value="12" data-i18n="optUturnLeft">Putar Balik Kiri</option>
           </select>
         </div>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Jalan / Instruksi</label>
-          <input type="text" id="editTurnTextOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <div class="inline-style-58">
+          <label class="inline-style-59" data-i18n="turnNameLabel">Nama Jalan / Instruksi</label>
+          <input type="text" id="editTurnTextOnly"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
-          <button type="button" class="btn btn-primary" onclick="confirmEditTurn()">Simpan</button>
+        <div class="inline-style-60">
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
+          <button type="button" class="btn btn-primary" onclick="confirmEditTurn()" data-i18n="btnSave">Simpan</button>
         </div>
       </div>
     </div>
 
     <!-- Modal Edit POI -->
-    <div id="modalEditPoi" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+    <div id="modalEditPoi" class="modal-backdrop hidden modal-backdrop-migrated-61">
       <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span>Edit POI</span></h3>
-        <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Ikon POI</label>
-          <select id="editPoiDirectionOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <h3 class="inline-style-62"><i data-lucide="edit"></i> <span data-i18n="modalEditTitlePoi">Edit POI</span></h3>
+        <div class="inline-style-63">
+          <label class="inline-style-64" data-i18n="poiIconLabel">Ikon POI</label>
+          <select id="editPoiDirectionOnly"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
             <option value="101">Camping</option>
             <option value="100">Target</option>
             <option value="102">Food</option>
@@ -711,46 +733,39 @@
             <option value="107">Sprint</option>
           </select>
         </div>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama POI</label>
-          <input type="text" id="editPoiTextOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <div class="inline-style-65">
+          <label class="inline-style-66" data-i18n="poiNameLabel">Nama POI</label>
+          <input type="text" id="editPoiTextOnly"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
-          <button type="button" class="btn btn-primary" onclick="confirmEditPoi()">Simpan</button>
+        <div class="inline-style-67">
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
+          <button type="button" class="btn btn-primary" onclick="confirmEditPoi()" data-i18n="btnSave">Simpan</button>
         </div>
       </div>
     </div>
 
     <!-- Modal Edit Climb -->
-    <div id="modalEditClimb" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+    <div id="modalEditClimb" class="modal-backdrop hidden modal-backdrop-migrated-68">
       <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span>Edit Tanjakan</span></h3>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Tanjakan</label>
-          <input type="text" id="editClimbTextOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <h3 class="inline-style-69"><i data-lucide="edit"></i> <span data-i18n="modalEditTitleClimb">Edit Tanjakan</span></h3>
+        <div class="inline-style-70">
+          <label class="inline-style-71" data-i18n="climbNameLabel">Nama Tanjakan</label>
+          <input type="text" id="editClimbTextOnly"
+            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
-          <button type="button" class="btn btn-primary" onclick="confirmEditClimb()">Simpan</button>
+        <div class="inline-style-72">
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
+          <button type="button" class="btn btn-primary" onclick="confirmEditClimb()" data-i18n="btnSave">Simpan</button>
         </div>
       </div>
     </div>
-    
+
     <button id="btnCloseModal" style="display:none;"></button>
 
   </div> <!-- End page-create -->
 
 
-
-  <!-- PAGE: MY ROUTES -->
-  <main class="container page-view hidden" id="page-myroutes" style="padding: 20px;">
-    <h2>My Saved Routes</h2>
-    <div id="myroutesGrid" class="route-grid"
-      style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
-      <!-- Cards rendered here -->
-    </div>
-  </main>
 
   </div> <!-- End appContainer -->
 
@@ -760,9 +775,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <script src="lang.js?v=5"></script>
-  <script src="firebase-db.js?v=5"></script>
-  <script src="app.js?v=5"></script>
+  <script src="lang.js?v=32"></script>
+  <script src="firebase-db.js?v=32"></script>
+  <script src="app.js?v=32"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Logic for language dropdown initialization is in lang.js

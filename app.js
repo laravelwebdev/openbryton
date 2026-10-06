@@ -45,7 +45,7 @@ const state = {
 // Expose state globally for firebase-db.js
 window.state = state;
 
-window.loadRouteFromFirebase = function(data, isOwner = true) {
+window.loadRouteFromFirebase = function (data, isOwner = true) {
   state.currentRouteId = data.id || null;
   state.currentRouteOwner = data.uid || null;
 
@@ -53,7 +53,7 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
   state.baseName = data.title;
   if (elements.brytonRouteName) elements.brytonRouteName.value = data.title;
   if (elements.brytonRouteName) elements.brytonRouteName.readOnly = !isOwner;
-  
+
   const parsedPoints = JSON.parse(data.points);
   state.points = parsedPoints.map(p => ({
     lat: parseFloat(p[0]),
@@ -61,7 +61,7 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
     ele: p[2] ? parseFloat(p[2]) : 0,
     distFromStart: 0
   }));
-  
+
   if (data.instructions) {
     state.combinedInstructions = JSON.parse(data.instructions);
     state.combinedInstructions.forEach(t => { if (!t.id) t.id = Math.random().toString(36).substr(2, 9); });
@@ -76,15 +76,15 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
     state.manualTurns = [];
     state.climbTurns = [];
   }
-  
+
   recalculateRouteDistances();
-  
-  state.totalDistance = state.points.length > 0 ? state.points[state.points.length-1].distFromStart : 0;
+
+  state.totalDistance = state.points.length > 0 ? state.points[state.points.length - 1].distFromStart : 0;
   if (elements.statDistance) elements.statDistance.textContent = `${(state.totalDistance / 1000).toFixed(2)} km`;
   if (elements.statPoints) elements.statPoints.textContent = state.points.length.toLocaleString();
-  
+
   state.rawBackupPoints = JSON.parse(JSON.stringify(state.points));
-  
+
   // Update map bounds and render track
   if (state.points.length > 0) {
     const lats = state.points.map(p => p.lat);
@@ -94,13 +94,14 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
       lonMin: Math.min(...lons), lonMax: Math.max(...lons)
     };
   }
-  
+
   renderTrackOnMap(true);
   updateStatsAndUI();
-  
+  updateCreateManualVisibility();
+
   // Render the elevation chart now that points are loaded
   setTimeout(() => renderElevationChart(), 500);
-  
+
   // Toggle editing controls based on ownership
   const btnSave = document.getElementById('btnSaveRoute');
   if (btnSave) btnSave.style.display = isOwner ? 'flex' : 'none';
@@ -114,7 +115,8 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
   elements.btnDownloadKml.disabled = false;
   elements.btnDownloadGpx.disabled = false;
   elements.btnDownloadFit.disabled = false;
-  
+  if (elements.btnToggleDownload) elements.btnToggleDownload.disabled = false;
+
   if (typeof showToast === 'function') {
     showToast(isOwner ? 'Rute dimuat ke Editor!' : 'Mode Lihat: Hanya bisa mengunduh', 'success');
   }
@@ -123,11 +125,7 @@ window.loadRouteFromFirebase = function(data, isOwner = true) {
 // DOM Elements
 const elements = {
   fileInput: document.getElementById('fileInput'),
-  dropZone: document.getElementById('dropZone'),
-  fileInfo: document.getElementById('fileInfo'),
-  fileName: document.getElementById('fileName'),
-  fileMeta: document.getElementById('fileMeta'),
-  btnRemoveFile: document.getElementById('btnRemoveFile'),
+  btnUploadGpxToolbar: document.getElementById('btnUploadGpxToolbar'),
 
   enableOsmTbt: document.getElementById('enableOsmTbt'),
   orsApiKey: document.getElementById('orsApiKey'),
@@ -146,12 +144,17 @@ const elements = {
   climbMinScoreValue: document.getElementById('climbMinScoreValue'),
   elevationCanvas: document.getElementById('elevationCanvas'),
   brytonRouteName: document.getElementById('brytonRouteName'),
+  settingsCardToggle: document.getElementById('settingsCardToggle'),
+  settingsCardContent: document.getElementById('settingsCardContent'),
+  settingsCardIcon: document.getElementById('settingsCardIcon'),
   btnProcess: document.getElementById('btnProcess'),
   processSpinner: document.getElementById('processSpinner'),
   btnDownloadBryton: document.getElementById('btnDownloadBryton'),
   btnDownloadKml: document.getElementById('btnDownloadKml'),
   btnDownloadGpx: document.getElementById('btnDownloadGpx'),
   btnDownloadFit: document.getElementById('btnDownloadFit'),
+  btnToggleDownload: document.getElementById('btnToggleDownload'),
+  downloadDropdownContainer: document.getElementById('downloadDropdownContainer'),
   btnToggleSidebarUI: document.getElementById('btnToggleSidebarUI'),
   btnToggleTableUI: document.getElementById('btnToggleTableUI'),
   sidebarContent: document.getElementById('sidebarContent'),
@@ -480,44 +483,33 @@ function bindEvents() {
 
   elements.fileInput.addEventListener('change', handleFileSelect);
 
-  // Prevent global drag/drop to avoid browser opening the file
-  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    document.addEventListener(eventName, (e) => {
-      e.preventDefault();
+  if (elements.btnUploadGpxToolbar) {
+    elements.btnUploadGpxToolbar.addEventListener('click', () => {
+      if (elements.fileInput) elements.fileInput.click();
     });
-    elements.dropZone.addEventListener(eventName, (e) => {
-      e.preventDefault();
-    });
-  });
+  }
 
-  ['dragenter', 'dragover'].forEach(eventName => {
-    elements.dropZone.addEventListener(eventName, (e) => {
-      elements.dropZone.classList.add('dragover');
-    });
-  });
 
-  ['dragleave', 'drop'].forEach(eventName => {
-    elements.dropZone.addEventListener(eventName, (e) => {
-      elements.dropZone.classList.remove('dragover');
-    });
-  });
-
-  elements.dropZone.addEventListener('drop', (e) => {
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFile(e.dataTransfer.files[0]);
-    }
-  });
-
-  elements.btnRemoveFile.addEventListener('click', (e) => {
-    e.stopPropagation();
-    resetState();
-  });
 
   elements.btnProcess.addEventListener('click', runTurnAnalysis);
   elements.btnDownloadBryton.addEventListener('click', generateBrytonZip);
   elements.btnDownloadKml.addEventListener('click', generateKmlFile);
   elements.btnDownloadGpx.addEventListener('click', generateGpxFile);
   elements.btnDownloadFit.addEventListener('click', generateFitFile);
+
+  if (elements.btnToggleDownload && elements.downloadDropdownContainer) {
+    elements.btnToggleDownload.addEventListener('click', (e) => {
+      e.stopPropagation();
+      elements.downloadDropdownContainer.classList.toggle('open');
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!elements.downloadDropdownContainer.contains(e.target)) {
+        elements.downloadDropdownContainer.classList.remove('open');
+      }
+    });
+  }
 
   elements.btnLocateMe.addEventListener('click', () => {
     state.map.locate({ setView: true, maxZoom: 16 });
@@ -554,10 +546,20 @@ function bindEvents() {
     const isHidden = elements.sidebarContent.classList.contains('collapsed-hidden');
     const icon = isHidden ? 'maximize-2' : 'minimize-2';
     const text = isHidden ? (typeof t === 'function' ? t('btnShowPanel') : 'Tampilkan') : (typeof t === 'function' ? t('btnHidePanel') : 'Sembunyikan');
-    elements.btnToggleSidebarUI.innerHTML = `<i data-lucide="${icon}"></i> <span>${text}</span>`;
+    const dataI18n = isHidden ? 'btnShowPanel' : 'btnHidePanel';
+    elements.btnToggleSidebarUI.innerHTML = `<i data-lucide="${icon}"></i> <span data-i18n="${dataI18n}">${text}</span>`;
     lucide.createIcons();
     setTimeout(() => { if (state.map) state.map.invalidateSize(); }, 350);
   });
+
+  if (elements.settingsCardToggle && elements.settingsCardContent && elements.settingsCardIcon) {
+    elements.settingsCardToggle.addEventListener('click', () => {
+      const isHidden = elements.settingsCardContent.style.display === 'none';
+      elements.settingsCardContent.style.display = isHidden ? 'block' : 'none';
+      elements.settingsCardIcon.setAttribute('data-lucide', isHidden ? 'chevron-up' : 'chevron-down');
+      lucide.createIcons();
+    });
+  }
 
   elements.btnToggleTableUI.addEventListener('click', () => {
     elements.turnsTableContent.classList.toggle('collapsed-hidden');
@@ -572,7 +574,7 @@ function bindEvents() {
   // Modal events
   if (elements.btnCloseModal) elements.btnCloseModal.addEventListener('click', closeModal);
   if (elements.btnCancelAddTurn) elements.btnCancelAddTurn.addEventListener('click', closeModal);
-  if(elements.btnConfirmAddTurn) elements.btnConfirmAddTurn.addEventListener('click', confirmAddManualTurn);
+  if (elements.btnConfirmAddTurn) elements.btnConfirmAddTurn.addEventListener('click', confirmAddManualTurn);
   const btnConfirmAddPoi = document.getElementById('btnConfirmAddPoi');
   if (btnConfirmAddPoi) btnConfirmAddPoi.addEventListener('click', confirmAddPoi);
 
@@ -606,10 +608,19 @@ function handleFileSelect(e) {
 }
 
 function processFile(file) {
+  if (state.points.length > 0) {
+    if (!confirm(t('confirmOverwriteRoute') || 'Rute sudah ada di peta. Mengupload GPX baru akan menghapus rute saat ini. Lanjutkan?')) {
+      if (elements.fileInput) elements.fileInput.value = '';
+      return;
+    }
+  }
+
   if (!file.name.toLowerCase().endsWith('.gpx')) {
     showToast(t('toastFormatGpx'), 'error');
     return;
   }
+
+  resetState();
 
   state.fileName = file.name;
   state.baseName = file.name.replace(/\.[^/.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -618,10 +629,6 @@ function processFile(file) {
   reader.onload = (e) => {
     state.rawGpxText = e.target.result;
 
-    elements.fileName.textContent = file.name;
-    elements.fileMeta.textContent = `${(file.size / 1024).toFixed(1)} KB`;
-    elements.fileInfo.classList.remove('hidden');
-    elements.dropZone.querySelector('.drop-zone-content').classList.add('hidden');
     elements.btnProcess.disabled = false;
 
 
@@ -638,6 +645,8 @@ function resetState() {
   state.fileName = '';
   state.points = [];
   state.rawBackupPoints = [];
+
+  updateCreateManualVisibility();
   state.isSnapped = false;
   state.osmTurns = [];
   state.extraTurns = [];
@@ -653,15 +662,14 @@ function resetState() {
   if (state.isCreatingRoute) toggleCreateManualRoute();
 
   elements.brytonRouteName.value = '';
-  elements.fileInput.value = '';
-  elements.fileInfo.classList.add('hidden');
-  elements.dropZone.querySelector('.drop-zone-content').classList.remove('hidden');
+  if (elements.fileInput) elements.fileInput.value = '';
   elements.btnProcess.disabled = true;
 
   elements.btnDownloadBryton.disabled = true;
   elements.btnDownloadKml.disabled = true;
   elements.btnDownloadGpx.disabled = true;
   elements.btnDownloadFit.disabled = true;
+  if (elements.btnToggleDownload) elements.btnToggleDownload.disabled = true;
 
   if (state.mapLayers.trackLine) {
     state.map.removeLayer(state.mapLayers.trackLine);
@@ -687,7 +695,7 @@ function resetState() {
   const climbsBody = document.getElementById('climbsTableBody');
   if (poisBody) poisBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyPois') : 'Belum ada data.'}</td></tr>`;
   if (climbsBody) climbsBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
-  
+
   const bTurns = document.getElementById('badge-turns');
   const bPois = document.getElementById('badge-pois');
   const bClimbs = document.getElementById('badge-climbs');
@@ -697,6 +705,8 @@ function resetState() {
 
   elements.turnCounterBadge.textContent = getInstructionCountLabel(0);
   elements.elevationCanvas.style.display = 'none';
+  const eleTitle = document.getElementById('elevationTitleContainer');
+  if (eleTitle) eleTitle.style.display = 'none';
 }
 
 function clearTurnMarkers() {
@@ -772,6 +782,8 @@ function parseGpx() {
   elements.statDistance.textContent = `${(runningDist / 1000).toFixed(2)} km`;
   elements.statPoints.textContent = points.length.toLocaleString();
 
+  updateCreateManualVisibility();
+
   renderTrackOnMap();
   renderElevationChart();
 }
@@ -783,12 +795,14 @@ function renderElevationChart(highlightClimbObj = null) {
 
   // Make visible BEFORE measuring so getBoundingClientRect() returns true dimensions
   canvas.style.display = 'block';
+  const eleTitle = document.getElementById('elevationTitleContainer');
+  if (eleTitle) eleTitle.style.display = 'flex';
 
   // Set internal resolution based on devicePixelRatio to avoid blur
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   const logicalWidth = rect.width || 350;
-  const logicalHeight = rect.height || 90;
+  const logicalHeight = rect.height || 140;
 
   canvas.width = logicalWidth * dpr;
   canvas.height = logicalHeight * dpr;
@@ -959,7 +973,7 @@ function simplifyRoute(epsilonMeters = 1.5) {
   const keepIndices = new Set();
   keepIndices.add(0);
   keepIndices.add(state.points.length - 1);
-  
+
   const markTurns = (turns) => {
     if (turns) turns.forEach(t => keepIndices.add(t.index));
   };
@@ -979,16 +993,16 @@ function simplifyRoute(epsilonMeters = 1.5) {
     const startIdx = keepArr[i];
     const endIdx = keepArr[i + 1];
     const slice = state.points.slice(startIdx, endIdx + 1);
-    
+
     const simplifyRDP = (pts, offset) => {
       if (pts.length <= 2) {
         return pts.map((p, idx) => ({ point: p, origIdx: offset + idx }));
       }
-      
+
       let dmax = 0;
       let idx = 0;
       const end = pts.length - 1;
-      
+
       const x1 = pts[0].lon, y1 = pts[0].lat;
       const x2 = pts[end].lon, y2 = pts[end].lat;
       const den = Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
@@ -997,18 +1011,18 @@ function simplifyRoute(epsilonMeters = 1.5) {
         const x0 = pts[j].lon, y0 = pts[j].lat;
         let d = 0;
         if (den === 0) {
-           d = haversineDistance(y1, x1, y0, x0);
+          d = haversineDistance(y1, x1, y0, x0);
         } else {
-           const num = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
-           d = (num / den) * 111320; 
+          const num = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
+          d = (num / den) * 111320;
         }
-        
+
         if (d > dmax) {
           idx = j;
           dmax = d;
         }
       }
-      
+
       if (dmax > epsilonMeters) {
         const res1 = simplifyRDP(pts.slice(0, idx + 1), offset);
         const res2 = simplifyRDP(pts.slice(idx, end + 1), offset + idx);
@@ -1020,12 +1034,12 @@ function simplifyRoute(epsilonMeters = 1.5) {
         ];
       }
     };
-    
+
     const rdpRes = simplifyRDP(slice, startIdx);
-    
+
     for (let k = 0; k < rdpRes.length; k++) {
       if (k === rdpRes.length - 1 && i < keepArr.length - 2) {
-         continue; 
+        continue;
       }
       simplifiedPoints.push(rdpRes[k].point);
       oldToNewMap.set(rdpRes[k].origIdx, simplifiedPoints.length - 1);
@@ -1251,7 +1265,7 @@ function findBestInsertIndex(points, lat, lon) {
     const dot = A * C + B * D;
     const len_sq = C * C + D * D;
     let param = -1;
-    
+
     if (len_sq !== 0) {
       param = dot / len_sq;
     }
@@ -1348,14 +1362,14 @@ function saveHistoryState() {
   const clone = state.points.map(p => ({ ...p }));
   const pinsClone = state.mapLayers.creationPins.map(marker => marker.getLatLng());
 
-  const osmClone = state.osmTurns.map(t => ({...t}));
-  const extraClone = state.extraTurns.map(t => ({...t}));
-  const manualClone = state.manualTurns.map(t => ({...t}));
-  const climbClone = state.climbTurns.map(t => ({...t}));
-  const combinedClone = state.combinedInstructions.map(t => ({...t}));
+  const osmClone = state.osmTurns.map(t => ({ ...t }));
+  const extraClone = state.extraTurns.map(t => ({ ...t }));
+  const manualClone = state.manualTurns.map(t => ({ ...t }));
+  const climbClone = state.climbTurns.map(t => ({ ...t }));
+  const combinedClone = state.combinedInstructions.map(t => ({ ...t }));
 
-  state.history.push({ 
-    points: clone, 
+  state.history.push({
+    points: clone,
     pins: pinsClone,
     osmTurns: osmClone,
     extraTurns: extraClone,
@@ -1396,11 +1410,11 @@ function redoEdit() {
 
 function restoreHistoryState(historyItem) {
   state.points = historyItem.points.map(p => ({ ...p }));
-  if (historyItem.osmTurns) state.osmTurns = historyItem.osmTurns.map(t => ({...t}));
-  if (historyItem.extraTurns) state.extraTurns = historyItem.extraTurns.map(t => ({...t}));
-  if (historyItem.manualTurns) state.manualTurns = historyItem.manualTurns.map(t => ({...t}));
-  if (historyItem.climbTurns) state.climbTurns = historyItem.climbTurns.map(t => ({...t}));
-  if (historyItem.combinedInstructions) state.combinedInstructions = historyItem.combinedInstructions.map(t => ({...t}));
+  if (historyItem.osmTurns) state.osmTurns = historyItem.osmTurns.map(t => ({ ...t }));
+  if (historyItem.extraTurns) state.extraTurns = historyItem.extraTurns.map(t => ({ ...t }));
+  if (historyItem.manualTurns) state.manualTurns = historyItem.manualTurns.map(t => ({ ...t }));
+  if (historyItem.climbTurns) state.climbTurns = historyItem.climbTurns.map(t => ({ ...t }));
+  if (historyItem.combinedInstructions) state.combinedInstructions = historyItem.combinedInstructions.map(t => ({ ...t }));
 
   if (state.isCreatingRoute) {
     clearCreationPins();
@@ -1458,7 +1472,7 @@ function recalculateRouteDistances() {
       }
     });
   };
-  
+
   syncTurns(state.osmTurns);
   syncTurns(state.extraTurns);
   syncTurns(state.manualTurns);
@@ -1616,7 +1630,7 @@ async function closeRouteLoop() {
       const newPt = { lat, lon, ele: firstPt.ele, distFromStart: 0 };
       state.points.push(newPt);
     }
-    
+
     recalculateRouteDistances();
     renderTrackOnMap(false);
     saveHistoryState();
@@ -1628,6 +1642,19 @@ async function closeRouteLoop() {
   } finally {
     state.isProcessing = false;
     elements.btnProcess.disabled = false;
+  }
+}
+
+function updateCreateManualVisibility() {
+  if (state.isCreatingRoute) {
+    if (elements.btnCreateManualRoute) elements.btnCreateManualRoute.classList.remove('hidden');
+    if (elements.btnUploadGpxToolbar) elements.btnUploadGpxToolbar.classList.add('hidden');
+  } else if (state.points.length > 0) {
+    if (elements.btnCreateManualRoute) elements.btnCreateManualRoute.classList.add('hidden');
+    if (elements.btnUploadGpxToolbar) elements.btnUploadGpxToolbar.classList.add('hidden');
+  } else {
+    if (elements.btnCreateManualRoute) elements.btnCreateManualRoute.classList.remove('hidden');
+    if (elements.btnUploadGpxToolbar) elements.btnUploadGpxToolbar.classList.remove('hidden');
   }
 }
 
@@ -1677,14 +1704,11 @@ function toggleCreateManualRoute() {
     } else {
       state.fileName = 'manual_route.gpx';
       state.baseName = 'manual_route';
-      elements.fileName.textContent = 'Rute Manual';
-      elements.fileMeta.textContent = `${state.points.length} titik`;
-      elements.fileInfo.classList.remove('hidden');
-      elements.dropZone.querySelector('.drop-zone-content').classList.add('hidden');
       elements.btnProcess.disabled = false;
       elements.btnManualSnap.disabled = false;
     }
   }
+  updateCreateManualVisibility();
 }
 
 function openAddManualTurnModal(latlng) {
@@ -1850,6 +1874,7 @@ async function runTurnAnalysis() {
     elements.btnDownloadKml.disabled = false;
     elements.btnDownloadGpx.disabled = false;
     elements.btnDownloadFit.disabled = false;
+    if (elements.btnToggleDownload) elements.btnToggleDownload.disabled = false;
     initIcons();
     showToast(t('toastAnalysisDone').replace('{count}', state.combinedInstructions.length), 'success');
   } catch (error) {
@@ -2195,13 +2220,13 @@ async function enrichStreetNamesFromOsm(instructions) {
           const data = await res.json();
           let roadName = '';
           if (data && data.address) roadName = data.address.road || data.address.pedestrian || data.address.cycleway || '';
-          
+
           if (roadName) {
             const climbPrefix = typeof t === 'function' ? t('climbPrefix') : 'Tanjakan';
             climb.name = `${climbPrefix} ${roadName}`;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
@@ -2322,7 +2347,7 @@ function finalizeInstructions(points, osmTurns, extraTurns, manualTurns = [], cl
   for (let i = 0; i < all.length; i++) {
     const cur = all[i];
     if (!cur.id) cur.id = Math.random().toString(36).substr(2, 9);
-    
+
     if (deduplicated.length === 0) {
       deduplicated.push(cur);
     } else {
@@ -2369,7 +2394,7 @@ function deleteTurn(index) {
   if (index < 0 || index >= state.combinedInstructions.length) return;
 
   const removed = state.combinedInstructions.splice(index, 1)[0];
-  
+
   const filterFn = t => t.id !== removed.id;
   if (removed.source === 'osm') {
     state.osmTurns = state.osmTurns.filter(filterFn);
@@ -3106,16 +3131,16 @@ function escapeXml(text) {
 // ==========================================
 async function generateFitFile() {
   if (state.points.length === 0) return;
-  
+
   const origBtnText = elements.btnDownloadFit.innerHTML;
   elements.btnDownloadFit.innerHTML = '<i class="lucide lucide-loader spinner"></i>';
   elements.btnDownloadFit.disabled = true;
-  
+
   try {
     const fitSdk = await import('https://esm.sh/@garmin/fitsdk@21.217.0');
     const Encoder = fitSdk.Encoder;
     const Profile = fitSdk.Profile;
-    
+
     const encoder = new Encoder();
 
     encoder.onMesg(Profile.MesgNum.FILE_ID, {
@@ -3133,7 +3158,7 @@ async function generateFitFile() {
     });
 
     const baseTime = Date.now();
-    
+
     state.points.forEach((pt, i) => {
       pt._fitDate = new Date(baseTime + i * 1000);
       encoder.onMesg(Profile.MesgNum.RECORD, {
@@ -3146,7 +3171,7 @@ async function generateFitFile() {
     });
 
     function mapToFitCp(code) {
-      switch(code) {
+      switch (code) {
         case 7: return Profile.types.coursePoint.sharpLeft;
         case 3: return Profile.types.coursePoint.left;
         case 5: return Profile.types.coursePoint.slightLeft;
@@ -3191,7 +3216,7 @@ async function generateFitFile() {
     const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
     let prefix = routeName.replace(/[^a-zA-Z0-9_-]/g, '_');
     saveAs(blob, `${prefix}.fit`);
-    
+
     showToast('Download file FIT berhasil!', 'success');
   } catch (err) {
     console.error(err);
