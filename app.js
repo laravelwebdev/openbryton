@@ -3497,7 +3497,7 @@ async function shareToBrytonActive() {
     let routeName = elements.brytonRouteName.value.trim() || state.baseName || 'BrytonRoute';
     let prefix = routeName.replace(/[^a-zA-Z0-9_-]/g, '_');
     const fileName = `${prefix}.fit`;
-    
+
     showToast(window.currentLang === 'id' ? 'Mengunggah ke server sementara...' : 'Uploading to temporary server...', 'info', false);
 
     const uploadUrl = `/api/upload?filename=${encodeURIComponent(fileName)}`;
@@ -3517,12 +3517,12 @@ async function shareToBrytonActive() {
       }
       throw new Error(`Upload gagal (${response.status}): ${errMsg}`);
     }
-    
+
     const result = await response.json();
     const fileUrl = result.url;
-    
+
     const brytonUrl = `https://www.brytonsport.com/applinkpt/#/?type=pt&fit=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(routeName)}`;
-    
+
     window.open(brytonUrl, '_blank');
     showToast(window.currentLang === 'id' ? 'Membuka Bryton Active...' : 'Opening Bryton Active...', 'success');
   } catch (err) {
