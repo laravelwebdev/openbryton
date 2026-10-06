@@ -3498,20 +3498,12 @@ async function shareToBrytonActive() {
     
     showToast(window.currentLang === 'id' ? 'Mengunggah ke server sementara...' : 'Uploading to temporary server...', 'info', false);
 
-    const binId = Math.random().toString(36).substring(2, 14);
-    const uploadUrl = `https://filebin.net/${binId}/${fileName}`;
-
-    // Create a new blob with type text/plain to avoid CORS preflight options
-    const plainBlob = new Blob([blob], { type: 'text/plain' });
-
-    const response = await fetch(uploadUrl, {
-      method: 'POST',
-      body: plainBlob
-    });
-
-    if (!response.ok) throw new Error('Failed to upload file.');
+    const storageRef = firebase.storage().ref();
+    const fileRef = storageRef.child(`temp_fits/${fileName}`);
     
-    const fileUrl = uploadUrl; // filebin directly serves the file on GET
+    // Upload to Firebase Storage
+    await fileRef.put(blob, { contentType: 'application/octet-stream' });
+    const fileUrl = await fileRef.getDownloadURL();
     
     const brytonUrl = `https://www.brytonsport.com/applinkpt/#/?type=pt&fit=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(routeName)}`;
     
