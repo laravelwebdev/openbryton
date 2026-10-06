@@ -1834,13 +1834,6 @@ async function runTurnAnalysis() {
       });
     });
 
-    if (!state.osmTurns.some(item => item.index === 0)) {
-      state.osmTurns.push({
-        id: Math.random().toString(36).substr(2, 9),
-        source: 'osm', index: 0, lat: state.points[0].lat, lon: state.points[0].lon,
-        directionCode: 0, instruction: typeof t === 'function' ? t('startRoute') : 'Mulai Rute', distFromStart: 0
-      });
-    }
 
     let combined = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
 

@@ -176,20 +176,10 @@
               </div>
             </div>
           </section>
-          <!-- Route Tools Card -->
-          <section class="card settings-card">
-            <h2 class="card-title"><i data-lucide="scissors"></i> <span data-i18n="routeToolsTitle">2. Alat Rute Tambahan</span></h2>
-            <div class="setting-item">
-               <button type="button" class="btn btn-outline" id="btnSimplifyRdp" style="width: 100%; display: flex; justify-content: center; gap: 8px;">
-                 <i data-lucide="minimize"></i> <span data-i18n="btnSimplifyRdp">Optimasi Garis Lurus (RDP)</span>
-               </button>
-               <p class="setting-desc" style="margin-top:8px;" data-i18n="rdpDesc">Membuang titik berlebih di jalur lurus untuk meringankan ukuran file tanpa mengubah bentuk asli rute.</p>
-            </div>
-          </section>
 
           <!-- Settings / Configuration Card -->
           <section class="card settings-card">
-            <h2 class="card-title"><i data-lucide="sliders"></i> <span data-i18n="tbtTitle">3. Pengaturan
+            <h2 class="card-title"><i data-lucide="sliders"></i> <span data-i18n="tbtTitle">2. Pengaturan
                 Turn-by-Turn</span></h2>
 
             <!-- OSM TBT Toggle -->
@@ -303,7 +293,7 @@
 
           <!-- Download Bryton ZIP Card -->
           <section class="card download-card" id="downloadCard">
-            <h2 class="card-title"><i data-lucide="package-check"></i> <span data-i18n="downloadTitle">4. Download Paket
+            <h2 class="card-title"><i data-lucide="package-check"></i> <span data-i18n="downloadTitle">3. Download Paket
                 Bryton</span></h2>
             <div style="margin-bottom: 16px; margin-top: 16px;">
               <label style="display:block; font-size:13px; margin-bottom:6px; font-weight:600;"
@@ -427,6 +417,11 @@
                 title="Tutup Rute (Sambung ke Awal)">
                 <i data-lucide="refresh-ccw"></i>
                 <span>Close Route</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnSimplifyRdp"
+                title="Optimasi Garis Lurus (RDP)">
+                <i data-lucide="minimize"></i>
+                <span data-i18n="btnSimplifyRdp">RDP</span>
               </button>
               <button type="button" class="btn btn-sm btn-outline" id="btnToggleEditRoute">
                 <i data-lucide="move"></i>
