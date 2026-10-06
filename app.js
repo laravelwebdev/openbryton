@@ -37,7 +37,8 @@ const state = {
     trackLine: null,
     turnMarkers: [],
     editHandles: [],
-    creationPins: []
+    creationPins: [],
+    hoverMarker: null
   },
   currentClimbHighlight: null
 };
@@ -624,6 +625,85 @@ function bindEvents() {
         } else {
           showToast(t('toastRdpNoOp'), 'info');
         }
+      }
+    });
+  }
+
+  // Add Chart Hover Event Listeners
+  if (elements.elevationCanvas) {
+    elements.elevationCanvas.addEventListener('mousemove', (e) => {
+      if (state.points.length === 0) return;
+      
+      const rect = elements.elevationCanvas.getBoundingClientRect();
+      const padLeft = 40;
+      const padRight = 10;
+      const padTop = 10;
+      const padBottom = 20;
+      const drawWidth = rect.width - padLeft - padRight;
+      
+      let x = e.clientX - rect.left - padLeft;
+      if (x < 0) x = 0;
+      if (x > drawWidth) x = drawWidth;
+      
+      const fraction = x / drawWidth;
+      const targetDist = fraction * state.totalDistance;
+      
+      let closestIdx = 0;
+      let minDist = Infinity;
+      for (let i = 0; i < state.points.length; i++) {
+        const d = Math.abs(state.points[i].distFromStart - targetDist);
+        if (d < minDist) {
+          minDist = d;
+          closestIdx = i;
+        }
+      }
+      
+      const pt = state.points[closestIdx];
+      
+      let hoverLine = document.getElementById('chartHoverLine');
+      if (!hoverLine) {
+        hoverLine = document.createElement('div');
+        hoverLine.id = 'chartHoverLine';
+        hoverLine.style.position = 'absolute';
+        hoverLine.style.width = '2px';
+        hoverLine.style.backgroundColor = '#ef4444'; // Red line
+        hoverLine.style.pointerEvents = 'none';
+        hoverLine.style.zIndex = '10';
+        hoverLine.style.boxShadow = '0 0 5px rgba(239, 68, 68, 0.5)';
+        elements.elevationCanvas.parentNode.style.position = 'relative';
+        elements.elevationCanvas.parentNode.appendChild(hoverLine);
+      }
+      
+      const canvasOffsetLeft = elements.elevationCanvas.offsetLeft;
+      const canvasOffsetTop = elements.elevationCanvas.offsetTop;
+      
+      hoverLine.style.display = 'block';
+      hoverLine.style.left = (canvasOffsetLeft + padLeft + (pt.distFromStart / state.totalDistance) * drawWidth) + 'px';
+      hoverLine.style.top = (canvasOffsetTop + padTop) + 'px';
+      hoverLine.style.height = (rect.height - padTop - padBottom) + 'px';
+      
+      if (!state.mapLayers.hoverMarker) {
+        state.mapLayers.hoverMarker = L.circleMarker([pt.lat, pt.lon], {
+          radius: 7,
+          color: '#ffffff',
+          weight: 2,
+          fillColor: '#ef4444',
+          fillOpacity: 1,
+          pane: 'markerPane'
+        }).addTo(state.map);
+      } else {
+        state.mapLayers.hoverMarker.setLatLng([pt.lat, pt.lon]);
+        if (!state.map.hasLayer(state.mapLayers.hoverMarker)) {
+          state.mapLayers.hoverMarker.addTo(state.map);
+        }
+      }
+    });
+
+    elements.elevationCanvas.addEventListener('mouseleave', () => {
+      const hoverLine = document.getElementById('chartHoverLine');
+      if (hoverLine) hoverLine.style.display = 'none';
+      if (state.mapLayers.hoverMarker && state.map) {
+        state.map.removeLayer(state.mapLayers.hoverMarker);
       }
     });
   }
