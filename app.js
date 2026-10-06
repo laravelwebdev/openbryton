@@ -631,7 +631,7 @@ function bindEvents() {
 
   // Add Chart Hover Event Listeners
   if (elements.elevationCanvas) {
-    elements.elevationCanvas.addEventListener('mousemove', (e) => {
+    const handleChartHover = (clientX) => {
       if (state.points.length === 0) return;
       
       const rect = elements.elevationCanvas.getBoundingClientRect();
@@ -641,7 +641,7 @@ function bindEvents() {
       const padBottom = 20;
       const drawWidth = rect.width - padLeft - padRight;
       
-      let x = e.clientX - rect.left - padLeft;
+      let x = clientX - rect.left - padLeft;
       if (x < 0) x = 0;
       if (x > drawWidth) x = drawWidth;
       
@@ -692,15 +692,34 @@ function bindEvents() {
           state.mapLayers.hoverMarker.addTo(state.map);
         }
       }
-    });
+    };
 
-    elements.elevationCanvas.addEventListener('mouseleave', () => {
+    const handleChartLeave = () => {
       const hoverLine = document.getElementById('chartHoverLine');
       if (hoverLine) hoverLine.style.display = 'none';
       if (state.mapLayers.hoverMarker && state.map) {
         state.map.removeLayer(state.mapLayers.hoverMarker);
       }
-    });
+    };
+
+    elements.elevationCanvas.addEventListener('mousemove', (e) => handleChartHover(e.clientX));
+    
+    elements.elevationCanvas.addEventListener('mouseleave', handleChartLeave);
+
+    elements.elevationCanvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        e.preventDefault(); // Prevent scrolling while interacting with the chart
+        handleChartHover(e.touches[0].clientX);
+      }
+    }, { passive: false });
+
+    elements.elevationCanvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) {
+        handleChartHover(e.touches[0].clientX);
+      }
+    }, { passive: true });
+
+    elements.elevationCanvas.addEventListener('touchend', handleChartLeave);
   }
 }
 
@@ -1316,15 +1335,18 @@ function setupRouteEditHandles() {
       setupRouteEditHandles();
     });
 
-    marker.on('contextmenu', (e) => {
-      e.originalEvent.preventDefault();
+    const deletePoint = (e) => {
+      if (e && e.originalEvent) e.originalEvent.preventDefault();
       shiftTurnIndices(pointIndex + 1, -1);
       state.points.splice(pointIndex, 1);
       recalculateRouteDistances();
       saveHistoryState();
       renderTrackOnMap(false);
       setupRouteEditHandles();
-    });
+    };
+
+    marker.on('contextmenu', deletePoint);
+    marker.on('dblclick', deletePoint);
 
     state.mapLayers.editHandles.push(marker);
   }
