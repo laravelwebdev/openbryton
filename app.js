@@ -3505,7 +3505,16 @@ async function shareToBrytonActive() {
       body: blob
     });
 
-    if (!response.ok) throw new Error('Gagal mengunggah file ke Vercel Blob.');
+    if (!response.ok) {
+      let errMsg = 'Unknown error';
+      try {
+        const errorData = await response.json();
+        errMsg = errorData.error || response.statusText;
+      } catch (e) {
+        errMsg = response.statusText;
+      }
+      throw new Error(`Upload gagal (${response.status}): ${errMsg}`);
+    }
     
     const result = await response.json();
     const fileUrl = result.url;
