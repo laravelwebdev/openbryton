@@ -680,6 +680,18 @@ function resetState() {
       <td colspan="8" class="text-center">${typeof t === 'function' ? t('emptyTable') : 'Belum ada data turn-by-turn. Silakan upload file GPX terlebih dahulu.'}</td>
     </tr>
   `;
+  const poisBody = document.getElementById('poisTableBody');
+  const climbsBody = document.getElementById('climbsTableBody');
+  if (poisBody) poisBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyPois') : 'Belum ada data.'}</td></tr>`;
+  if (climbsBody) climbsBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
+  
+  const bTurns = document.getElementById('badge-turns');
+  const bPois = document.getElementById('badge-pois');
+  const bClimbs = document.getElementById('badge-climbs');
+  if (bTurns) bTurns.textContent = "0";
+  if (bPois) bPois.textContent = "0";
+  if (bClimbs) bClimbs.textContent = "0";
+
   elements.turnCounterBadge.textContent = getInstructionCountLabel(0);
   elements.elevationCanvas.style.display = 'none';
 }
