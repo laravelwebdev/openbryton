@@ -572,7 +572,9 @@ function bindEvents() {
   // Modal events
   elements.btnCloseModal.addEventListener('click', closeModal);
   elements.btnCancelAddTurn.addEventListener('click', closeModal);
-  elements.btnConfirmAddTurn.addEventListener('click', confirmAddManualTurn);
+  if(elements.btnConfirmAddTurn) elements.btnConfirmAddTurn.addEventListener('click', confirmAddManualTurn);
+  const btnConfirmAddPoi = document.getElementById('btnConfirmAddPoi');
+  if (btnConfirmAddPoi) btnConfirmAddPoi.addEventListener('click', confirmAddPoi);
 
   if (elements.btnSimplifyRdp) {
     elements.btnSimplifyRdp.addEventListener('click', () => {
@@ -1672,67 +1674,66 @@ function toggleCreateManualRoute() {
 
 function openAddManualTurnModal(latlng) {
   state.pendingManualCoord = latlng;
-  elements.manualTurnCoords.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
-  elements.manualTurnText.value = '';
-
-  const optTurns = document.getElementById('optgroupTurns');
-  const optPois = document.getElementById('optgroupPois');
-
   if (state.manualAddMode === 'turn') {
-    if (optTurns) {
-      optTurns.style.display = '';
-      optTurns.hidden = false;
-      optTurns.disabled = false;
-    }
-    if (optPois) {
-      optPois.style.display = 'none';
-      optPois.hidden = true;
-      optPois.disabled = true;
-    }
-    elements.manualTurnDirection.value = "10"; // Straight as default
+    document.getElementById('addTurnCoords').textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+    document.getElementById('addTurnText').value = '';
+    document.getElementById('addTurnDirection').value = '10';
+    document.getElementById('modalAddTurn').classList.remove('hidden');
+    document.getElementById('modalAddTurn').style.display = 'flex';
   } else {
-    if (optTurns) {
-      optTurns.style.display = 'none';
-      optTurns.hidden = true;
-      optTurns.disabled = true;
-    }
-    if (optPois) {
-      optPois.style.display = '';
-      optPois.hidden = false;
-      optPois.disabled = false;
-    }
-    elements.manualTurnDirection.value = "106"; // Water as default POI
+    document.getElementById('addPoiCoords').textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+    document.getElementById('addPoiText').value = '';
+    document.getElementById('addPoiDirection').value = '106';
+    document.getElementById('modalAddPoi').classList.remove('hidden');
+    document.getElementById('modalAddPoi').style.display = 'flex';
   }
-
-  elements.modalAddTurn.classList.remove('hidden');
-  elements.modalAddTurn.style.display = 'flex';
 }
 
-function closeModal() {
-  elements.modalAddTurn.classList.add('hidden');
-  elements.modalAddTurn.style.display = 'none';
+function closeAllModals() {
+  const modals = ['modalAddTurn', 'modalAddPoi', 'modalEditTurn', 'modalEditPoi', 'modalEditClimb'];
+  modals.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.classList.add('hidden');
+      el.style.display = 'none';
+    }
+  });
   state.pendingManualCoord = null;
+  state.editingItem = null;
   if (state.isAddingManualTurn) {
     toggleAddManualTurnMode(state.manualAddMode);
   }
 }
+window.closeAllModals = closeAllModals;
+
+function closeModal() {
+  closeAllModals();
+}
 
 function confirmAddManualTurn() {
   if (!state.pendingManualCoord) return;
-
   const lat = state.pendingManualCoord.lat;
   const lon = state.pendingManualCoord.lng;
-  const dirCode = parseInt(elements.manualTurnDirection.value, 10);
-  let text = elements.manualTurnText.value.trim();
-  if (!text) {
-    if (dirCode >= 100) {
-      let poiCount = state.manualTurns.filter(t => t.directionCode >= 100).length;
-      text = `POI ${poiCount + 1}`;
-    } else {
-      text = getDirectionLabel(dirCode);
-    }
-  }
+  const dirCode = parseInt(document.getElementById('addTurnDirection').value, 10);
+  let text = document.getElementById('addTurnText').value.trim() || getDirectionLabel(dirCode);
+  _addManualItem(lat, lon, dirCode, text);
+}
 
+function confirmAddPoi() {
+  if (!state.pendingManualCoord) return;
+  const lat = state.pendingManualCoord.lat;
+  const lon = state.pendingManualCoord.lng;
+  const dirCode = parseInt(document.getElementById('addPoiDirection').value, 10);
+  let text = document.getElementById('addPoiText').value.trim();
+  if (!text) {
+    let poiCount = state.manualTurns.filter(t => t.directionCode >= 100).length;
+    text = `POI ${poiCount + 1}`;
+  }
+  _addManualItem(lat, lon, dirCode, text);
+}
+window.confirmAddPoi = confirmAddPoi;
+
+function _addManualItem(lat, lon, dirCode, text) {
   const closestIdx = findClosestPointIndex(state.points, lat, lon);
   const pt = state.points[closestIdx];
 
@@ -1747,7 +1748,7 @@ function confirmAddManualTurn() {
     distFromStart: pt.distFromStart
   });
 
-  closeModal();
+  closeAllModals();
   showToast(t('toastTurnAdded').replace('{text}', text), 'success');
 
   // Re-finalize instructions & re-render
@@ -2567,7 +2568,7 @@ function renderTurnsTable(instructions) {
         <td><strong>${instructionText}</strong></td>
         <td>${Math.round(inst.distance || 0)}</td>
         <td class="coord-cell">${inst.lat.toFixed(5)}, ${inst.lon.toFixed(5)}</td>
-        <td class="text-center">${btnEdit}${btnDel}</td>
+        <td class="text-center"><div style="display:flex; justify-content:center; align-items:center; gap:4px;">${btnEdit}${btnDel}</div></td>
       `;
       poisBody.appendChild(tr);
     } else {
@@ -2589,7 +2590,7 @@ function renderTurnsTable(instructions) {
         <td>${Math.round(inst.distance || 0)}</td>
         <td>${formatTime(inst.time || 0)}</td>
         <td class="coord-cell">${inst.lat.toFixed(5)}, ${inst.lon.toFixed(5)}</td>
-        <td class="text-center">${btnEdit}${btnDel}</td>
+        <td class="text-center"><div style="display:flex; justify-content:center; align-items:center; gap:4px;">${btnEdit}${btnDel}</div></td>
       `;
       turnsBody.appendChild(tr);
     }
@@ -2619,7 +2620,7 @@ function renderTurnsTable(instructions) {
         <td>${climb.avgGrad.toFixed(1)}%</td>
         <td>${Math.round(climb.dist)}</td>
         <td class="coord-cell">${state.points[climb.startIndex].lat.toFixed(5)}, ${state.points[climb.startIndex].lon.toFixed(5)}</td>
-        <td class="text-center">${btnEdit}</td>
+        <td class="text-center"><div style="display:flex; justify-content:center; align-items:center; gap:4px;">${btnEdit}</div></td>
       `;
       climbsBody.appendChild(tr);
     });
@@ -2647,21 +2648,26 @@ function renderTurnsTable(instructions) {
       const type = btn.getAttribute('data-type');
       const idx = parseInt(btn.getAttribute('data-index'), 10);
       if (type === 'climb') {
+        state.editingItem = { type, idx };
         const climb = state.climbs[idx];
         const currentName = climb.name || 'Tanjakan ' + (idx + 1);
-        const newName = prompt("Edit Nama Tanjakan:", currentName);
-        if (newName !== null && newName.trim() !== '') {
-          climb.name = newName.trim();
-          renderTurnsTable(state.combinedInstructions);
-        }
+        document.getElementById('editClimbTextOnly').value = currentName;
+        document.getElementById('modalEditClimb').classList.remove('hidden');
+        document.getElementById('modalEditClimb').style.display = 'flex';
       } else if (type === 'turn') {
         state.editingItem = { type, idx };
         const inst = state.combinedInstructions[idx];
-        document.getElementById('modalEditTitle').innerText = (inst.directionCode >= 100) ? 'Edit POI' : 'Edit Belokan';
-        document.getElementById('editTurnDirection').value = inst.directionCode;
-        document.getElementById('editTurnText').value = getTranslatedInstruction(inst.instruction, inst.directionCode);
-        document.getElementById('modalEditItem').classList.remove('hidden');
-        document.getElementById('modalEditItem').style.display = 'flex';
+        if (inst.directionCode >= 100) {
+          document.getElementById('editPoiDirectionOnly').value = inst.directionCode;
+          document.getElementById('editPoiTextOnly').value = getTranslatedInstruction(inst.instruction, inst.directionCode);
+          document.getElementById('modalEditPoi').classList.remove('hidden');
+          document.getElementById('modalEditPoi').style.display = 'flex';
+        } else {
+          document.getElementById('editTurnDirectionOnly').value = inst.directionCode;
+          document.getElementById('editTurnTextOnly').value = getTranslatedInstruction(inst.instruction, inst.directionCode);
+          document.getElementById('modalEditTurn').classList.remove('hidden');
+          document.getElementById('modalEditTurn').style.display = 'flex';
+        }
       }
     });
   });
@@ -2669,37 +2675,62 @@ function renderTurnsTable(instructions) {
   initIcons();
 }
 
-function confirmEditItem() {
+function confirmEditTurn() {
   if (!state.editingItem) return;
   const { type, idx } = state.editingItem;
-  
   if (type === 'turn') {
     const inst = state.combinedInstructions[idx];
-    const newDirCode = parseInt(document.getElementById('editTurnDirection').value, 10);
-    const newText = document.getElementById('editTurnText').value.trim();
-    
-    inst.directionCode = newDirCode;
-    inst.instruction = newText;
-    
-    // Attempt to update the original turn as well based on id/source
-    if (inst.source === 'osm') {
-      const match = state.osmTurns.find(t => t.id === inst.id);
-      if (match) { match.directionCode = newDirCode; match.instruction = newText; }
-    } else if (inst.source === 'extra') {
-      const match = state.extraTurns.find(t => t.id === inst.id);
-      if (match) { match.directionCode = newDirCode; match.instruction = newText; }
-    } else if (inst.source === 'manual') {
-      const match = state.manualTurns.find(t => t.id === inst.id);
-      if (match) { match.directionCode = newDirCode; match.instruction = newText; }
-    }
-    
-    renderTurnsTable(state.combinedInstructions);
-    renderTurnMarkersOnMap(state.combinedInstructions);
+    const newDirCode = parseInt(document.getElementById('editTurnDirectionOnly').value, 10);
+    const newText = document.getElementById('editTurnTextOnly').value.trim();
+    _applyTurnEdit(inst, newDirCode, newText);
   }
-  
-  document.getElementById('modalEditItem').style.display = 'none';
-  document.getElementById('modalEditItem').classList.add('hidden');
-  state.editingItem = null;
+  closeAllModals();
+}
+window.confirmEditTurn = confirmEditTurn;
+
+function confirmEditPoi() {
+  if (!state.editingItem) return;
+  const { type, idx } = state.editingItem;
+  if (type === 'turn') {
+    const inst = state.combinedInstructions[idx];
+    const newDirCode = parseInt(document.getElementById('editPoiDirectionOnly').value, 10);
+    const newText = document.getElementById('editPoiTextOnly').value.trim();
+    _applyTurnEdit(inst, newDirCode, newText);
+  }
+  closeAllModals();
+}
+window.confirmEditPoi = confirmEditPoi;
+
+function confirmEditClimb() {
+  if (!state.editingItem) return;
+  const { type, idx } = state.editingItem;
+  if (type === 'climb') {
+    const climb = state.climbs[idx];
+    const newText = document.getElementById('editClimbTextOnly').value.trim();
+    if (newText) {
+      climb.name = newText;
+      renderTurnsTable(state.combinedInstructions);
+    }
+  }
+  closeAllModals();
+}
+window.confirmEditClimb = confirmEditClimb;
+
+function _applyTurnEdit(inst, newDirCode, newText) {
+  inst.directionCode = newDirCode;
+  inst.instruction = newText;
+  if (inst.source === 'osm') {
+    const match = state.osmTurns.find(t => t.id === inst.id);
+    if (match) { match.directionCode = newDirCode; match.instruction = newText; }
+  } else if (inst.source === 'extra') {
+    const match = state.extraTurns.find(t => t.id === inst.id);
+    if (match) { match.directionCode = newDirCode; match.instruction = newText; }
+  } else if (inst.source === 'manual') {
+    const match = state.manualTurns.find(t => t.id === inst.id);
+    if (match) { match.directionCode = newDirCode; match.instruction = newText; }
+  }
+  renderTurnsTable(state.combinedInstructions);
+  renderTurnMarkersOnMap(state.combinedInstructions);
 }
 
 function highlightClimb(climb) {

@@ -605,108 +605,139 @@
       <div class="toast-msg" id="toastMsg">Notifikasi</div>
     </div>
 
-    <!-- Modal Add Manual Turn -->
-    <div id="modalAddTurn" class="modal-backdrop hidden"
-      style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+    <!-- Modal Add TBT -->
+    <div id="modalAddTurn" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
       <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="corner-up-right"></i> <span
-            data-i18n="modalTitle">Tambah Belokan Manual</span></h3>
-        <p style="font-size:13px; color:#9ca3af; margin-bottom:15px;"><span data-i18n="modalCoord">Koordinat:</span>
-          <span id="manualTurnCoords"></span></p>
-
+        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="corner-up-right"></i> <span data-i18n="modalTitleTbt">Tambah Belokan (TBT)</span></h3>
+        <p style="font-size:13px; color:#9ca3af; margin-bottom:15px;">Koordinat: <span id="addTurnCoords"></span></p>
         <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;" data-i18n="modalDir">Arah Belokan</label>
-          <select id="manualTurnDirection"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
-            <optgroup label="Arah Navigasi" id="optgroupTurns">
-              <option value="1" data-i18n="dirGoAhead">Lurus (Go Ahead)</option>
-              <option value="2" data-i18n="dirRight">Belok Kanan</option>
-              <option value="3" data-i18n="dirLeft">Belok Kiri</option>
-              <option value="4" data-i18n="dirSlightRight">Serong Kanan</option>
-              <option value="5" data-i18n="dirSlightLeft">Serong Kiri</option>
-              <option value="6" data-i18n="dirSharpRight">Belok Tajam Kanan</option>
-              <option value="7" data-i18n="dirSharpLeft">Belok Tajam Kiri</option>
-              <option value="8" data-i18n="dirExitRight">Exit Kanan</option>
-              <option value="9" data-i18n="dirExitLeft">Exit Kiri</option>
-              <option value="10" data-i18n="dirStraight">Continue Straight</option>
-              <option value="11" data-i18n="dirUturn">Putar Balik Kanan</option>
-              <option value="12" data-i18n="dirUturnLeft">Putar Balik Kiri</option>
-            </optgroup>
-            <optgroup label="Point of Interest (Bryton)" id="optgroupPois">
-              <option value="101" data-i18n="poiSummit">Camping</option>
-              <option value="100" data-i18n="poiTarget">Target</option>
-              <option value="102" data-i18n="poiFood">Food</option>
-              <option value="103" data-i18n="poiFirstAid">First Aid</option>
-              <option value="104" data-i18n="poiCheck">Checkpoint</option>
-              <option value="105" data-i18n="poiGroup">Group</option>
-              <option value="106" data-i18n="poiWater">Water</option>
-              <option value="107" data-i18n="poiSprint">Sprint</option>
-            </optgroup>
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Arah Belokan</label>
+          <select id="addTurnDirection" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            <option value="1">Lurus (Go Ahead)</option>
+            <option value="2">Belok Kanan</option>
+            <option value="3">Belok Kiri</option>
+            <option value="4">Serong Kanan</option>
+            <option value="5">Serong Kiri</option>
+            <option value="6">Belok Tajam Kanan</option>
+            <option value="7">Belok Tajam Kiri</option>
+            <option value="8">Exit Kanan</option>
+            <option value="9">Exit Kiri</option>
+            <option value="10">Continue Straight</option>
+            <option value="11">Putar Balik Kanan</option>
+            <option value="12">Putar Balik Kiri</option>
           </select>
         </div>
-
         <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;" data-i18n="modalInst">Nama Jalan / Instruksi
-            (Opsional)</label>
-          <input type="text" id="manualTurnText" data-i18n-placeholder="modalInstPlaceholder"
-            placeholder="Contoh: Jl. Sudirman"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Jalan / Instruksi</label>
+          <input type="text" id="addTurnText" placeholder="Contoh: Jl. Sudirman" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
         </div>
-
         <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn btn-outline" id="btnCancelAddTurn" data-i18n="modalBtnCancel">Batal</button>
-          <button type="button" class="btn btn-primary" id="btnConfirmAddTurn"
-            data-i18n="modalBtnAdd">Tambahkan</button>
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmAddTurn">Tambahkan</button>
         </div>
       </div>
     </div>
-    
-    <!-- Modal Edit Item -->
-    <div id="modalEditItem" class="modal-backdrop hidden"
-      style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span id="modalEditTitle">Edit Item</span></h3>
 
+    <!-- Modal Add POI -->
+    <div id="modalAddPoi" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="map-pin"></i> <span data-i18n="modalTitlePoi">Tambah POI</span></h3>
+        <p style="font-size:13px; color:#9ca3af; margin-bottom:15px;">Koordinat: <span id="addPoiCoords"></span></p>
         <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Arah / Ikon</label>
-          <select id="editTurnDirection"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
-            <optgroup label="Arah Navigasi">
-              <option value="1">Lurus (Go Ahead)</option>
-              <option value="2">Belok Kanan</option>
-              <option value="3">Belok Kiri</option>
-              <option value="4">Serong Kanan</option>
-              <option value="5">Serong Kiri</option>
-              <option value="6">Belok Tajam Kanan</option>
-              <option value="7">Belok Tajam Kiri</option>
-              <option value="8">Exit Kanan</option>
-              <option value="9">Exit Kiri</option>
-              <option value="10">Continue Straight</option>
-              <option value="11">Putar Balik Kanan</option>
-              <option value="12">Putar Balik Kiri</option>
-            </optgroup>
-            <optgroup label="Point of Interest (Bryton)">
-              <option value="101">Camping</option>
-              <option value="100">Target</option>
-              <option value="102">Food</option>
-              <option value="103">First Aid</option>
-              <option value="104">Checkpoint</option>
-              <option value="105">Group</option>
-              <option value="106">Water</option>
-              <option value="107">Sprint</option>
-            </optgroup>
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Ikon POI</label>
+          <select id="addPoiDirection" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            <option value="106">Water</option>
+            <option value="101">Camping</option>
+            <option value="100">Target</option>
+            <option value="102">Food</option>
+            <option value="103">First Aid</option>
+            <option value="104">Checkpoint</option>
+            <option value="105">Group</option>
+            <option value="107">Sprint</option>
           </select>
         </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama POI</label>
+          <input type="text" id="addPoiText" placeholder="Contoh: Warung Kopi" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
+          <button type="button" class="btn btn-primary" id="btnConfirmAddPoi">Tambahkan</button>
+        </div>
+      </div>
+    </div>
 
+    <!-- Modal Edit TBT -->
+    <div id="modalEditTurn" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span>Edit Belokan</span></h3>
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Arah Belokan</label>
+          <select id="editTurnDirectionOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            <option value="1">Lurus (Go Ahead)</option>
+            <option value="2">Belok Kanan</option>
+            <option value="3">Belok Kiri</option>
+            <option value="4">Serong Kanan</option>
+            <option value="5">Serong Kiri</option>
+            <option value="6">Belok Tajam Kanan</option>
+            <option value="7">Belok Tajam Kiri</option>
+            <option value="8">Exit Kanan</option>
+            <option value="9">Exit Kiri</option>
+            <option value="10">Continue Straight</option>
+            <option value="11">Putar Balik Kanan</option>
+            <option value="12">Putar Balik Kiri</option>
+          </select>
+        </div>
         <div style="margin-bottom:20px;">
           <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Jalan / Instruksi</label>
-          <input type="text" id="editTurnText"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+          <input type="text" id="editTurnTextOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
         </div>
-
         <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn btn-outline" onclick="document.getElementById('modalEditItem').style.display='none'; document.getElementById('modalEditItem').classList.add('hidden');">Batal</button>
-          <button type="button" class="btn btn-primary" onclick="confirmEditItem()">Simpan</button>
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
+          <button type="button" class="btn btn-primary" onclick="confirmEditTurn()">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Edit POI -->
+    <div id="modalEditPoi" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span>Edit POI</span></h3>
+        <div style="margin-bottom:12px;">
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Ikon POI</label>
+          <select id="editPoiDirectionOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            <option value="101">Camping</option>
+            <option value="100">Target</option>
+            <option value="102">Food</option>
+            <option value="103">First Aid</option>
+            <option value="104">Checkpoint</option>
+            <option value="105">Group</option>
+            <option value="106">Water</option>
+            <option value="107">Sprint</option>
+          </select>
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama POI</label>
+          <input type="text" id="editPoiTextOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
+          <button type="button" class="btn btn-primary" onclick="confirmEditPoi()">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Edit Climb -->
+    <div id="modalEditClimb" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
+      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span>Edit Tanjakan</span></h3>
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Tanjakan</label>
+          <input type="text" id="editClimbTextOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
+          <button type="button" class="btn btn-primary" onclick="confirmEditClimb()">Simpan</button>
         </div>
       </div>
     </div>
