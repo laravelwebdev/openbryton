@@ -988,6 +988,12 @@ function simplifyRoute(epsilonMeters = 1.5) {
   if (state.combinedInstructions) {
     state.combinedInstructions.forEach(t => keepIndices.add(t.index));
   }
+  if (state.climbs) {
+    state.climbs.forEach(c => {
+      keepIndices.add(c.startIndex);
+      keepIndices.add(c.endIndex);
+    });
+  }
 
   const keepArr = Array.from(keepIndices).sort((a, b) => a - b);
   const simplifiedPoints = [];
@@ -1063,12 +1069,19 @@ function simplifyRoute(epsilonMeters = 1.5) {
   updateTurns(state.extraTurns);
   updateTurns(state.manualTurns);
   updateTurns(state.climbTurns);
-  if (state.combinedInstructions) {
-    updateTurns(state.combinedInstructions);
+  
+  if (state.climbs) {
+    state.climbs.forEach(c => {
+      if (oldToNewMap.has(c.startIndex)) c.startIndex = oldToNewMap.get(c.startIndex);
+      if (oldToNewMap.has(c.endIndex)) c.endIndex = oldToNewMap.get(c.endIndex);
+    });
   }
 
   state.points = simplifiedPoints;
   recalculateRouteDistances();
+  
+  state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+  updateStatsAndUI();
 }
 
 /**
@@ -1225,6 +1238,13 @@ function shiftTurnIndices(startIndex, amount) {
   shiftArr(state.manualTurns);
   shiftArr(state.climbTurns);
   // Do not shift combinedInstructions to prevent double-shifting of the same object references
+
+  if (state.climbs) {
+    for (let i = 0; i < state.climbs.length; i++) {
+      if (state.climbs[i].startIndex >= startIndex) state.climbs[i].startIndex += amount;
+      if (state.climbs[i].endIndex >= startIndex) state.climbs[i].endIndex += amount;
+    }
+  }
 }
 
 /**
@@ -1493,6 +1513,8 @@ function recalculateRouteDistances() {
 async function saveRouteEditing() {
   state.originalPointsBeforeEdit = null;
   recalculateRouteDistances();
+  state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+  updateStatsAndUI();
   toggleRouteEditing();
   showToast(t('toastRouteUpdated'), 'success');
 }
