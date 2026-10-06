@@ -1749,16 +1749,16 @@ function closeModal() {
   closeAllModals();
 }
 
-function confirmAddManualTurn() {
+async function confirmAddManualTurn() {
   if (!state.pendingManualCoord) return;
   const lat = state.pendingManualCoord.lat;
   const lon = state.pendingManualCoord.lng;
   const dirCode = parseInt(document.getElementById('addTurnDirection').value, 10);
   let text = document.getElementById('addTurnText').value.trim() || getDirectionLabel(dirCode);
-  _addManualItem(lat, lon, dirCode, text);
+  await _addManualItem(lat, lon, dirCode, text);
 }
 
-function confirmAddPoi() {
+async function confirmAddPoi() {
   if (!state.pendingManualCoord) return;
   const lat = state.pendingManualCoord.lat;
   const lon = state.pendingManualCoord.lng;
@@ -1768,18 +1768,18 @@ function confirmAddPoi() {
     let poiCount = state.manualTurns.filter(t => t.directionCode >= 100).length;
     text = `POI ${poiCount + 1}`;
   }
-  _addManualItem(lat, lon, dirCode, text);
+  await _addManualItem(lat, lon, dirCode, text);
 }
 window.confirmAddPoi = confirmAddPoi;
 
-function _addManualItem(lat, lon, dirCode, text) {
-  const closestIdx = findClosestPointIndex(state.points, lat, lon);
-  const pt = state.points[closestIdx];
+async function _addManualItem(lat, lon, dirCode, text) {
+  const targetIdx = await ensurePointForManualItem(lat, lon);
+  const pt = state.points[targetIdx];
 
   state.manualTurns.push({
     id: Math.random().toString(36).substr(2, 9),
     source: 'manual',
-    index: closestIdx,
+    index: targetIdx,
     lat: pt.lat,
     lon: pt.lon,
     directionCode: dirCode,
@@ -1792,7 +1792,31 @@ function _addManualItem(lat, lon, dirCode, text) {
 
   // Re-finalize instructions & re-render
   state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+  renderTrackOnMap(false);
   updateStatsAndUI();
+}
+
+async function ensurePointForManualItem(lat, lon) {
+  if (state.points.length === 0) return 0;
+
+  const closestIdx = findClosestPointIndex(state.points, lat, lon);
+  const closestPt = state.points[closestIdx];
+  const snapThresholdMeters = 5;
+  const distToClosest = haversineDistance(closestPt.lat, closestPt.lon, lat, lon);
+
+  if (state.points.length < 2 || distToClosest <= snapThresholdMeters) {
+    return closestIdx;
+  }
+
+  const insertIdx = findBestInsertIndex(state.points, lat, lon);
+  shiftTurnIndices(insertIdx, 1);
+
+  const newPt = { lat, lon, ele: closestPt.ele ?? 0, distFromStart: 0 };
+  await fetchElevationForSinglePoint(newPt);
+  state.points.splice(insertIdx, 0, newPt);
+  recalculateRouteDistances();
+
+  return insertIdx;
 }
 
 /**
