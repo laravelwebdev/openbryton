@@ -664,13 +664,8 @@ function bindEvents() {
       if (!hoverLine) {
         hoverLine = document.createElement('div');
         hoverLine.id = 'chartHoverLine';
-        hoverLine.style.position = 'absolute';
-        hoverLine.style.width = '2px';
-        hoverLine.style.backgroundColor = '#ef4444'; // Red line
-        hoverLine.style.pointerEvents = 'none';
-        hoverLine.style.zIndex = '10';
-        hoverLine.style.boxShadow = '0 0 5px rgba(239, 68, 68, 0.5)';
-        elements.elevationCanvas.parentNode.style.position = 'relative';
+        hoverLine.className = 'chart-hover-line';
+        elements.elevationCanvas.parentNode.classList.add('elevation-canvas-wrapper');
         elements.elevationCanvas.parentNode.appendChild(hoverLine);
       }
       
@@ -1293,15 +1288,7 @@ function setupRouteEditHandles() {
     const handleIcon = L.divIcon({
       className: 'route-edit-handle',
       html: `
-        <div style="
-          width: 14px;
-          height: 14px;
-          background: #ffffff;
-          border: 3px solid #3b82f6;
-          border-radius: 50%;
-          cursor: grab;
-          box-shadow: 0 0 8px rgba(0,0,0,0.6);
-        "></div>
+        <div class="edit-handle-marker"></div>
       `,
       iconSize: [14, 14],
       iconAnchor: [7, 7]
@@ -2706,21 +2693,7 @@ function renderTurnMarkersOnMap(instructions) {
     const customIcon = L.divIcon({
       className: 'custom-map-marker',
       html: `
-        <div style="
-          background: ${color};
-          color: #0b0f19;
-          font-weight: 800;
-          font-size: 11px;
-          border-radius: 50%;
-          width: 22px;
-          height: 22px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 2px solid #ffffff;
-          box-shadow: 0 0 10px ${color};
-          cursor: pointer;
-        ">
+        <div class="map-turn-marker" style="background: ${color}; box-shadow: 0 0 10px ${color};">
           ${symbol}
         </div>
       `,
@@ -2730,9 +2703,9 @@ function renderTurnMarkersOnMap(instructions) {
 
     const marker = L.marker([inst.lat, inst.lon], { icon: customIcon })
       .bindPopup(`
-        <div style="font-family: sans-serif; font-size: 12px;">
+        <div class="popup-source-text">
           <strong>#${idx + 1} ${escapeHtml(getTranslatedInstruction(inst.instruction, inst.directionCode))}</strong><br>
-          <span style="color: #888;">${t('popupSource')} ${inst.source.toUpperCase()}</span><br>
+          <span class="popup-source-label">${t('popupSource')} ${inst.source.toUpperCase()}</span><br>
           <span>${t('popupDistance')} ${Math.round(inst.distance)} m</span>
         </div>
       `)
@@ -2861,14 +2834,14 @@ function renderTurnsTable(instructions) {
     if (inst.directionCode === 190 || inst.directionCode === 191) {
       return; // Skip, climbs are handled below
     } else if (inst.directionCode >= 100 && inst.directionCode <= 108) {
-      const btnEdit = `<button type="button" class="btn-edit-item" data-type="turn" data-index="${idx}" style="margin-right: 5px;"><i data-lucide="edit-2"></i></button>`;
+      const btnEdit = `<button type="button" class="btn-edit-item btn-edit-item-margin" data-type="turn" data-index="${idx}"><i data-lucide="edit-2"></i></button>`;
       tr.innerHTML = `
         <td>${pIdx++}</td>
         <td><div class="turn-icon-cell">${arrow}</div></td>
         <td><strong>${instructionText}</strong></td>
         <td>${Math.round(inst.distance || 0)}</td>
         <td class="coord-cell">${inst.lat.toFixed(5)}, ${inst.lon.toFixed(5)}</td>
-        <td class="text-center"><div style="display:flex; justify-content:center; align-items:center; gap:4px;">${btnEdit}${btnDel}</div></td>
+        <td class="text-center"><div class="flex-center-gap">${btnEdit}${btnDel}</div></td>
       `;
       poisBody.appendChild(tr);
     } else {
@@ -2881,7 +2854,7 @@ function renderTurnsTable(instructions) {
         badgeClass = 'turn-badge-manual';
         badgeText = t('badgeManual');
       }
-      const btnEdit = `<button type="button" class="btn-edit-item" data-type="turn" data-index="${idx}" style="margin-right: 5px;"><i data-lucide="edit-2"></i></button>`;
+      const btnEdit = `<button type="button" class="btn-edit-item btn-edit-item-margin" data-type="turn" data-index="${idx}"><i data-lucide="edit-2"></i></button>`;
       tr.innerHTML = `
         <td>${tIdx++}</td>
         <td><div class="turn-icon-cell">${arrow}</div></td>
@@ -2890,7 +2863,7 @@ function renderTurnsTable(instructions) {
         <td>${Math.round(inst.distance || 0)}</td>
         <td>${formatTime(inst.time || 0)}</td>
         <td class="coord-cell">${inst.lat.toFixed(5)}, ${inst.lon.toFixed(5)}</td>
-        <td class="text-center"><div style="display:flex; justify-content:center; align-items:center; gap:4px;">${btnEdit}${btnDel}</div></td>
+        <td class="text-center"><div class="flex-center-gap">${btnEdit}${btnDel}</div></td>
       `;
       turnsBody.appendChild(tr);
     }

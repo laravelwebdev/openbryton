@@ -99,12 +99,12 @@
     <main class="container page-view active container-migrated-4" id="page-login">
       <div class="card card-migrated-5">
         <div
-          style="width: 72px; height: 72px; background: linear-gradient(135deg, var(--primary), var(--accent-cyan)); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; box-shadow: 0 10px 25px var(--primary-glow);">
+          class="feature-logo-box">
           <i data-lucide="navigation" class="inline-style-6"></i>
         </div>
         <h2 class="inline-style-7">Welcome to
           OpenBryton</h2>
-        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 32px; line-height: 1.6;">
+        <p class="feature-description">
           Your ultimate companion for snapping GPX routes to OSM roads, planning Turn-by-Turn, and exporting perfectly
           to Bryton devices.
         </p>
@@ -167,7 +167,7 @@
 
             <!-- Settings / Configuration Collapsible -->
             <div id="settingsCardToggle"
-              style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--bg-input); border-radius: 6px; border: 1px solid var(--bg-card-border); margin-bottom: 0;">
+              class="cursor-pointer-between">
               <span class="inline-style-16">
                 <i data-lucide="sliders" class="inline-style-17"></i>
                 <span data-i18n="tbtTitle">Advanced Options</span>
@@ -190,7 +190,7 @@
                   <label class="inline-style-21" data-i18n="orsKeyLabel">OpenRouteService API Key (Disarankan):</label>
                   <input type="text" id="orsApiKey" class="input-text" placeholder="Masukkan API Key ORS (opsional)..."
                     data-i18n-placeholder="orsKeyPlaceholder"
-                    style="width:100%; padding: 6px; border-radius:4px; background:var(--bg-input); border:1px solid var(--bg-card-border); color:#fff; font-family:inherit;">
+                    class="input-full-width-p6">
                 </div>
               </div>
 
@@ -252,7 +252,7 @@
 
               <!-- ClimbPro Settings -->
               <h3
-                style="font-size:14px; margin: 20px 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid var(--bg-card-border);">
+                class="border-bottom-card">
                 <i data-lucide="mountain"></i> <span data-i18n="climbTitle">Kriteria Deteksi Tanjakan</span>
               </h3>
 
@@ -289,9 +289,9 @@
             <h2 class="card-title"><i data-lucide="package-check"></i> <span data-i18n="downloadTitle">3. Download Paket
                 Bryton</span></h2>
 
-            <div class="custom-dropdown" id="downloadDropdownContainer" style="width: 100%; margin-bottom: 16px;">
-              <button type="button" class="btn btn-primary btn-block" id="btnToggleDownload" disabled style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="display: flex; align-items: center; gap: 8px;">
+            <div class="custom-dropdown w-full mb-16" id="downloadDropdownContainer">
+              <button type="button" class="btn btn-primary btn-block flex-between-center" id="btnToggleDownload" disabled>
+                <span class="flex-center-gap-8">
                   <i data-lucide="download"></i>
                   <span data-i18n="btnDownloadMenu">Pilih Format Unduhan</span>
                 </span>
@@ -481,7 +481,7 @@
             </div>
           </div>
           <div id="elevationTitleContainer" class="elevationTitleContainer-style">
-            <i data-lucide="activity" style="color: var(--primary); width: 18px; height: 18px;"></i>
+            <i data-lucide="activity" class="icon-primary-18"></i>
             <h3 class="inline-style-30"><span data-i18n="elevationChartTitle">Profil Elevasi</span></h3>
           </div>
           <canvas id="elevationCanvas" class="elevationCanvas-style"></canvas>
@@ -622,14 +622,13 @@
 
     <!-- Modal Add TBT -->
     <div id="modalAddTurn" class="modal-backdrop hidden modal-backdrop-migrated-38">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+      <div class="card card-400-p20">
         <h3 class="inline-style-39"><i data-lucide="corner-up-right"></i> <span data-i18n="modalTitleTbt">Tambah Belokan
             (TBT)</span></h3>
         <p class="inline-style-40">Koordinat: <span id="addTurnCoords"></span></p>
         <div class="inline-style-41">
           <label class="inline-style-42" data-i18n="turnDirectionLabel">Arah Belokan</label>
-          <select id="addTurnDirection"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+          <select id="addTurnDirection" class="input-full-width">
             <option value="1" data-i18n="optStraight">Lurus (Go Ahead)</option>
             <option value="2" data-i18n="optRight">Belok Kanan</option>
             <option value="3" data-i18n="optLeft">Belok Kiri</option>
@@ -647,7 +646,7 @@
         <div class="inline-style-43">
           <label class="inline-style-44" data-i18n="turnNameLabel">Nama Jalan / Instruksi</label>
           <input type="text" id="addTurnText" placeholder="Contoh: Jl. Sudirman" data-i18n-placeholder="turnNamePlaceholder"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            class="input-full-width">
         </div>
         <div class="inline-style-45">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
@@ -658,13 +657,12 @@
 
     <!-- Modal Add POI -->
     <div id="modalAddPoi" class="modal-backdrop hidden modal-backdrop-migrated-46">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+      <div class="card card-400-p20">
         <h3 class="inline-style-47"><i data-lucide="map-pin"></i> <span data-i18n="modalTitlePoi">Tambah POI</span></h3>
         <p class="inline-style-48">Koordinat: <span id="addPoiCoords"></span></p>
         <div class="inline-style-49">
           <label class="inline-style-50" data-i18n="poiIconLabel">Ikon POI</label>
-          <select id="addPoiDirection"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+          <select id="addPoiDirection" class="input-full-width">
             <option value="106">Water</option>
             <option value="101">Camping</option>
             <option value="100">Target</option>
@@ -678,7 +676,7 @@
         <div class="inline-style-51">
           <label class="inline-style-52" data-i18n="poiNameLabel">Nama POI</label>
           <input type="text" id="addPoiText" placeholder="Contoh: Warung Kopi" data-i18n-placeholder="poiNamePlaceholder"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            class="input-full-width">
         </div>
         <div class="inline-style-53">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
@@ -689,12 +687,12 @@
 
     <!-- Modal Edit TBT -->
     <div id="modalEditTurn" class="modal-backdrop hidden modal-backdrop-migrated-54">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+      <div class="card card-400-p20">
         <h3 class="inline-style-55"><i data-lucide="edit"></i> <span data-i18n="modalEditTitleTbt">Edit Belokan</span></h3>
         <div class="inline-style-56">
           <label class="inline-style-57" data-i18n="turnDirectionLabel">Arah Belokan</label>
           <select id="editTurnDirectionOnly"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            class="input-full-width">
             <option value="1" data-i18n="optStraight">Lurus (Go Ahead)</option>
             <option value="2" data-i18n="optRight">Belok Kanan</option>
             <option value="3" data-i18n="optLeft">Belok Kiri</option>
@@ -712,7 +710,7 @@
         <div class="inline-style-58">
           <label class="inline-style-59" data-i18n="turnNameLabel">Nama Jalan / Instruksi</label>
           <input type="text" id="editTurnTextOnly"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            class="input-full-width">
         </div>
         <div class="inline-style-60">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
@@ -723,12 +721,12 @@
 
     <!-- Modal Edit POI -->
     <div id="modalEditPoi" class="modal-backdrop hidden modal-backdrop-migrated-61">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+      <div class="card card-400-p20">
         <h3 class="inline-style-62"><i data-lucide="edit"></i> <span data-i18n="modalEditTitlePoi">Edit POI</span></h3>
         <div class="inline-style-63">
           <label class="inline-style-64" data-i18n="poiIconLabel">Ikon POI</label>
           <select id="editPoiDirectionOnly"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            class="input-full-width">
             <option value="101">Camping</option>
             <option value="100">Target</option>
             <option value="102">Food</option>
@@ -742,7 +740,7 @@
         <div class="inline-style-65">
           <label class="inline-style-66" data-i18n="poiNameLabel">Nama POI</label>
           <input type="text" id="editPoiTextOnly"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            class="input-full-width">
         </div>
         <div class="inline-style-67">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
@@ -753,12 +751,12 @@
 
     <!-- Modal Edit Climb -->
     <div id="modalEditClimb" class="modal-backdrop hidden modal-backdrop-migrated-68">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
+      <div class="card card-400-p20">
         <h3 class="inline-style-69"><i data-lucide="edit"></i> <span data-i18n="modalEditTitleClimb">Edit Tanjakan</span></h3>
         <div class="inline-style-70">
           <label class="inline-style-71" data-i18n="climbNameLabel">Nama Tanjakan</label>
           <input type="text" id="editClimbTextOnly"
-            style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+            class="input-full-width">
         </div>
         <div class="inline-style-72">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
