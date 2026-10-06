@@ -8,10 +8,9 @@ module.exports = async function handler(request, response) {
   try {
     const filename = request.query.filename || 'route.fit';
     
-    // We upload the raw request body to Vercel Blob
+    // Upload request directly to Vercel Blob
     const blob = await put(`temp_fits/${filename}`, request, {
-      access: 'public',
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      access: 'public'
     });
     
     return response.status(200).json(blob);
@@ -19,4 +18,11 @@ module.exports = async function handler(request, response) {
     console.error('Blob Upload Error:', error);
     return response.status(500).json({ error: error.message });
   }
+};
+
+// Disable Vercel's default body parser so we can stream the raw binary file
+module.exports.config = {
+  api: {
+    bodyParser: false,
+  },
 };
