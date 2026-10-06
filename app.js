@@ -79,6 +79,31 @@ window.loadRouteFromFirebase = function (data, isOwner = true) {
 
   recalculateRouteDistances();
 
+  state.climbs = [];
+  if (state.climbTurns && state.climbTurns.length > 0) {
+    const climbStarts = state.climbTurns.filter(t => t.directionCode === 190).sort((a, b) => a.index - b.index);
+    const climbEnds = state.climbTurns.filter(t => t.directionCode === 191).sort((a, b) => a.index - b.index);
+    
+    for (let i = 0; i < Math.min(climbStarts.length, climbEnds.length); i++) {
+      const startIdx = climbStarts[i].index;
+      const endIdx = climbEnds[i].index;
+      
+      if (startIdx >= 0 && endIdx < state.points.length && startIdx < endIdx) {
+        const totalDist = state.points[endIdx].distFromStart - state.points[startIdx].distFromStart;
+        const totalEle = state.points[endIdx].ele - state.points[startIdx].ele;
+        const avgGrad = totalDist > 0 ? (totalEle / totalDist) * 100 : 0;
+        
+        state.climbs.push({
+          startIndex: startIdx,
+          endIndex: endIdx,
+          dist: totalDist,
+          eleGain: totalEle,
+          avgGrad: avgGrad
+        });
+      }
+    }
+  }
+
   state.totalDistance = state.points.length > 0 ? state.points[state.points.length - 1].distFromStart : 0;
   if (elements.statDistance) elements.statDistance.textContent = `${(state.totalDistance / 1000).toFixed(2)} km`;
   if (elements.statPoints) elements.statPoints.textContent = state.points.length.toLocaleString();
@@ -1080,6 +1105,18 @@ function simplifyRoute(epsilonMeters = 1.5) {
   state.points = simplifiedPoints;
   recalculateRouteDistances();
   
+  if (state.climbs) {
+    state.climbs.forEach(c => {
+      const startPt = state.points[c.startIndex];
+      const endPt = state.points[c.endIndex];
+      if (startPt && endPt) {
+        c.dist = endPt.distFromStart - startPt.distFromStart;
+        c.eleGain = endPt.ele - startPt.ele;
+        c.avgGrad = c.dist > 0 ? (c.eleGain / c.dist) * 100 : 0;
+      }
+    });
+  }
+
   state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
   updateStatsAndUI();
 }
