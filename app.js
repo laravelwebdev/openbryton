@@ -3498,20 +3498,17 @@ async function shareToBrytonActive() {
     
     showToast(window.currentLang === 'id' ? 'Mengunggah ke server sementara...' : 'Uploading to temporary server...', 'info', false);
 
-    const formData = new FormData();
-    formData.append('reqtype', 'fileupload');
-    formData.append('time', '1h'); // File expires in 1 hour
-    formData.append('fileToUpload', blob, fileName);
+    const uploadUrl = `/api/upload?filename=${encodeURIComponent(fileName)}`;
 
-    const response = await fetch('https://litterbox.catbox.moe/resources/internals/api.php', {
+    const response = await fetch(uploadUrl, {
       method: 'POST',
-      body: formData
+      body: blob
     });
 
-    if (!response.ok) throw new Error('Failed to upload file to temporary server.');
+    if (!response.ok) throw new Error('Gagal mengunggah file ke Vercel Blob.');
     
-    // Litterbox returns the direct URL as plain text
-    const fileUrl = await response.text();
+    const result = await response.json();
+    const fileUrl = result.url;
     
     const brytonUrl = `https://www.brytonsport.com/applinkpt/#/?type=pt&fit=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(routeName)}`;
     
