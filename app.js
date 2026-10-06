@@ -570,8 +570,8 @@ function bindEvents() {
   });
 
   // Modal events
-  elements.btnCloseModal.addEventListener('click', closeModal);
-  elements.btnCancelAddTurn.addEventListener('click', closeModal);
+  if (elements.btnCloseModal) elements.btnCloseModal.addEventListener('click', closeModal);
+  if (elements.btnCancelAddTurn) elements.btnCancelAddTurn.addEventListener('click', closeModal);
   if(elements.btnConfirmAddTurn) elements.btnConfirmAddTurn.addEventListener('click', confirmAddManualTurn);
   const btnConfirmAddPoi = document.getElementById('btnConfirmAddPoi');
   if (btnConfirmAddPoi) btnConfirmAddPoi.addEventListener('click', confirmAddPoi);
