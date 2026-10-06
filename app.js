@@ -115,6 +115,7 @@ window.loadRouteFromFirebase = function (data, isOwner = true) {
   elements.btnDownloadKml.disabled = false;
   elements.btnDownloadGpx.disabled = false;
   elements.btnDownloadFit.disabled = false;
+  if (elements.btnShareBrytonActive) elements.btnShareBrytonActive.disabled = false;
   if (elements.btnToggleDownload) elements.btnToggleDownload.disabled = false;
 
   if (typeof showToast === 'function') {
@@ -153,6 +154,7 @@ const elements = {
   btnDownloadKml: document.getElementById('btnDownloadKml'),
   btnDownloadGpx: document.getElementById('btnDownloadGpx'),
   btnDownloadFit: document.getElementById('btnDownloadFit'),
+  btnShareBrytonActive: document.getElementById('btnShareBrytonActive'),
   btnToggleDownload: document.getElementById('btnToggleDownload'),
   downloadDropdownContainer: document.getElementById('downloadDropdownContainer'),
   btnToggleSidebarUI: document.getElementById('btnToggleSidebarUI'),
@@ -496,13 +498,14 @@ function bindEvents() {
   elements.btnDownloadKml.addEventListener('click', generateKmlFile);
   elements.btnDownloadGpx.addEventListener('click', generateGpxFile);
   elements.btnDownloadFit.addEventListener('click', generateFitFile);
+  if (elements.btnShareBrytonActive) elements.btnShareBrytonActive.addEventListener('click', shareToBrytonActive);
 
   if (elements.btnToggleDownload && elements.downloadDropdownContainer) {
     elements.btnToggleDownload.addEventListener('click', (e) => {
       e.stopPropagation();
       elements.downloadDropdownContainer.classList.toggle('open');
     });
-    
+
     // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
       if (!elements.downloadDropdownContainer.contains(e.target)) {
@@ -669,6 +672,7 @@ function resetState() {
   elements.btnDownloadKml.disabled = true;
   elements.btnDownloadGpx.disabled = true;
   elements.btnDownloadFit.disabled = true;
+  if (elements.btnShareBrytonActive) elements.btnShareBrytonActive.disabled = true;
   if (elements.btnToggleDownload) elements.btnToggleDownload.disabled = true;
 
   if (state.mapLayers.trackLine) {
@@ -1882,14 +1886,14 @@ async function runTurnAnalysis() {
     const indexMap = new Map(); // original index → new index after cleanup
     let originalIdx = 0;
     densePoints.forEach((p, denseIdx) => {
-        const inClimb = denseClimbs.some(c => denseIdx >= c.startIndex && denseIdx <= c.endIndex);
-        if (p.isOriginal || inClimb) {
-            finalPoints.push(p);
-            if (p.isOriginal) {
-                indexMap.set(originalIdx, finalPoints.length - 1);
-                originalIdx++;
-            }
+      const inClimb = denseClimbs.some(c => denseIdx >= c.startIndex && denseIdx <= c.endIndex);
+      if (p.isOriginal || inClimb) {
+        finalPoints.push(p);
+        if (p.isOriginal) {
+          indexMap.set(originalIdx, finalPoints.length - 1);
+          originalIdx++;
         }
+      }
     });
 
     // 4. Replace the global points with the cleaned‑up version
@@ -1899,39 +1903,39 @@ async function runTurnAnalysis() {
     state.osmTurns.forEach(t => t.index = indexMap.get(t.index));
     state.extraTurns.forEach(t => t.index = indexMap.get(t.index));
     if (state.manualTurns) {
-        state.manualTurns.forEach(t => t.index = indexMap.get(t.index));
+      state.manualTurns.forEach(t => t.index = indexMap.get(t.index));
     }
 
     // 6. Build climbTurns from denseClimbs using the new indexes
     state.climbs = [];
     state.climbTurns = [];
     denseClimbs.forEach((c, idx) => {
-        const startPt = densePoints[c.startIndex];
-        const endPt   = densePoints[c.endIndex];
-        const newStartIdx = finalPoints.indexOf(startPt);
-        const newEndIdx   = finalPoints.indexOf(endPt);
-        state.climbs.push({ ...c, startIndex: newStartIdx, endIndex: newEndIdx });
+      const startPt = densePoints[c.startIndex];
+      const endPt = densePoints[c.endIndex];
+      const newStartIdx = finalPoints.indexOf(startPt);
+      const newEndIdx = finalPoints.indexOf(endPt);
+      state.climbs.push({ ...c, startIndex: newStartIdx, endIndex: newEndIdx });
 
-        state.climbTurns.push({
-            id: Math.random().toString(36).substr(2, 9),
-            source: 'climb',
-            index: newStartIdx,
-            lat: startPt.lat,
-            lon: startPt.lon,
-            directionCode: 190,
-            instruction: `Climb ${idx + 1} Start`,
-            distFromStart: startPt.distFromStart
-        });
-        state.climbTurns.push({
-            id: Math.random().toString(36).substr(2, 9),
-            source: 'climb',
-            index: newEndIdx,
-            lat: endPt.lat,
-            lon: endPt.lon,
-            directionCode: 191,
-            instruction: `Climb ${idx + 1} End`,
-            distFromStart: endPt.distFromStart
-        });
+      state.climbTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'climb',
+        index: newStartIdx,
+        lat: startPt.lat,
+        lon: startPt.lon,
+        directionCode: 190,
+        instruction: `Climb ${idx + 1} Start`,
+        distFromStart: startPt.distFromStart
+      });
+      state.climbTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'climb',
+        index: newEndIdx,
+        lat: endPt.lat,
+        lon: endPt.lon,
+        directionCode: 191,
+        instruction: `Climb ${idx + 1} End`,
+        distFromStart: endPt.distFromStart
+      });
     });
 
 
@@ -1949,6 +1953,7 @@ async function runTurnAnalysis() {
     elements.btnDownloadKml.disabled = false;
     elements.btnDownloadGpx.disabled = false;
     elements.btnDownloadFit.disabled = false;
+    if (elements.btnShareBrytonActive) elements.btnShareBrytonActive.disabled = false;
     if (elements.btnToggleDownload) elements.btnToggleDownload.disabled = false;
     initIcons();
     showToast(t('toastAnalysisDone').replace('{count}', state.combinedInstructions.length), 'success');
@@ -2244,38 +2249,38 @@ function detectClimbs(points) {
 // ------------------------------------------------
 // Helper: Densify route (max distance per segment)
 function densifyRoute(originalPoints, maxDistanceMeters) {
-    const densePoints = [];
+  const densePoints = [];
 
-    for (let i = 0; i < originalPoints.length - 1; i++) {
-        const ptA = originalPoints[i];
-        const ptB = originalPoints[i + 1];
+  for (let i = 0; i < originalPoints.length - 1; i++) {
+    const ptA = originalPoints[i];
+    const ptB = originalPoints[i + 1];
 
-        // Preserve original point and mark it
-        densePoints.push({ ...ptA, isOriginal: true });
+    // Preserve original point and mark it
+    densePoints.push({ ...ptA, isOriginal: true });
 
-        const segmentDist = ptB.distFromStart - ptA.distFromStart;
-        if (segmentDist > maxDistanceMeters) {
-            const segments = Math.ceil(segmentDist / maxDistanceMeters);
-            const latStep = (ptB.lat - ptA.lat) / segments;
-            const lonStep = (ptB.lon - ptA.lon) / segments;
-            const eleStep = (ptB.ele - ptA.ele) / segments;
-            const distStep = segmentDist / segments;
+    const segmentDist = ptB.distFromStart - ptA.distFromStart;
+    if (segmentDist > maxDistanceMeters) {
+      const segments = Math.ceil(segmentDist / maxDistanceMeters);
+      const latStep = (ptB.lat - ptA.lat) / segments;
+      const lonStep = (ptB.lon - ptA.lon) / segments;
+      const eleStep = (ptB.ele - ptA.ele) / segments;
+      const distStep = segmentDist / segments;
 
-            for (let s = 1; s < segments; s++) {
-                densePoints.push({
-                    lat: ptA.lat + latStep * s,
-                    lon: ptA.lon + lonStep * s,
-                    ele: ptA.ele + eleStep * s,
-                    distFromStart: ptA.distFromStart + distStep * s,
-                    isOriginal: false // synthetic point
-                });
-            }
-        }
+      for (let s = 1; s < segments; s++) {
+        densePoints.push({
+          lat: ptA.lat + latStep * s,
+          lon: ptA.lon + lonStep * s,
+          ele: ptA.ele + eleStep * s,
+          distFromStart: ptA.distFromStart + distStep * s,
+          isOriginal: false // synthetic point
+        });
+      }
     }
+  }
 
-    // Add the final original point
-    densePoints.push({ ...originalPoints[originalPoints.length - 1], isOriginal: true });
-    return densePoints;
+  // Add the final original point
+  densePoints.push({ ...originalPoints[originalPoints.length - 1], isOriginal: true });
+  return densePoints;
 }
 
 // ------------------------------------------------
@@ -3248,8 +3253,213 @@ function escapeXml(text) {
 }
 
 // ==========================================
-// Fit File Generator using @garmin/fitsdk
-// ==========================================
+class BrytonFitBuilder {
+  constructor() {
+    this.records = [];
+    this.localMesgNum = 0;
+  }
+
+  addMessage(globalMesgNum, fields, values) {
+    this.localMesgNum = (this.localMesgNum + 1) % 16;
+    const defBuf = new Uint8Array(6 + fields.length * 3);
+    const defView = new DataView(defBuf.buffer);
+    defBuf[0] = 0x40 | this.localMesgNum;
+    defBuf[1] = 0;
+    defBuf[2] = 0;
+    defView.setUint16(3, globalMesgNum, true);
+    defBuf[5] = fields.length;
+
+    let offset = 6;
+    for (const f of fields) {
+      defBuf[offset++] = f.defNum;
+      defBuf[offset++] = f.size;
+      defBuf[offset++] = f.typeId;
+    }
+
+    let dataSize = 0;
+    for (const f of fields) dataSize += f.size;
+
+    const dataBuf = new Uint8Array(1 + dataSize);
+    const dataView = new DataView(dataBuf.buffer);
+    dataBuf[0] = this.localMesgNum;
+
+    offset = 1;
+    for (let i = 0; i < fields.length; i++) {
+      const f = fields[i];
+      const val = values[i] || 0;
+      switch (f.typeId) {
+        case 0x00: // enum
+        case 0x01: // sint8
+        case 0x02: // uint8
+          dataView.setInt8(offset, val);
+          break;
+        case 0x83: // sint16
+        case 0x84: // uint16
+          dataView.setInt16(offset, val, true);
+          break;
+        case 0x85: // sint32
+        case 0x86: // uint32
+          dataView.setInt32(offset, val, true);
+          break;
+        case 0x07: // string
+          const str = typeof values[i] === 'string' ? values[i] : '';
+          for (let j = 0; j < f.size; j++) {
+            dataBuf[offset + j] = j < str.length ? str.charCodeAt(j) : 0;
+          }
+          break;
+      }
+      offset += f.size;
+    }
+
+    this.records.push(defBuf);
+    this.records.push(dataBuf);
+  }
+
+  build() {
+    let dataLength = 0;
+    for (const r of this.records) dataLength += r.length;
+
+    const fileBuf = new Uint8Array(14 + dataLength + 2);
+    const view = new DataView(fileBuf.buffer);
+
+    fileBuf[0] = 14;
+    fileBuf[1] = 0x10;
+    view.setUint16(2, 21217, true);
+    view.setUint32(4, dataLength, true);
+    fileBuf[8] = 0x2E; fileBuf[9] = 0x46; fileBuf[10] = 0x49; fileBuf[11] = 0x54;
+    view.setUint16(12, 0, true);
+
+    let offset = 14;
+    for (const r of this.records) {
+      fileBuf.set(r, offset);
+      offset += r.length;
+    }
+
+    let crc = 0;
+    const crcTable = [
+      0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
+      0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400
+    ];
+    for (let i = 0; i < offset; i++) {
+      let tmp = crcTable[crc & 0xF];
+      crc = (crc >> 4) & 0x0FFF;
+      crc = crc ^ tmp ^ crcTable[fileBuf[i] & 0xF];
+      tmp = crcTable[crc & 0xF];
+      crc = (crc >> 4) & 0x0FFF;
+      crc = crc ^ tmp ^ crcTable[(fileBuf[i] >> 4) & 0xF];
+    }
+    view.setUint16(offset, crc, true);
+
+    return fileBuf;
+  }
+}
+
+function buildFitBlob() {
+  const builder = new BrytonFitBuilder();
+
+  // 1. Header 248
+  builder.addMessage(248, [
+    { defNum: 1, size: 2, typeId: 0x84 },
+    { defNum: 2, size: 2, typeId: 0x84 }
+  ], [0, 1]);
+
+  let maxLat = -90, minLat = 90, maxLon = -180, minLon = 180;
+  let maxEle = -9999, minEle = 9999;
+  state.points.forEach(pt => {
+    if (pt.lat > maxLat) maxLat = pt.lat;
+    if (pt.lat < minLat) minLat = pt.lat;
+    if (pt.lon > maxLon) maxLon = pt.lon;
+    if (pt.lon < minLon) minLon = pt.lon;
+    if (pt.ele > maxEle) maxEle = pt.ele;
+    if (pt.ele < minEle) minEle = pt.ele;
+  });
+
+  const totalDistMeters = Math.round(state.points[state.points.length - 1].distFromStart);
+
+  // Elevation encoding: FIT standard = (ele + 500) * 5
+  // Bryton device perfectly follows this standard for .fit files (unlike native .track which uses meters/cm)
+  const encodeEle = (ele) => Math.max(0, Math.round((ele + 500) * 5));
+
+  // 2. Summary 254
+  builder.addMessage(254, [
+    { defNum: 1, size: 2, typeId: 0x84 },
+    { defNum: 2, size: 4, typeId: 0x85 },
+    { defNum: 3, size: 4, typeId: 0x85 },
+    { defNum: 4, size: 4, typeId: 0x85 },
+    { defNum: 5, size: 4, typeId: 0x85 },
+    { defNum: 6, size: 4, typeId: 0x86 },
+    { defNum: 7, size: 2, typeId: 0x84 },
+    { defNum: 8, size: 2, typeId: 0x84 },
+    { defNum: 9, size: 2, typeId: 0x84 },
+    { defNum: 10, size: 2, typeId: 0x84 }
+  ], [
+    state.points.length,
+    Math.round(maxLat * 1000000),
+    Math.round(minLat * 1000000),
+    Math.round(maxLon * 1000000),
+    Math.round(minLon * 1000000),
+    totalDistMeters,
+    encodeEle(maxEle),
+    encodeEle(minEle),
+    2, 6
+  ]);
+
+  // 3. Track indices 251
+  const idxFields = [{ defNum: 1, size: 2, typeId: 0x84 }];
+  for (let i = 0; i < state.points.length; i++) {
+    builder.addMessage(251, idxFields, [i]);
+  }
+
+  // 4. Course point count 253
+  const validCPs = state.combinedInstructions.filter(inst => inst.index < state.points.length);
+  builder.addMessage(253, [{ defNum: 1, size: 2, typeId: 0x84 }], [validCPs.length]);
+
+  // 5. Course points 250
+  // Encoding from Bryton native .tinfo:
+  // For both POI and Turn: unknown_3 = distance to next instruction (in meters)
+  // unknown_4 = estimated time to next instruction
+  const cpFields = [
+    { defNum: 1, size: 2, typeId: 0x84 },
+    { defNum: 2, size: 1, typeId: 0x00 },
+    { defNum: 3, size: 4, typeId: 0x86 },
+    { defNum: 4, size: 4, typeId: 0x86 },
+    { defNum: 5, size: 32, typeId: 0x07 }
+  ];
+  validCPs.forEach((inst) => {
+    // Use pre-calculated distance and time to next instruction (matches .tinfo behavior)
+    const unknown_3 = Math.round(inst.distance || 0);
+    const unknown_4 = Math.round(inst.time || 0);
+
+    builder.addMessage(250, cpFields, [
+      inst.index,
+      inst.directionCode,
+      unknown_3,
+      unknown_4,
+      (inst.instruction || '').substring(0, 31)
+    ]);
+  });
+
+  // 6. Track count 2 252
+  builder.addMessage(252, [{ defNum: 1, size: 2, typeId: 0x84 }], [state.points.length]);
+
+  // Elevation is stored using FIT standard (ele + 500) * 5
+  const ptFields = [
+    { defNum: 1, size: 4, typeId: 0x85 },
+    { defNum: 2, size: 4, typeId: 0x85 },
+    { defNum: 3, size: 2, typeId: 0x84 }
+  ];
+  state.points.forEach(pt => {
+    builder.addMessage(249, ptFields, [
+      Math.round(pt.lat * 1000000),
+      Math.round(pt.lon * 1000000),
+      encodeEle(pt.ele)
+    ]);
+  });
+
+  const uint8Array = builder.build();
+  return new Blob([uint8Array], { type: 'application/octet-stream' });
+}
+
 async function generateFitFile() {
   if (state.points.length === 0) return;
 
@@ -3258,83 +3468,8 @@ async function generateFitFile() {
   elements.btnDownloadFit.disabled = true;
 
   try {
-    const fitSdk = await import('https://esm.sh/@garmin/fitsdk@21.217.0');
-    const Encoder = fitSdk.Encoder;
-    const Profile = fitSdk.Profile;
-
-    const encoder = new Encoder();
-
-    encoder.onMesg(Profile.MesgNum.FILE_ID, {
-      type: Profile.types.file.course,
-      manufacturer: Profile.types.manufacturer.development,
-      product: 0,
-      timeCreated: new Date(),
-      serialNumber: Math.floor(Math.random() * 0xFFFFFFFF)
-    });
-
+    const blob = buildFitBlob();
     let routeName = elements.brytonRouteName.value.trim() || state.baseName || 'BrytonRoute';
-    encoder.onMesg(Profile.MesgNum.COURSE, {
-      name: routeName.substring(0, 15),
-      sport: Profile.types.sport.cycling
-    });
-
-    const baseTime = Date.now();
-
-    state.points.forEach((pt, i) => {
-      pt._fitDate = new Date(baseTime + i * 1000);
-      encoder.onMesg(Profile.MesgNum.RECORD, {
-        timestamp: pt._fitDate,
-        positionLat: Math.round(pt.lat * (0x7FFFFFFF / 180)),
-        positionLong: Math.round(pt.lon * (0x7FFFFFFF / 180)),
-        altitude: pt.ele,
-        distance: pt.distFromStart
-      });
-    });
-
-    function mapToFitCp(code) {
-      switch (code) {
-        case 7: return Profile.types.coursePoint.sharpLeft;
-        case 3: return Profile.types.coursePoint.left;
-        case 5: return Profile.types.coursePoint.slightLeft;
-        case 10: return Profile.types.coursePoint.straight;
-        case 1: return Profile.types.coursePoint.straight;
-        case 4: return Profile.types.coursePoint.slightRight;
-        case 2: return Profile.types.coursePoint.right;
-        case 6: return Profile.types.coursePoint.sharpRight;
-        case 8: return Profile.types.coursePoint.slightRight; // Exit Right -> mapped to slight right
-        case 9: return Profile.types.coursePoint.slightLeft; // Exit Left -> mapped to slight left
-        case 11: return Profile.types.coursePoint.uTurn; // uturn right
-        case 12: return Profile.types.coursePoint.uTurn; // uturn left
-        case 100: return Profile.types.coursePoint.generic; // Target -> generic
-        case 101: return Profile.types.coursePoint.food;
-        case 102: return Profile.types.coursePoint.water;
-        case 103: return Profile.types.coursePoint.summit;
-        case 104: return Profile.types.coursePoint.danger;
-        case 105: return Profile.types.coursePoint.sprint;
-        case 106: return Profile.types.coursePoint.firstAid;
-        case 107: return Profile.types.coursePoint.valley;
-        case 108: return Profile.types.coursePoint.generic;
-        case 190: return Profile.types.coursePoint.segmentStart;
-        case 191: return Profile.types.coursePoint.segmentEnd;
-        default: return Profile.types.coursePoint.generic;
-      }
-    }
-
-    state.combinedInstructions.forEach((inst) => {
-      const pt = state.points[inst.index];
-      if (!pt || !pt._fitDate) return;
-      encoder.onMesg(Profile.MesgNum.COURSE_POINT, {
-        timestamp: pt._fitDate,
-        positionLat: Math.round(pt.lat * (0x7FFFFFFF / 180)),
-        positionLong: Math.round(pt.lon * (0x7FFFFFFF / 180)),
-        distance: pt.distFromStart,
-        type: mapToFitCp(inst.directionCode),
-        name: (inst.instruction || '').substring(0, 15)
-      });
-    });
-
-    const uint8Array = encoder.close();
-    const blob = new Blob([uint8Array], { type: 'application/octet-stream' });
     let prefix = routeName.replace(/[^a-zA-Z0-9_-]/g, '_');
     saveAs(blob, `${prefix}.fit`);
 
@@ -3345,5 +3480,49 @@ async function generateFitFile() {
   } finally {
     elements.btnDownloadFit.innerHTML = origBtnText;
     elements.btnDownloadFit.disabled = false;
+  }
+}
+
+async function shareToBrytonActive() {
+  if (state.points.length === 0) return;
+
+  const origBtnText = elements.btnShareBrytonActive.innerHTML;
+  elements.btnShareBrytonActive.innerHTML = '<i class="lucide lucide-loader spinner"></i>';
+  elements.btnShareBrytonActive.disabled = true;
+
+  try {
+    const blob = buildFitBlob();
+    let routeName = elements.brytonRouteName.value.trim() || state.baseName || 'BrytonRoute';
+    let prefix = routeName.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fileName = `${prefix}.fit`;
+    
+    showToast(window.currentLang === 'id' ? 'Mengunggah ke server sementara...' : 'Uploading to temporary server...', 'info', false);
+
+    const formData = new FormData();
+    formData.append('file', blob, fileName);
+
+    const response = await fetch('https://tmpfiles.org/api/v1/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) throw new Error('Failed to upload file.');
+    
+    const result = await response.json();
+    if (result.status !== 'success') throw new Error('API Error');
+
+    // Convert to direct download URL (add /dl/)
+    const fileUrl = result.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+    
+    const brytonUrl = `https://www.brytonsport.com/applinkpt/#/?type=pt&fit=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(routeName)}`;
+    
+    window.open(brytonUrl, '_blank');
+    showToast(window.currentLang === 'id' ? 'Membuka Bryton Active...' : 'Opening Bryton Active...', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    elements.btnShareBrytonActive.innerHTML = origBtnText;
+    elements.btnShareBrytonActive.disabled = false;
   }
 }
