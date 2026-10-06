@@ -1866,21 +1866,71 @@ async function runTurnAnalysis() {
     const dupDistThresh = parseInt(elements.dupDistanceThreshold.value, 10);
     const smoothingDist = parseInt(elements.smoothingRadius.value, 10);
 
-    state.extraTurns = detectAngleTurns(state.points, state.osmTurns, angleThresh, dupDistThresh, smoothingDist);
+    // ------------------------------------------------
+    // SMART CLIMB DENSIFICATION & CLEANUP LOGIC
+    // ------------------------------------------------
+    // 1. Densify route so that max distance between points is 50 m
+    const densePoints = densifyRoute(state.points, 50);
 
-    state.climbs = detectClimbs(state.points);
+    // 2. Detect climbs on the dense route
+    const denseClimbs = detectClimbs(densePoints);
+
+    // 3. Build a final points array that keeps original points
+    //    and also retains every point that lies inside a climb segment.
+    const finalPoints = [];
+    const indexMap = new Map(); // original index → new index after cleanup
+    let originalIdx = 0;
+    densePoints.forEach((p, denseIdx) => {
+        const inClimb = denseClimbs.some(c => denseIdx >= c.startIndex && denseIdx <= c.endIndex);
+        if (p.isOriginal || inClimb) {
+            finalPoints.push(p);
+            if (p.isOriginal) {
+                indexMap.set(originalIdx, finalPoints.length - 1);
+                originalIdx++;
+            }
+        }
+    });
+
+    // 4. Replace the global points with the cleaned‑up version
+    state.points = finalPoints;
+
+    // 5. Adjust indexes of pre‑existing turn objects (OSM, extra, manual)
+    state.osmTurns.forEach(t => t.index = indexMap.get(t.index));
+    state.extraTurns.forEach(t => t.index = indexMap.get(t.index));
+    if (state.manualTurns) {
+        state.manualTurns.forEach(t => t.index = indexMap.get(t.index));
+    }
+
+    // 6. Build climbTurns from denseClimbs using the new indexes
+    state.climbs = [];
     state.climbTurns = [];
-    state.climbs.forEach((c, idx) => {
-      state.climbTurns.push({
-        id: Math.random().toString(36).substr(2, 9),
-        source: 'climb', index: c.startIndex, lat: state.points[c.startIndex].lat, lon: state.points[c.startIndex].lon,
-        directionCode: 190, instruction: `Climb ${idx + 1} Start`, distFromStart: state.points[c.startIndex].distFromStart
-      });
-      state.climbTurns.push({
-        id: Math.random().toString(36).substr(2, 9),
-        source: 'climb', index: c.endIndex, lat: state.points[c.endIndex].lat, lon: state.points[c.endIndex].lon,
-        directionCode: 191, instruction: `Climb ${idx + 1} End`, distFromStart: state.points[c.endIndex].distFromStart
-      });
+    denseClimbs.forEach((c, idx) => {
+        const startPt = densePoints[c.startIndex];
+        const endPt   = densePoints[c.endIndex];
+        const newStartIdx = finalPoints.indexOf(startPt);
+        const newEndIdx   = finalPoints.indexOf(endPt);
+        state.climbs.push({ ...c, startIndex: newStartIdx, endIndex: newEndIdx });
+
+        state.climbTurns.push({
+            id: Math.random().toString(36).substr(2, 9),
+            source: 'climb',
+            index: newStartIdx,
+            lat: startPt.lat,
+            lon: startPt.lon,
+            directionCode: 190,
+            instruction: `Climb ${idx + 1} Start`,
+            distFromStart: startPt.distFromStart
+        });
+        state.climbTurns.push({
+            id: Math.random().toString(36).substr(2, 9),
+            source: 'climb',
+            index: newEndIdx,
+            lat: endPt.lat,
+            lon: endPt.lon,
+            directionCode: 191,
+            instruction: `Climb ${idx + 1} End`,
+            distFromStart: endPt.distFromStart
+        });
     });
 
 
@@ -2189,6 +2239,45 @@ function detectClimbs(points) {
   }
   return climbs;
 }
+
+// ------------------------------------------------
+// Helper: Densify route (max distance per segment)
+function densifyRoute(originalPoints, maxDistanceMeters) {
+    const densePoints = [];
+
+    for (let i = 0; i < originalPoints.length - 1; i++) {
+        const ptA = originalPoints[i];
+        const ptB = originalPoints[i + 1];
+
+        // Preserve original point and mark it
+        densePoints.push({ ...ptA, isOriginal: true });
+
+        const segmentDist = ptB.distFromStart - ptA.distFromStart;
+        if (segmentDist > maxDistanceMeters) {
+            const segments = Math.ceil(segmentDist / maxDistanceMeters);
+            const latStep = (ptB.lat - ptA.lat) / segments;
+            const lonStep = (ptB.lon - ptA.lon) / segments;
+            const eleStep = (ptB.ele - ptA.ele) / segments;
+            const distStep = segmentDist / segments;
+
+            for (let s = 1; s < segments; s++) {
+                densePoints.push({
+                    lat: ptA.lat + latStep * s,
+                    lon: ptA.lon + lonStep * s,
+                    ele: ptA.ele + eleStep * s,
+                    distFromStart: ptA.distFromStart + distStep * s,
+                    isOriginal: false // synthetic point
+                });
+            }
+        }
+    }
+
+    // Add the final original point
+    densePoints.push({ ...originalPoints[originalPoints.length - 1], isOriginal: true });
+    return densePoints;
+}
+
+// ------------------------------------------------
 
 async function enrichStreetNamesFromOsm(instructions) {
   const enriched = [...instructions];
