@@ -102,7 +102,14 @@ function logout() {
 // ==========================================
 // SPA Router
 // ==========================================
-function switchPage(pageId) {
+function switchPage(pageId, isManualClick = false) {
+  if (pageId === 'create' && isManualClick) {
+    if (window.state && window.state.points && window.state.points.length > 0) {
+      if (!confirm("Anda sedang memiliki rute yang terbuka. Membuat rute baru akan mereset data rute saat ini di layar. Lanjutkan?")) {
+        return; // Batalkan perpindahan
+      }
+    }
+  }
   document.querySelectorAll('.nav-link').forEach(btn => btn.classList.remove('active'));
   const activeNav = document.getElementById(`nav-${pageId}`);
   if (activeNav) activeNav.classList.add('active');

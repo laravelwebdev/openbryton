@@ -631,6 +631,8 @@ function processFile(file) {
 }
 
 function resetState() {
+  state.currentRouteId = null;
+  state.currentRouteOwner = null;
   state.rawGpxText = '';
   state.fileName = '';
   state.points = [];
