@@ -474,3 +474,89 @@ document.addEventListener('DOMContentLoaded', () => {
   updateDOMText();
   initLangDropdown();
 });
+
+/* --- LANGUAGE LOGIC EXTRACTED FROM APP.JS --- */
+function getTranslatedInstruction(text, dirCode) {
+  if (!text) return getDirectionLabel(dirCode);
+
+  let result = text;
+  // Replace standard phrases if they match
+  const keys = ['dirSharpLeft', 'dirSharpRight', 'dirSlightLeft', 'dirSlightRight', 'dirLeft', 'dirRight', 'dirStraight', 'dirUturn', 'startRoute', 'poiFood', 'poiWater', 'poiSummit', 'poiDanger', 'poiSprint', 'poiFirstAid', 'poiValley', 'poiGeneric'];
+
+  for (const key of keys) {
+    const idText = translations.id[key];
+    const enText = translations.en[key];
+
+    if (currentLang === 'en') {
+      if (result.includes(idText)) result = result.replace(idText, enText);
+    } else {
+      if (result.includes(enText)) result = result.replace(enText, idText);
+    }
+  }
+
+  // Handle some edge cases with " ke " / " to "
+  if (currentLang === 'en') {
+    result = result.replace(' ke ', ' to ');
+    result = result.replace('Lanjut ke ', 'Continue to ');
+  } else {
+    result = result.replace(' to ', ' ke ');
+    result = result.replace('Continue to ', 'Lanjut ke ');
+  }
+
+  return result;
+}
+
+function getDirectionLabel(code) {
+  switch (code) {
+    case 7: return t('dirSharpLeft') || 'Belok Tajam Kiri';
+    case 3: return t('dirLeft') || 'Belok Kiri';
+    case 5: return t('dirSlightLeft') || 'Serong Kiri';
+    case 10: return t('dirStraight') || 'Lurus';
+    case 1: return t('dirGoAhead') || 'Go Ahead';
+    case 4: return t('dirSlightRight') || 'Serong Kanan';
+    case 2: return t('dirRight') || 'Belok Kanan';
+    case 6: return t('dirSharpRight') || 'Belok Tajam Kanan';
+    case 8: return t('dirExitRight') || 'Exit Kanan';
+    case 9: return t('dirExitLeft') || 'Exit Kiri';
+    case 11: return t('dirUturn') || 'U-Turn Kanan';
+    case 12: return t('dirUturnLeft') || 'U-Turn Kiri';
+    case 101: return t('poiFood');
+    case 102: return t('poiWater');
+    case 103: return t('poiSummit');
+    case 104: return t('poiDanger');
+    case 105: return t('poiSprint');
+    case 106: return t('poiFirstAid');
+    case 107: return t('poiValley');
+    case 108: return t('poiGeneric');
+    default: return t('dirStraight');
+  }
+}
+
+function getDirectionArrow(code) {
+  switch (code) {
+    case 7: return '↰';
+    case 3: return '←';
+    case 5: return '↖';
+    case 10: return '↑';
+    case 1: return '↑';
+    case 4: return '↗';
+    case 2: return '→';
+    case 6: return '↱';
+    case 8: return '⬈';
+    case 9: return '⬉';
+    case 11: return '↩';
+    case 12: return '↪';
+    case 100: return '🎯';
+    case 101: return '⛺';
+    case 102: return '🍴';
+    case 103: return '➕';
+    case 104: return '☑️';
+    case 105: return '👥';
+    case 106: return '💧';
+    case 107: return '⚡';
+    case 190: return '🧗'; // Climb Start
+    case 191: return '📉'; // Climb End
+    default: return '↑';
+  }
+}
+

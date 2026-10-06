@@ -50,7 +50,7 @@
       </div>
 
       <!-- Top Navigation -->
-      <nav class="top-nav" id="mainNav" style="display:none;">
+      <nav class="top-nav ext-style-1" id="mainNav" >
         <button class="nav-link" onclick="switchPage('create', true)" id="nav-create"><i data-lucide="pen-tool"></i>
           <span>Create</span></button>
         <button class="nav-link" onclick="switchPage('myroutes')" id="nav-myroutes"><i data-lucide="library"></i>
@@ -59,10 +59,10 @@
 
       <div class="header-badges">
         <!-- Auth UI -->
-        <div id="authContainer" style="display:flex; align-items:center; gap:10px;">
+        <div id="authContainer"  class="ext-style-2">
 
-          <div id="userProfile" style="display:none; align-items:center; gap:8px;">
-            <img id="userAvatar" src="" alt="User" style="width:28px; height:28px; border-radius:50%;">
+          <div id="userProfile"  class="ext-style-3">
+            <img id="userAvatar" src="" alt="User"  class="ext-style-4">
             <button id="btnLogout" class="btn btn-icon btn-sm" onclick="logout()" title="Logout"><i
                 data-lucide="log-out"></i></button>
           </div>
@@ -93,24 +93,24 @@
   <div id="appContainer">
 
     <!-- PAGE: LOGIN -->
-    <main class="container page-view active" id="page-login"
-      style="display:flex; align-items:center; justify-content:center; min-height: calc(100vh - 100px);">
-      <div class="card"
-        style="max-width: 420px; width: 100%; padding: 40px 30px; text-align: center; background: rgba(18, 24, 38, 0.6); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);">
+    <main class="container page-view active ext-style-5" id="page-login"
+      >
+      <div class="card ext-style-6"
+        >
         <div
-          style="width: 72px; height: 72px; background: linear-gradient(135deg, var(--primary), var(--accent-cyan)); border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px auto; box-shadow: 0 10px 25px var(--primary-glow);">
-          <i data-lucide="navigation" style="width: 36px; height: 36px; color: #fff;"></i>
+           class="ext-style-7">
+          <i data-lucide="navigation"  class="ext-style-8"></i>
         </div>
-        <h2 style="font-size: 26px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.5px;">Welcome to
+        <h2  class="ext-style-9">Welcome to
           OpenBryton</h2>
-        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 32px; line-height: 1.6;">
+        <p  class="ext-style-10">
           Your ultimate companion for snapping GPX routes to OSM roads, planning Turn-by-Turn, and exporting perfectly
           to Bryton devices.
         </p>
-        <button class="btn btn-primary"
-          style="width: 100%; padding: 14px; font-size: 15px; font-weight: 600; border-radius: 12px; display: flex; justify-content: center; align-items: center; gap: 10px; background: #fff; color: #000; border: none; box-shadow: 0 4px 15px rgba(255,255,255,0.2);"
+        <button class="btn btn-primary ext-style-11"
+          
           onclick="loginWithGoogle()">
-          <svg style="width:20px; height:20px;" viewBox="0 0 24 24">
+          <svg  viewBox="0 0 24 24" class="ext-style-12">
             <path fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
             <path fill="#34A853"
@@ -127,17 +127,17 @@
     </main>
 
     <!-- PAGE: CREATE (Editor) -->
-    <main class="container main-layout page-view hidden" id="page-create" style="display:none;">
+    <main class="container main-layout page-view hidden ext-style-1" id="page-create" >
       <!-- Left Column: Controls & Upload -->
       <aside class="sidebar-panel">
         <!-- Sidebar Header / Minimize Button -->
-        <div class="sidebar-top-bar"
-          style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; color:#f1f5f9; padding: 0 5px;">
-          <span class="sidebar-title" id="sidebarTitle"
-            style="font-weight:600; display:flex; align-items:center; gap:8px;"><i data-lucide="settings"></i>
+        <div class="sidebar-top-bar ext-style-13"
+          >
+          <span class="sidebar-title ext-style-14" id="sidebarTitle"
+            ><i data-lucide="settings"></i>
             <span data-i18n="panelHeader">Panel</span></span>
-          <button class="btn btn-outline btn-sm" id="btnToggleSidebarUI" title="Minimize Panel"
-            style="padding: 4px 10px; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;"><i
+          <button class="btn btn-outline btn-sm ext-style-15" id="btnToggleSidebarUI" title="Minimize Panel"
+            ><i
               data-lucide="minimize-2"></i> <span>Sembunyikan</span></button>
         </div>
         <div class="sidebar-content" id="sidebarContent">
@@ -156,17 +156,17 @@
                 <p class="drop-zone-hint" data-i18n="uploadHintSupport">Mendukung file GPX dari Strava, Komoot, Garmin,
                   OSM, dll.</p>
               </div>
-              <div class="file-info hidden" id="fileInfo" style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                  <div style="display: flex; gap: 15px; align-items: center;">
-                    <div class="file-info-icon"
-                      style="color:var(--primary); background:rgba(37,99,235,0.2); padding:10px; border-radius:8px;"><i
+              <div class="file-info hidden ext-style-16" id="fileInfo" >
+                <div  class="ext-style-17">
+                  <div  class="ext-style-18">
+                    <div class="file-info-icon ext-style-19"
+                      ><i
                         data-lucide="file-check"></i></div>
                     <div class="file-info-details">
-                      <div class="file-name" id="fileName"
-                        style="font-weight:600; font-size:14px; word-break:break-all;">
+                      <div class="file-name ext-style-20" id="fileName"
+                        >
                         track.gpx</div>
-                      <div class="file-meta" id="fileMeta" style="font-size:12px; color:#9ca3af;">0 KB</div>
+                      <div class="file-meta ext-style-21" id="fileMeta" >0 KB</div>
                     </div>
                   </div>
                   <button type="button" class="btn-icon" id="btnRemoveFile" title="Ganti file">
@@ -180,10 +180,10 @@
           <section class="card settings-card">
             <h2 class="card-title"><i data-lucide="scissors"></i> <span data-i18n="routeToolsTitle">2. Alat Rute Tambahan</span></h2>
             <div class="setting-item">
-               <button type="button" class="btn btn-outline" id="btnSimplifyRdp" style="width: 100%; display: flex; justify-content: center; gap: 8px;">
+               <button type="button" class="btn btn-outline ext-style-22" id="btnSimplifyRdp" >
                  <i data-lucide="minimize"></i> <span data-i18n="btnSimplifyRdp">Optimasi Garis Lurus (RDP)</span>
                </button>
-               <p class="setting-desc" style="margin-top:8px;" data-i18n="rdpDesc">Membuang titik berlebih di jalur lurus untuk meringankan ukuran file tanpa mengubah bentuk asli rute.</p>
+               <p class="setting-desc ext-style-23"  data-i18n="rdpDesc">Membuang titik berlebih di jalur lurus untuk meringankan ukuran file tanpa mengubah bentuk asli rute.</p>
             </div>
           </section>
 
@@ -202,10 +202,10 @@
               </div>
               <p class="setting-desc" data-i18n="tbtOsmDesc">Mengambil nama jalan resmi & manuver belokan dari
                 OpenStreetMap OSRM Routing Engine.</p>
-              <div style="margin-top:8px;">
-                <label style="font-size: 12px; color:#9ca3af; display:block; margin-bottom:4px;" data-i18n="orsKeyLabel">OpenRouteService API Key (Disarankan):</label>
-                <input type="text" id="orsApiKey" class="input-text" placeholder="Masukkan API Key ORS (opsional)..." data-i18n-placeholder="orsKeyPlaceholder"
-                  style="width:100%; padding: 6px; border-radius:4px; background:var(--bg-input); border:1px solid var(--bg-card-border); color:#fff; font-family:inherit;">
+              <div  class="ext-style-23">
+                <label  data-i18n="orsKeyLabel" class="ext-style-24">OpenRouteService API Key (Disarankan):</label>
+                <input type="text" id="orsApiKey" class="input-text ext-style-25" placeholder="Masukkan API Key ORS (opsional)..." data-i18n-placeholder="orsKeyPlaceholder"
+                  >
               </div>
             </div>
 
@@ -264,7 +264,7 @@
 
             <!-- ClimbPro Settings -->
             <h3
-              style="font-size:14px; margin: 20px 0 10px 0; padding-bottom: 6px; border-bottom: 1px solid var(--bg-card-border);">
+               class="ext-style-26">
               <i data-lucide="mountain"></i> <span data-i18n="climbTitle">Kriteria Deteksi Tanjakan</span>
             </h3>
 
@@ -305,34 +305,34 @@
           <section class="card download-card" id="downloadCard">
             <h2 class="card-title"><i data-lucide="package-check"></i> <span data-i18n="downloadTitle">4. Download Paket
                 Bryton</span></h2>
-            <div style="margin-bottom: 16px; margin-top: 16px;">
-              <label style="display:block; font-size:13px; margin-bottom:6px; font-weight:600;"
-                data-i18n="routeNameLabel">Nama Rute di Perangkat Bryton (Opsional)</label>
+            <div  class="ext-style-27">
+              <label 
+                data-i18n="routeNameLabel" class="ext-style-28">Nama Rute di Perangkat Bryton (Opsional)</label>
               <input type="text" id="brytonRouteName" placeholder="Contoh: Gowes Sentul 50km"
                 data-i18n-placeholder="routeNamePlaceholder"
-                style="width:100%; padding:10px; border-radius:6px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border); font-family:inherit;">
+                 class="ext-style-29">
             </div>
 
-            <button type="button" class="btn btn-primary btn-block" id="btnSaveRoute" style="margin-bottom: 16px;"
+            <button type="button" class="btn btn-primary btn-block ext-style-30" id="btnSaveRoute" 
               disabled>
               <i data-lucide="save"></i>
               <span data-i18n="btnSaveDb">Simpan ke Database</span>
             </button>
 
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
-              <button type="button" class="btn btn-success" id="btnDownloadBryton" style="flex: 1;" disabled>
+            <div  class="ext-style-31">
+              <button type="button" class="btn btn-success ext-style-32" id="btnDownloadBryton"  disabled>
                 <i data-lucide="download"></i>
                 <span data-i18n="btnDownloadBryton">Bryton (.ZIP)</span>
               </button>
-              <button type="button" class="btn btn-outline" id="btnDownloadFit" style="flex: 1;" disabled>
+              <button type="button" class="btn btn-outline ext-style-32" id="btnDownloadFit"  disabled>
                 <i data-lucide="download"></i>
                 <span data-i18n="btnDownloadFit">FIT</span>
               </button>
-              <button type="button" class="btn btn-outline" id="btnDownloadKml" style="flex: 1;" disabled>
+              <button type="button" class="btn btn-outline ext-style-32" id="btnDownloadKml"  disabled>
                 <i data-lucide="download"></i>
                 <span data-i18n="btnDownloadKml">KML</span>
               </button>
-              <button type="button" class="btn btn-outline" id="btnDownloadGpx" style="flex: 1;" disabled>
+              <button type="button" class="btn btn-outline ext-style-32" id="btnDownloadGpx"  disabled>
                 <i data-lucide="download"></i>
                 <span data-i18n="btnDownloadGpx">GPX</span>
               </button>
@@ -401,7 +401,7 @@
         <div class="card map-card">
           <div class="card-header-flex">
             <div class="map-title-group">
-              <h2 class="card-title" style="margin-bottom:0;"><i data-lucide="map"></i> <span
+              <h2 class="card-title ext-style-33" ><i data-lucide="map"></i> <span
                   data-i18n="mapTitle">Visualisasi Rute & Titik Belokan</span>
               </h2>
             </div>
@@ -457,7 +457,7 @@
             <i data-lucide="pen-tool"></i>
             <span data-i18n="modeCreateActive">Mode Buat Rute Aktif: Klik pada peta untuk menggambar.</span>
             <label
-              style="display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 4px; cursor: pointer;">
+               class="ext-style-34">
               <input type="checkbox" id="chkManualSnap" checked> <span data-i18n="chkSnapToRoad">Snap to Road
                 (OSM)</span>
             </label>
@@ -478,7 +478,7 @@
             </div>
           </div>
           <canvas id="elevationCanvas"
-            style="width: 100%; height: 90px; display: none; background: #1e293b; border-radius: 8px; margin-top: 15px;"></canvas>
+             class="ext-style-35"></canvas>
 
           <div class="map-footer-info">
             <div class="map-legend">
@@ -499,21 +499,21 @@
 
         <!-- Turn by Turn, POI, and Climb Tables -->
         <div class="card turns-card">
-          <div class="card-header-flex" style="flex-wrap: wrap; gap: 10px;">
+          <div class="card-header-flex ext-style-36" >
             <h2 class="card-title"><i data-lucide="list-ordered"></i> <span data-i18n="turnsTableTitle">Daftar
                 Instruksi</span></h2>
-            <div class="tabs-container" style="display:flex; gap:5px;" id="tableTabs">
+            <div class="tabs-container ext-style-37"  id="tableTabs">
               <button class="btn btn-sm btn-tab btn-primary active-tab" data-target="tab-turns-table"><span
-                  data-i18n="tabTurns">Turn-by-Turn</span> <span class="badge" id="badge-turns"
-                  style="margin-left:5px; background:rgba(255,255,255,0.2)">0</span></button>
+                  data-i18n="tabTurns">Turn-by-Turn</span> <span class="badge ext-style-38" id="badge-turns"
+                  >0</span></button>
               <button class="btn btn-sm btn-tab btn-outline" data-target="tab-pois-table"><span
-                  data-i18n="tabPois">POI</span> <span class="badge" id="badge-pois"
-                  style="margin-left:5px; background:rgba(255,255,255,0.2)">0</span></button>
+                  data-i18n="tabPois">POI</span> <span class="badge ext-style-38" id="badge-pois"
+                  >0</span></button>
               <button class="btn btn-sm btn-tab btn-outline" data-target="tab-climbs-table"><span
-                  data-i18n="tabClimbs">Climb</span> <span class="badge" id="badge-climbs"
-                  style="margin-left:5px; background:rgba(255,255,255,0.2)">0</span></button>
+                  data-i18n="tabClimbs">Climb</span> <span class="badge ext-style-38" id="badge-climbs"
+                  >0</span></button>
             </div>
-            <div class="turns-filter" style="display:flex; gap:10px; align-items:center;">
+            <div class="turns-filter ext-style-39" >
               <span id="turnCounterBadge" class="badge badge-secondary" data-i18n="turnCounterBadge">0 Instruksi</span>
               <button class="btn btn-icon btn-sm" id="btnToggleTableUI" title="Minimize Tabel"
                 data-i18n-title="btnMinimizeTable"><i data-lucide="minimize-2"></i></button>
@@ -606,13 +606,13 @@
     </div>
 
     <!-- Modal Add TBT -->
-    <div id="modalAddTurn" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="corner-up-right"></i> <span data-i18n="modalTitleTbt">Tambah Belokan (TBT)</span></h3>
-        <p style="font-size:13px; color:#9ca3af; margin-bottom:15px;">Koordinat: <span id="addTurnCoords"></span></p>
-        <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Arah Belokan</label>
-          <select id="addTurnDirection" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+    <div id="modalAddTurn" class="modal-backdrop hidden ext-style-40" >
+      <div class="card ext-style-41" >
+        <h3  class="ext-style-42"><i data-lucide="corner-up-right"></i> <span data-i18n="modalTitleTbt">Tambah Belokan (TBT)</span></h3>
+        <p  class="ext-style-43">Koordinat: <span id="addTurnCoords"></span></p>
+        <div  class="ext-style-44">
+          <label  class="ext-style-45">Arah Belokan</label>
+          <select id="addTurnDirection"  class="ext-style-46">
             <option value="1">Lurus (Go Ahead)</option>
             <option value="2">Belok Kanan</option>
             <option value="3">Belok Kiri</option>
@@ -627,11 +627,11 @@
             <option value="12">Putar Balik Kiri</option>
           </select>
         </div>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Jalan / Instruksi</label>
-          <input type="text" id="addTurnText" placeholder="Contoh: Jl. Sudirman" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <div  class="ext-style-47">
+          <label  class="ext-style-45">Nama Jalan / Instruksi</label>
+          <input type="text" id="addTurnText" placeholder="Contoh: Jl. Sudirman"  class="ext-style-46">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <div  class="ext-style-48">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
           <button type="button" class="btn btn-primary" id="btnConfirmAddTurn">Tambahkan</button>
         </div>
@@ -639,13 +639,13 @@
     </div>
 
     <!-- Modal Add POI -->
-    <div id="modalAddPoi" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="map-pin"></i> <span data-i18n="modalTitlePoi">Tambah POI</span></h3>
-        <p style="font-size:13px; color:#9ca3af; margin-bottom:15px;">Koordinat: <span id="addPoiCoords"></span></p>
-        <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Ikon POI</label>
-          <select id="addPoiDirection" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+    <div id="modalAddPoi" class="modal-backdrop hidden ext-style-40" >
+      <div class="card ext-style-41" >
+        <h3  class="ext-style-42"><i data-lucide="map-pin"></i> <span data-i18n="modalTitlePoi">Tambah POI</span></h3>
+        <p  class="ext-style-43">Koordinat: <span id="addPoiCoords"></span></p>
+        <div  class="ext-style-44">
+          <label  class="ext-style-45">Ikon POI</label>
+          <select id="addPoiDirection"  class="ext-style-46">
             <option value="106">Water</option>
             <option value="101">Camping</option>
             <option value="100">Target</option>
@@ -656,11 +656,11 @@
             <option value="107">Sprint</option>
           </select>
         </div>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama POI</label>
-          <input type="text" id="addPoiText" placeholder="Contoh: Warung Kopi" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <div  class="ext-style-47">
+          <label  class="ext-style-45">Nama POI</label>
+          <input type="text" id="addPoiText" placeholder="Contoh: Warung Kopi"  class="ext-style-46">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <div  class="ext-style-48">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
           <button type="button" class="btn btn-primary" id="btnConfirmAddPoi">Tambahkan</button>
         </div>
@@ -668,12 +668,12 @@
     </div>
 
     <!-- Modal Edit TBT -->
-    <div id="modalEditTurn" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span>Edit Belokan</span></h3>
-        <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Arah Belokan</label>
-          <select id="editTurnDirectionOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+    <div id="modalEditTurn" class="modal-backdrop hidden ext-style-40" >
+      <div class="card ext-style-41" >
+        <h3  class="ext-style-42"><i data-lucide="edit"></i> <span>Edit Belokan</span></h3>
+        <div  class="ext-style-44">
+          <label  class="ext-style-45">Arah Belokan</label>
+          <select id="editTurnDirectionOnly"  class="ext-style-46">
             <option value="1">Lurus (Go Ahead)</option>
             <option value="2">Belok Kanan</option>
             <option value="3">Belok Kiri</option>
@@ -688,11 +688,11 @@
             <option value="12">Putar Balik Kiri</option>
           </select>
         </div>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Jalan / Instruksi</label>
-          <input type="text" id="editTurnTextOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <div  class="ext-style-47">
+          <label  class="ext-style-45">Nama Jalan / Instruksi</label>
+          <input type="text" id="editTurnTextOnly"  class="ext-style-46">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <div  class="ext-style-48">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
           <button type="button" class="btn btn-primary" onclick="confirmEditTurn()">Simpan</button>
         </div>
@@ -700,12 +700,12 @@
     </div>
 
     <!-- Modal Edit POI -->
-    <div id="modalEditPoi" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span>Edit POI</span></h3>
-        <div style="margin-bottom:12px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Ikon POI</label>
-          <select id="editPoiDirectionOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+    <div id="modalEditPoi" class="modal-backdrop hidden ext-style-40" >
+      <div class="card ext-style-41" >
+        <h3  class="ext-style-42"><i data-lucide="edit"></i> <span>Edit POI</span></h3>
+        <div  class="ext-style-44">
+          <label  class="ext-style-45">Ikon POI</label>
+          <select id="editPoiDirectionOnly"  class="ext-style-46">
             <option value="101">Camping</option>
             <option value="100">Target</option>
             <option value="102">Food</option>
@@ -716,11 +716,11 @@
             <option value="107">Sprint</option>
           </select>
         </div>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama POI</label>
-          <input type="text" id="editPoiTextOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+        <div  class="ext-style-47">
+          <label  class="ext-style-45">Nama POI</label>
+          <input type="text" id="editPoiTextOnly"  class="ext-style-46">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <div  class="ext-style-48">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
           <button type="button" class="btn btn-primary" onclick="confirmEditPoi()">Simpan</button>
         </div>
@@ -728,31 +728,31 @@
     </div>
 
     <!-- Modal Edit Climb -->
-    <div id="modalEditClimb" class="modal-backdrop hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; display:none; align-items:center; justify-content:center;">
-      <div class="card" style="width:400px; max-width:90%; padding:20px; background:var(--bg-card);">
-        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;"><i data-lucide="edit"></i> <span>Edit Tanjakan</span></h3>
-        <div style="margin-bottom:20px;">
-          <label style="display:block; font-size:13px; margin-bottom:4px;">Nama Tanjakan</label>
-          <input type="text" id="editClimbTextOnly" style="width:100%; padding:8px; border-radius:4px; background:var(--bg-input); color:#fff; border:1px solid var(--bg-card-border);">
+    <div id="modalEditClimb" class="modal-backdrop hidden ext-style-40" >
+      <div class="card ext-style-41" >
+        <h3  class="ext-style-42"><i data-lucide="edit"></i> <span>Edit Tanjakan</span></h3>
+        <div  class="ext-style-47">
+          <label  class="ext-style-45">Nama Tanjakan</label>
+          <input type="text" id="editClimbTextOnly"  class="ext-style-46">
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <div  class="ext-style-48">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()">Batal</button>
           <button type="button" class="btn btn-primary" onclick="confirmEditClimb()">Simpan</button>
         </div>
       </div>
     </div>
     
-    <button id="btnCloseModal" style="display:none;"></button>
+    <button id="btnCloseModal"  class="ext-style-1"></button>
 
   </div> <!-- End page-create -->
 
 
 
   <!-- PAGE: MY ROUTES -->
-  <main class="container page-view hidden" id="page-myroutes" style="padding: 20px;">
+  <main class="container page-view hidden ext-style-49" id="page-myroutes" >
     <h2>My Saved Routes</h2>
-    <div id="myroutesGrid" class="route-grid"
-      style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+    <div id="myroutesGrid" class="route-grid ext-style-50"
+      >
       <!-- Cards rendered here -->
     </div>
   </main>
@@ -766,6 +766,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
   <script src="lang.js?v=3"></script>
+  <script src="tbt-engine.js?v=3"></script>
+  <script src="export.js?v=3"></script>
   <script src="firebase-db.js?v=3"></script>
   <script src="app.js?v=3"></script>
   <script>
