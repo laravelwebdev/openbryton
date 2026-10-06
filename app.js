@@ -1871,6 +1871,8 @@ async function runTurnAnalysis() {
     const dupDistThresh = parseInt(elements.dupDistanceThreshold.value, 10);
     const smoothingDist = parseInt(elements.smoothingRadius.value, 10);
 
+    state.extraTurns = detectAngleTurns(state.points, state.osmTurns, angleThresh, dupDistThresh, smoothingDist);
+
     // ------------------------------------------------
     // SMART CLIMB DENSIFICATION & CLEANUP LOGIC
     // ------------------------------------------------
