@@ -3501,13 +3501,12 @@ async function shareToBrytonActive() {
     const binId = Math.random().toString(36).substring(2, 14);
     const uploadUrl = `https://filebin.net/${binId}/${fileName}`;
 
+    // Create a new blob with type text/plain to avoid CORS preflight options
+    const plainBlob = new Blob([blob], { type: 'text/plain' });
+
     const response = await fetch(uploadUrl, {
       method: 'POST',
-      body: blob,
-      headers: {
-        'Content-Type': 'application/octet-stream',
-        'Accept': 'application/json'
-      }
+      body: plainBlob
     });
 
     if (!response.ok) throw new Error('Failed to upload file.');
