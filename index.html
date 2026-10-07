@@ -176,35 +176,15 @@
             </div>
 
             <div id="settingsCardContent" class="settingsCardContent-style">
-              <!-- OSM TBT Toggle -->
+              <!-- GraphHopper TBT Toggle -->
               <div class="setting-item">
                 <div class="setting-label-row">
                   <label for="enableOsmTbt" class="setting-label">
-                    <i data-lucide="globe"></i> <span data-i18n="tbtOsmAuto">Turn-by-Turn OpenStreetMap (OSRM)</span>
+                    <i data-lucide="navigation"></i> <span data-i18n="tbtOsmAuto">GraphHopper Turn-by-Turn</span>
                   </label>
-                  <input type="checkbox" id="enableOsmTbt" class="switch-checkbox">
+                  <input type="checkbox" id="enableOsmTbt" class="switch-checkbox" checked>
                 </div>
-                <p class="setting-desc" data-i18n="tbtOsmDesc">Mengambil nama jalan resmi & manuver belokan dari
-                  OpenStreetMap OSRM Routing Engine.</p>
-                <div class="inline-style-20">
-                  <label class="inline-style-21" data-i18n="orsKeyLabel">OpenRouteService API Key (Disarankan):</label>
-                  <input type="text" id="orsApiKey" class="input-full-width" placeholder="Masukkan API Key ORS (opsional)..."
-                    data-i18n-placeholder="orsKeyPlaceholder">
-                </div>
-              </div>
-
-              <!-- Reverse Geocode Names Toggle -->
-              <div class="setting-item">
-                <div class="setting-label-row">
-                  <label for="enableOsmNames" class="setting-label">
-                    <i data-lucide="map-pin"></i> <span data-i18n="autoOsmNames">Auto Nama Jalan OSM (Reverse
-                      Geocode)</span>
-                  </label>
-                  <input type="checkbox" id="enableOsmNames" checked class="switch-checkbox">
-                </div>
-                <p class="setting-desc" data-i18n="autoOsmDesc">Mengambil nama jalan asli dari OpenStreetMap untuk
-                  setiap
-                  titik belokan.</p>
+                <p class="setting-desc" data-i18n="tbtOsmDesc">Mengambil instruksi belokan & nama jalan otomatis dari GraphHopper API.</p>
               </div>
 
               <!-- Angle Threshold -->

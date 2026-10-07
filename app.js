@@ -159,8 +159,6 @@ const elements = {
   btnUploadGpxToolbar: document.getElementById('btnUploadGpxToolbar'),
 
   enableOsmTbt: document.getElementById('enableOsmTbt'),
-  orsApiKey: document.getElementById('orsApiKey'),
-  enableOsmNames: document.getElementById('enableOsmNames'),
   angleThreshold: document.getElementById('angleThreshold'),
   angleThresholdValue: document.getElementById('angleThresholdValue'),
   dupDistanceThreshold: document.getElementById('dupDistanceThreshold'),
@@ -1927,85 +1925,21 @@ async function openAddManualTurnModal(latlng) {
     if (chk && chk.checked && state.points.length > 0) {
       try {
         showToast('Mengambil instruksi dari GraphHopper...', 'info', false);
-        const keyRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.brytonsport.com/download/Docs/graphhopperKey'));
-        if (keyRes.ok) {
-          const apiKey = await keyRes.text();
-          const targetIdx = findClosestPointIndex(state.points, latlng.lat, latlng.lng);
+        const apiKey = await getGraphHopperApiKey();
+        const targetIdx = findClosestPointIndex(state.points, latlng.lat, latlng.lng);
+        const locale = typeof currentLang !== 'undefined' && currentLang === 'en' ? 'en' : 'id';
+        const ghData = await fetchGraphHopperInstruction(state.points, targetIdx, apiKey, locale);
 
-          function getPointAlongRoute(points, startIdx, distance, direction) {
-            let currIdx = startIdx;
-            let distRemaining = distance;
-            while (true) {
-              let nextIdx = currIdx + direction;
-              if (nextIdx < 0 || nextIdx >= points.length) return points[currIdx];
-              let d = haversineDistance(points[currIdx].lat, points[currIdx].lon, points[nextIdx].lat, points[nextIdx].lon);
-              if (distRemaining <= d && d > 0) {
-                const fraction = distRemaining / d;
-                return {
-                  lat: points[currIdx].lat + (points[nextIdx].lat - points[currIdx].lat) * fraction,
-                  lon: points[currIdx].lon + (points[nextIdx].lon - points[currIdx].lon) * fraction
-                };
-              }
-              distRemaining -= d;
-              currIdx = nextIdx;
-            }
-          }
-
-          const optimalDist = 30; // 30m is optimal to capture intersections in GraphHopper
-          const p1 = getPointAlongRoute(state.points, targetIdx, optimalDist, -1);
-          const p2 = getPointAlongRoute(state.points, targetIdx, optimalDist, 1);
-
-          const locale = typeof currentLang !== 'undefined' && currentLang === 'en' ? 'en' : 'id';
-          const url = `https://graphhopper.com/api/1/route?point=${p1.lat},${p1.lon}&point=${p2.lat},${p2.lon}&elevation=true&vehicle=mtb&calc_points=true&instructions=true&locale=${locale}&key=${apiKey.trim()}`;
-
-          const res = await fetch(url);
-          if (!res.ok) {
-            const errText = await res.text();
-            alert("GraphHopper API Error (" + res.status + "):\n" + errText);
-            return;
-          }
-
-          const data = await res.json();
-
-          if (data.paths && data.paths.length > 0) {
-            const insts = data.paths[0].instructions;
-            if (insts && insts.length > 0) {
-              let foundIdx = -1;
-              for (let i = 0; i < insts.length; i++) {
-                if (insts[i].sign !== 0 && insts[i].sign !== 4) {
-                  foundIdx = i;
-                  break;
-                }
-              }
-              if (foundIdx === -1 && insts.length > 0) foundIdx = 0;
-
-              if (foundIdx !== -1) {
-                const inst = insts[foundIdx];
-                const ghToBrytonMap = {
-                  "-8": 12, "-7": 14, "-6": 32, "-3": 7, "-2": 3, "-1": 5,
-                  "0": 1, "1": 4, "2": 2, "3": 6, "4": 33, "5": 30, "6": 31, "7": 13, "8": 11
-                };
-                const bCode = ghToBrytonMap[inst.sign] || 1;
-                document.getElementById('addTurnDirection').value = bCode;
-                document.getElementById('addTurnText').value = inst.text;
-
-                await confirmAddManualTurn();
-                return;
-              } else {
-                alert("GraphHopper: Tidak ada instruksi belokan valid dalam rute ini");
-              }
-            } else {
-              alert("GraphHopper: Tidak ada instruksi yang dikembalikan (array instructions kosong/undefined)");
-            }
-          } else {
-            alert("GraphHopper: Tidak ada rute yang ditemukan");
-          }
+        if (ghData && ghData.text) {
+          document.getElementById('addTurnDirection').value = ghData.directionCode;
+          document.getElementById('addTurnText').value = ghData.text;
+          await confirmAddManualTurn();
+          return;
         } else {
-          alert("Gagal fetch API Key: " + keyRes.statusText);
+          showToast('GraphHopper: Tidak ada instruksi belokan di titik ini', 'warning');
         }
       } catch (e) {
         console.error(e);
-        alert("GraphHopper Exception:\n" + e.message);
         showToast('Gagal memanggil GraphHopper', 'error');
       }
     }
@@ -2508,32 +2442,20 @@ async function runTurnAnalysis() {
     state.osmTurns = [];
     state.extraTurns = [];
 
-    const useOsm = elements.enableOsmTbt.checked;
-    if (useOsm) {
-      const orsKey = elements.orsApiKey.value.trim();
-      if (orsKey) {
-        showToast(t('toastFetchORS'), 'info', false);
-        state.osmTurns = await fetchOrsTurnByTurn(state.points, orsKey);
-      } else {
-        try {
-          state.osmTurns = await fetchOsmTurnByTurn(state.points);
-        } catch (e) {
-          console.warn('OSRM Match failed, falling back to OSM Overpass Intersection engine...', e);
-        }
-
-        // If OSRM returned 0, run our built-in OSM Overpass Intersection Engine!
-        if (state.osmTurns.length === 0) {
-          showToast(t('toastFetchOverpass'), 'info', false);
-          state.osmTurns = await fetchOsmOverpassIntersections(state.points);
-        }
-      }
-    }
-
     const angleThresh = parseInt(elements.angleThreshold.value, 10);
     const dupDistThresh = parseInt(elements.dupDistanceThreshold.value, 10);
     const smoothingDist = parseInt(elements.smoothingRadius.value, 10);
 
-    state.extraTurns = detectAngleTurns(state.points, state.osmTurns, angleThresh, dupDistThresh, smoothingDist);
+    const useGhTbt = elements.enableOsmTbt.checked;
+
+    if (useGhTbt) {
+      showToast(typeof t === 'function' && t('toastFetchGH') ? t('toastFetchGH') : 'Mengambil data dari GraphHopper API...', 'info', false);
+      const candidateTurns = detectAngleTurns(state.points, [], angleThresh, dupDistThresh, smoothingDist);
+      state.osmTurns = await enrichCandidateTurnsWithGraphHopper(state.points, candidateTurns);
+      state.extraTurns = [];
+    } else {
+      state.extraTurns = detectAngleTurns(state.points, state.osmTurns, angleThresh, dupDistThresh, smoothingDist);
+    }
 
     // ------------------------------------------------
     // SMART CLIMB DENSIFICATION & CLEANUP LOGIC
@@ -2605,11 +2527,6 @@ async function runTurnAnalysis() {
 
     let combined = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
 
-    if (elements.enableOsmNames.checked && combined.length > 0) {
-      showToast(t('toastFetchOsmNames'), 'info', false);
-      combined = await enrichStreetNamesFromOsm(combined);
-    }
-
     state.combinedInstructions = combined;
     updateStatsAndUI();
 
@@ -2631,223 +2548,124 @@ async function runTurnAnalysis() {
   }
 }
 
-/**
- * OpenRouteService (ORS) Directions API Integration (when user supplies API key)
- */
-async function fetchOrsTurnByTurn(points, apiKey) {
-  if (points.length < 2) return [];
-
-  const sampled = [points[0]];
-  const step = Math.max(1, Math.floor(points.length / 35));
-  for (let i = step; i < points.length - 1; i += step) {
-    sampled.push(points[i]);
+function getPointAlongRoute(points, startIdx, distance, direction) {
+  let currIdx = startIdx;
+  let distRemaining = distance;
+  while (true) {
+    let nextIdx = currIdx + direction;
+    if (nextIdx < 0 || nextIdx >= points.length) return points[currIdx];
+    let d = haversineDistance(points[currIdx].lat, points[currIdx].lon, points[nextIdx].lat, points[nextIdx].lon);
+    if (distRemaining <= d && d > 0) {
+      const fraction = distRemaining / d;
+      return {
+        lat: points[currIdx].lat + (points[nextIdx].lat - points[currIdx].lat) * fraction,
+        lon: points[currIdx].lon + (points[nextIdx].lon - points[currIdx].lon) * fraction
+      };
+    }
+    distRemaining -= d;
+    currIdx = nextIdx;
   }
-  sampled.push(points[points.length - 1]);
+}
 
-  const coords = sampled.map(p => [p.lon, p.lat]);
+const GH_TO_BRYTON_MAP = {
+  "-8": 12, "-7": 14, "-6": 32, "-3": 7, "-2": 3, "-1": 5,
+  "0": 1, "1": 4, "2": 2, "3": 6, "4": 33, "5": 30, "6": 31, "7": 13, "8": 11
+};
 
-  const res = await fetch('https://api.openrouteservice.org/v2/directions/cycling-regular', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': apiKey
-    },
-    body: JSON.stringify({ coordinates: coords, instructions: true })
-  });
+async function fetchGraphHopperInstruction(points, targetIdx, apiKey, locale) {
+  try {
+    const optimalDist = 30; // 30m sampling around turn point
+    const p1 = getPointAlongRoute(points, targetIdx, optimalDist, -1);
+    const p2 = getPointAlongRoute(points, targetIdx, optimalDist, 1);
 
-  if (!res.ok) throw new Error(`ORS API Error ${res.status}`);
+    const url = `https://graphhopper.com/api/1/route?point=${p1.lat},${p1.lon}&point=${p2.lat},${p2.lon}&elevation=true&vehicle=mtb&calc_points=true&instructions=true&locale=${locale}&key=${apiKey.trim()}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) return null;
 
-  const data = await res.json();
+    const data = await res.json();
+    if (!data.paths || data.paths.length === 0) return null;
+
+    const insts = data.paths[0].instructions;
+    if (!insts || insts.length === 0) return null;
+
+    let foundIdx = -1;
+    for (let i = 0; i < insts.length; i++) {
+      if (insts[i].sign !== 0 && insts[i].sign !== 4) {
+        foundIdx = i;
+        break;
+      }
+    }
+
+    // Jika GraphHopper tidak mendeteksi manuver belokan (hanya jalan lurus / sign 0),
+    // jangan kembalikan arah lurus agar tidak menimpa belokan sudut asli!
+    if (foundIdx === -1) {
+      // Ambil street_name murni jika ada (bukan text "Lanjut")
+      const streetName = (insts[0] && insts[0].street_name && insts[0].street_name.trim()) || '';
+      return {
+        directionCode: null, // tandai tidak ada belokan dari GH
+        text: '',
+        streetName: streetName
+      };
+    }
+
+    const inst = insts[foundIdx];
+    const bCode = GH_TO_BRYTON_MAP[inst.sign] || null;
+    return {
+      directionCode: bCode,
+      text: inst.text || '',
+      streetName: (inst.street_name && inst.street_name.trim()) || ''
+    };
+  } catch (err) {
+    return null;
+  }
+}
+
+async function enrichCandidateTurnsWithGraphHopper(points, candidateTurns) {
+  if (!candidateTurns || candidateTurns.length === 0) return [];
+
+  const apiKey = await getGraphHopperApiKey();
+  const locale = typeof currentLang !== 'undefined' && currentLang === 'en' ? 'en' : 'id';
   const turns = [];
 
-  if (data.routes && data.routes[0] && data.routes[0].segments) {
-    data.routes[0].segments.forEach(seg => {
-      seg.steps.forEach(step => {
-        const type = step.type; // 0=left, 1=right, etc.
-        const dirCode = mapOrsTypeToDirectionCode(type);
-        const loc = step.way_points; // index range
-        const approxPt = sampled[Math.min(sampled.length - 1, loc[0])];
-        const closestIdx = findClosestPointIndex(points, approxPt.lat, approxPt.lon);
+  // Concurrency limit to prevent throttling
+  const CONCURRENCY = 4;
+  for (let i = 0; i < candidateTurns.length; i += CONCURRENCY) {
+    const chunk = candidateTurns.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      chunk.map(async (turn) => {
+        const ghData = await fetchGraphHopperInstruction(points, turn.index, apiKey, locale);
+        let finalDirCode = turn.directionCode;
+        let finalInstruction = turn.instruction;
 
-        turns.push({
-          source: 'osm',
-          index: closestIdx,
-          lat: points[closestIdx].lat,
-          lon: points[closestIdx].lon,
-          directionCode: dirCode,
-          instruction: step.instruction || `${getDirectionLabel(dirCode)}: ${step.name || ''}`,
-          distFromStart: points[closestIdx].distFromStart
-        });
-      });
-    });
+        // Hanya gunakan arah & teks dari GraphHopper jika memang belokan nyata (bukan lurus/lanjut)
+        if (ghData && ghData.directionCode && ghData.directionCode !== 1 && ghData.text) {
+          finalDirCode = ghData.directionCode;
+          finalInstruction = ghData.text;
+        } else if (ghData && ghData.streetName) {
+          // Jika GH hanya lurus tapi memiliki nama jalan murni (bukan kata "Lanjut"), tambahkan nama jalannya
+          finalInstruction = `${turn.instruction} ke ${ghData.streetName}`;
+        } else {
+          // Tetap gunakan belokan manual/sudut asli tanpa tambahan apa-apa
+          finalInstruction = turn.instruction;
+        }
+
+        return {
+          id: Math.random().toString(36).substr(2, 9),
+          source: (ghData && ghData.directionCode && ghData.directionCode !== 1) ? 'osm' : 'extra',
+          index: turn.index,
+          lat: turn.lat,
+          lon: turn.lon,
+          directionCode: finalDirCode,
+          instruction: finalInstruction,
+          distFromStart: turn.distFromStart,
+          angle: turn.angle
+        };
+      })
+    );
+    turns.push(...results);
   }
 
   return turns;
-}
-
-function mapOrsTypeToDirectionCode(orsType) {
-  switch (orsType) {
-    case 0: return 3;   // left
-    case 1: return 2;   // right
-    case 2: return 7;   // close left
-    case 3: return 6;   // close right
-    case 4: return 5;   // slight left
-    case 5: return 4;   // slight right
-    case 6: return 10;  // continue straight
-    case 7: return 10;  // roundabout -> continue straight
-    case 8: return 9;   // exit left
-    case 9: return 11;  // uturn right
-    case 10: return 1;  // go ahead
-    case 11: return 1;  // go ahead
-    case 12: return 5;  // keep left -> slight left
-    case 13: return 4;  // keep right -> slight right
-    case 14: return 1;  // unknown -> go ahead
-    default: return 1;
-  }
-}
-
-/**
- * Built-in OSM Overpass & Geometric Intersection Matcher:
- * Directly queries OpenStreetMap road network around bend points to guarantee
- * genuine OSM turns & street names without third-party routing server rate limits!
- */
-async function fetchOsmOverpassIntersections(points) {
-  const osmTurns = [];
-  if (points.length < 3) return osmTurns;
-
-  // Find candidate turns from significant bends (e.g. angle >= 25)
-  const candidateIndices = [];
-  for (let i = 2; i < points.length - 2; i += 2) {
-    const pPrev = points[i - 2];
-    const pCur = points[i];
-    const pNext = points[i + 2];
-
-    const b1 = calculateBearing(pPrev.lat, pPrev.lon, pCur.lat, pCur.lon);
-    const b2 = calculateBearing(pCur.lat, pCur.lon, pNext.lat, pNext.lon);
-    let diff = b2 - b1;
-    while (diff > 180) diff -= 360;
-    while (diff < -180) diff += 360;
-
-    if (Math.abs(diff) >= 28) {
-      candidateIndices.push({ index: i, angleDiff: diff });
-    }
-  }
-
-  // Query OSM Nominatim/Overpass for turns
-  const selected = candidateIndices;
-
-  for (const c of selected) {
-    // Tambahkan delay 1 detik agar tidak diblokir server Nominatim
-    await new Promise(r => setTimeout(r, 1000));
-
-    const pt = points[c.index];
-    const absAngle = Math.abs(c.angleDiff);
-
-    let dirCode = 1;
-    if (absAngle >= 135) dirCode = c.angleDiff < 0 ? 7 : 6;
-    else if (absAngle >= 55) dirCode = c.angleDiff < 0 ? 3 : 2;
-    else dirCode = c.angleDiff < 0 ? 5 : 4;
-
-    let originName = '';
-    let destName = '';
-    try {
-      const originPt = points[Math.max(0, c.index - 3)];
-      const destPt = points[Math.min(points.length - 1, c.index + 3)];
-
-      if (originPt) {
-        const urlO = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${originPt.lat.toFixed(6)}&lon=${originPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
-        const resO = await fetch(urlO, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
-        if (resO.ok) {
-          const dataO = await resO.json();
-          if (dataO && dataO.address) originName = dataO.address.road || dataO.address.neighbourhood || '';
-        }
-      }
-
-      if (destPt) {
-        const urlD = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${destPt.lat.toFixed(6)}&lon=${destPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
-        const resD = await fetch(urlD, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
-        if (resD.ok) {
-          const dataD = await resD.json();
-          if (dataD && dataD.address) destName = dataD.address.road || dataD.address.neighbourhood || '';
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    let text = getDirectionLabel(dirCode);
-    if (destName && destName !== originName) {
-      text = `${getDirectionLabel(dirCode)} ke ${destName}`;
-    }
-
-    osmTurns.push({
-      source: 'osm',
-      index: c.index,
-      lat: pt.lat,
-      lon: pt.lon,
-      directionCode: dirCode,
-      instruction: text,
-      distFromStart: pt.distFromStart
-    });
-  }
-
-  return osmTurns;
-}
-
-/**
- * Standard OSRM Match API
- */
-async function fetchOsmTurnByTurn(points) {
-  if (points.length < 2) return [];
-
-  const chunkSize = 50;
-  const sampleStep = Math.max(1, Math.floor(points.length / 100));
-  const sampled = [];
-  for (let i = 0; i < points.length; i += sampleStep) {
-    sampled.push({ point: points[i], origIndex: i });
-  }
-
-  const allOsmTurns = [];
-  const coordString = sampled.map(s => `${s.point.lon.toFixed(6)},${s.point.lat.toFixed(6)}`).join(';');
-  const radiuses = sampled.map(() => '45').join(';');
-
-  const url = `https://router.project-osrm.org/match/v1/driving/${coordString}?overview=simplified&geometries=geojson&steps=true&annotations=false&radiuses=${radiuses}`;
-  const response = await fetch(url, { signal: AbortSignal.timeout(6000) });
-  if (!response.ok) return [];
-
-  const json = await response.json();
-  if (json.code !== 'Ok' || !json.matchings) return [];
-
-  json.matchings.forEach(matching => {
-    matching.legs.forEach(leg => {
-      leg.steps.forEach(step => {
-        const maneuver = step.maneuver;
-        if (!maneuver) return;
-
-        const dirCode = mapOsrmManeuverToDirectionCode(maneuver.type, maneuver.modifier);
-        const loc = maneuver.location;
-        const matchedIndex = findClosestPointIndex(points, loc[1], loc[0]);
-        const matchedPoint = points[matchedIndex];
-
-        let instructionText = step.name ? `Lanjut ke ${step.name}` : getDirectionLabel(dirCode);
-        if (maneuver.type === 'turn' || maneuver.type === 'fork') {
-          instructionText = `${getDirectionLabel(dirCode)} ${step.name ? 'ke ' + step.name : ''}`.trim();
-        }
-
-        allOsmTurns.push({
-          source: 'osm',
-          index: matchedIndex,
-          lat: matchedPoint.lat,
-          lon: matchedPoint.lon,
-          directionCode: dirCode,
-          instruction: instructionText,
-          distFromStart: matchedPoint.distFromStart
-        });
-      });
-    });
-  });
-
-  return allOsmTurns;
 }
 
 function detectClimbs(points) {
@@ -2948,89 +2766,6 @@ function densifyRoute(originalPoints, maxDistanceMeters) {
 }
 
 // ------------------------------------------------
-
-async function enrichStreetNamesFromOsm(instructions) {
-  const enriched = [...instructions];
-  const toEnrich = enriched.filter(inst => !inst.instruction.includes('Jl.') && !inst.instruction.includes('Jalan'));
-
-  for (const inst of toEnrich) {
-    // Tambahkan delay 1 detik agar tidak diblokir server Nominatim
-    await new Promise(r => setTimeout(r, 1000));
-
-    try {
-      const originPt = state.points[Math.max(0, inst.index - 3)];
-      const destPt = state.points[Math.min(state.points.length - 1, inst.index + 3)];
-
-      let originName = '';
-      let destName = '';
-
-      if (originPt) {
-        const urlO = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${originPt.lat.toFixed(6)}&lon=${originPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
-        const resO = await fetch(urlO, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
-        if (resO.ok) {
-          const dataO = await resO.json();
-          if (dataO && dataO.address) originName = dataO.address.road || dataO.address.pedestrian || dataO.address.cycleway || '';
-        }
-      }
-
-      if (destPt) {
-        const urlD = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${destPt.lat.toFixed(6)}&lon=${destPt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
-        const resD = await fetch(urlD, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
-        if (resD.ok) {
-          const dataD = await resD.json();
-          if (dataD && dataD.address) destName = dataD.address.road || dataD.address.pedestrian || dataD.address.cycleway || '';
-        }
-      }
-
-      if (destName && destName !== originName) {
-        inst.instruction = `${getDirectionLabel(inst.directionCode)} ke ${destName}`;
-      }
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  // Enrich Climbs
-  for (let i = 0; i < state.climbs.length; i++) {
-    const climb = state.climbs[i];
-    if (!climb.name) {
-      await new Promise(r => setTimeout(r, 1000));
-      try {
-        const pt = state.points[climb.startIndex];
-        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pt.lat.toFixed(6)}&lon=${pt.lon.toFixed(6)}&zoom=18&addressdetails=1`;
-        const res = await fetch(url, { headers: { 'Accept-Language': 'id,en' }, signal: AbortSignal.timeout(2000) });
-        if (res.ok) {
-          const data = await res.json();
-          let roadName = '';
-          if (data && data.address) roadName = data.address.road || data.address.pedestrian || data.address.cycleway || '';
-
-          if (roadName) {
-            const climbPrefix = typeof t === 'function' ? t('climbPrefix') : 'Tanjakan';
-            climb.name = `${climbPrefix} ${roadName}`;
-          }
-        }
-      } catch (e) { }
-    }
-  }
-
-  return enriched;
-}
-
-function mapOsrmManeuverToDirectionCode(type, modifier) {
-  if (type === 'depart') return 1;
-  if (type === 'arrive') return 1;
-
-  if (modifier === 'uturn') return 11;
-  if (modifier === 'sharp left') return 7;
-  if (modifier === 'left') return 3;
-  if (modifier === 'slight left') return 5;
-  if (modifier === 'straight') return 1;
-  if (modifier === 'slight right') return 4;
-  if (modifier === 'right') return 2;
-  if (modifier === 'sharp right') return 6;
-
-  return 1;
-}
 
 function detectAngleTurns(points, existingOsmTurns, angleThreshold, dupDistThreshold, smoothingDist) {
   const extraTurns = [];
