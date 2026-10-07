@@ -67,6 +67,10 @@ function updateAuthUI(user) {
     if (document.getElementById('page-login')?.classList.contains('active') || !document.querySelector('.page-view.active') || document.querySelector('.page-view.active').id === 'page-login') {
       switchPage('myroutes');
     }
+    // Load Bryton userId jika sudah pernah disimpan
+    if (typeof loadBrytonUserIdFromFirestore === 'function') {
+      loadBrytonUserIdFromFirestore();
+    }
   } else {
     currentUser = null;
     if (btnLogin) btnLogin.style.display = 'inline-flex';

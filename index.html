@@ -306,9 +306,35 @@
                 </ul>
               </div>
 
-              <button type="button" class="btn btn-bryton-share flex-center-gap-8" id="btnShareBrytonActive" disabled title="Share to Bryton Active" data-i18n-title="btnShareBrytonActive">
+            </div>
+
+            <!-- Bryton Active Share Panel -->
+            <div class="bryton-active-panel" id="brytonActivePanel">
+              <div class="bryton-active-header">
+                <img src="https://active.brytonsport.com/favicon.ico" class="bryton-active-icon" onerror="this.style.display='none'" alt="" />
+                <span data-i18n="brytonActivePanelTitle">Bryton Active</span>
+              </div>
+
+              <!-- Bryton ID Row -->
+              <div class="bryton-id-row">
+                <label class="bryton-id-label" data-i18n="brytonIdLabel">Bryton ID</label>
+                <div class="bryton-id-input-group">
+                  <input type="text" id="brytonUserId" class="bryton-id-input"
+                    placeholder="4bD2zLPECdDx5ffrP"
+                    data-i18n-placeholder="brytonIdPlaceholder" />
+                  <button type="button" id="btnGetBrytonId" class="btn-get-id" title="Ambil Bryton ID dari akun">
+                    <i data-lucide="search"></i>
+                    <span data-i18n="btnGetBrytonId">Get ID</span>
+                  </button>
+                </div>
+                <p class="bryton-id-hint" data-i18n="brytonIdHint">Masukkan Bryton ID Anda, atau klik Get ID untuk mengambil otomatis.</p>
+              </div>
+
+              <!-- Share Button -->
+              <button type="button" class="btn btn-bryton-share flex-center-gap-8" id="btnShareBrytonActive" disabled
+                title="Share to Bryton Active" data-i18n-title="btnShareBrytonActive">
                 <i data-lucide="share-2"></i>
-                <span data-i18n="btnShareBrytonActive">Share to Bryton Active</span>
+                <span data-i18n="btnShareBrytonActive">Kirim ke Bryton Active</span>
               </button>
             </div>
 
@@ -904,7 +930,39 @@
 
   </div> <!-- End page-create -->
 
-
+  <!-- Modal: Get Bryton ID -->
+  <div id="modalGetBrytonId" class="modal-backdrop hidden">
+    <div class="card modal-card bryton-login-modal">
+      <div class="modal-header-row">
+        <h3><i data-lucide="log-in"></i> <span data-i18n="modalGetBrytonIdTitle">Ambil Bryton ID</span></h3>
+        <button type="button" class="btn btn-icon btn-sm" onclick="document.getElementById('modalGetBrytonId').classList.add('hidden')" title="Tutup">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <p class="bryton-login-desc" data-i18n="modalGetBrytonIdDesc">Masukkan email dan password akun Bryton Active Anda. Kredensial <strong>tidak disimpan</strong> — hanya digunakan sekali untuk mengambil ID.</p>
+      <div class="form-group">
+        <label data-i18n="labelEmail">Email</label>
+        <input type="email" id="brytonLoginEmail" class="form-control" placeholder="email@example.com" autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label data-i18n="labelPassword">Password</label>
+        <div class="password-input-wrapper">
+          <input type="password" id="brytonLoginPassword" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+          <button type="button" class="btn-toggle-password" id="btnTogglePassword" title="Tampilkan/Sembunyikan">
+            <i data-lucide="eye" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+      <div id="brytonLoginError" class="bryton-login-error hidden"></div>
+      <div class="modal-footer-row">
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('modalGetBrytonId').classList.add('hidden')" data-i18n="btnCancel">Batal</button>
+        <button type="button" class="btn btn-primary" id="btnConfirmGetId">
+          <i data-lucide="search"></i>
+          <span data-i18n="btnConfirmGetId">Ambil ID Saya</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   </div> <!-- End appContainer -->
 
@@ -915,9 +973,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-  <script src="lang.js?v=34"></script>
-  <script src="firebase-db.js?v=34"></script>
-  <script src="app.js?v=34"></script>
+  <script src="lang.js?v=35"></script>
+  <script src="firebase-db.js?v=35"></script>
+  <script src="app.js?v=35"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Logic for language dropdown initialization is in lang.js

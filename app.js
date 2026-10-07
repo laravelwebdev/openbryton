@@ -550,7 +550,7 @@ function bindEvents() {
   elements.btnDownloadKml.addEventListener('click', generateKmlFile);
   elements.btnDownloadGpx.addEventListener('click', generateGpxFile);
   elements.btnDownloadFit.addEventListener('click', generateFitFile);
-  if (elements.btnShareBrytonActive) elements.btnShareBrytonActive.addEventListener('click', shareToBrytonActive);
+  initBrytonActivePanel();
 
   if (elements.btnToggleDownload && elements.downloadDropdownContainer) {
     elements.btnToggleDownload.addEventListener('click', (e) => {
@@ -4115,51 +4115,184 @@ async function generateFitFile() {
   }
 }
 
+// ============================================================
+// BRYTON ACTIVE — Get ID & Share
+// ============================================================
+
+/** Load saved Bryton userId dari Firestore untuk current user */
+async function loadBrytonUserIdFromFirestore() {
+  const input = document.getElementById('brytonUserId');
+  if (!input) return;
+  if (!currentUser || !db) return;
+  try {
+    const doc = await db.collection('users').doc(currentUser.uid).get();
+    if (doc.exists && doc.data().brytonUserId) {
+      input.value = doc.data().brytonUserId;
+    }
+  } catch (e) {
+    console.warn('Could not load brytonUserId from Firestore:', e);
+  }
+}
+
+/** Simpan Bryton userId ke Firestore untuk current user */
+async function saveBrytonUserIdToFirestore(userId) {
+  if (!currentUser || !db) return;
+  try {
+    await db.collection('users').doc(currentUser.uid).set(
+      { brytonUserId: userId },
+      { merge: true }
+    );
+  } catch (e) {
+    console.warn('Could not save brytonUserId to Firestore:', e);
+  }
+}
+
+/** Inisialisasi logika panel Bryton Active */
+function initBrytonActivePanel() {
+  const btnGetId = document.getElementById('btnGetBrytonId');
+  const btnShare = document.getElementById('btnShareBrytonActive');
+  const btnConfirm = document.getElementById('btnConfirmGetId');
+  const btnTogglePw = document.getElementById('btnTogglePassword');
+  const modal = document.getElementById('modalGetBrytonId');
+  const pwInput = document.getElementById('brytonLoginPassword');
+  const eyeIcon = document.getElementById('eyeIcon');
+
+  // Toggle password visibility
+  if (btnTogglePw && pwInput) {
+    btnTogglePw.addEventListener('click', () => {
+      const isHidden = pwInput.type === 'password';
+      pwInput.type = isHidden ? 'text' : 'password';
+      if (eyeIcon) eyeIcon.setAttribute('data-lucide', isHidden ? 'eye-off' : 'eye');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+  }
+
+  // Buka modal Get ID — bisa dibuka tanpa login Google
+  if (btnGetId) {
+    btnGetId.addEventListener('click', () => {
+      const errEl = document.getElementById('brytonLoginError');
+      if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+      if (modal) modal.classList.remove('hidden');
+      const emailEl = document.getElementById('brytonLoginEmail');
+      // Auto-fill email dari Google jika sudah login
+      if (emailEl && currentUser && currentUser.email && !emailEl.value) {
+        emailEl.value = currentUser.email;
+      }
+      // Focus ke password jika email sudah terisi
+      const pwEl = document.getElementById('brytonLoginPassword');
+      if (emailEl && emailEl.value && pwEl) {
+        setTimeout(() => pwEl.focus(), 100);
+      } else if (emailEl) {
+        setTimeout(() => emailEl.focus(), 100);
+      }
+    });
+  }
+
+  // Confirm Get ID — panggil API bryton-login
+  if (btnConfirm) {
+    btnConfirm.addEventListener('click', async () => {
+      const emailEl = document.getElementById('brytonLoginEmail');
+      const pwEl = document.getElementById('brytonLoginPassword');
+      const errEl = document.getElementById('brytonLoginError');
+      const email = emailEl?.value?.trim();
+      const password = pwEl?.value;
+
+      if (!email || !password) {
+        if (errEl) { errEl.textContent = 'Email dan password wajib diisi.'; errEl.classList.remove('hidden'); }
+        return;
+      }
+
+      const origHtml = btnConfirm.innerHTML;
+      btnConfirm.innerHTML = '<i class="lucide lucide-loader spinner"></i>';
+      btnConfirm.disabled = true;
+      if (errEl) { errEl.textContent = ''; errEl.classList.add('hidden'); }
+
+      try {
+        showToast(t('toastFetchingBrytonId'), 'info', false);
+        const resp = await fetch('/api/bryton-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await resp.json();
+        if (!resp.ok || data.error) throw new Error(data.error || resp.statusText);
+
+        const brytonId = data.id;
+        // Isi input
+        const idInput = document.getElementById('brytonUserId');
+        if (idInput) idInput.value = brytonId;
+        // Simpan ke Firestore
+        await saveBrytonUserIdToFirestore(brytonId);
+        // Tutup modal, bersihkan password
+        if (modal) modal.classList.add('hidden');
+        if (pwEl) pwEl.value = '';
+        showToast(t('toastBrytonIdSaved'), 'success');
+      } catch (err) {
+        console.error('Get Bryton ID error:', err);
+        if (errEl) { errEl.textContent = err.message; errEl.classList.remove('hidden'); }
+        showToast(t('toastBrytonIdFailed') + err.message, 'error');
+      } finally {
+        btnConfirm.innerHTML = origHtml;
+        btnConfirm.disabled = false;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+      }
+    });
+  }
+
+  // Share to Bryton Active
+  if (btnShare) {
+    btnShare.addEventListener('click', shareToBrytonActive);
+  }
+}
+
+/** Share rute ke Bryton Active via proxy API */
 async function shareToBrytonActive() {
   if (state.points.length === 0) return;
 
-  const origBtnText = elements.btnShareBrytonActive.innerHTML;
-  elements.btnShareBrytonActive.innerHTML = '<i class="lucide lucide-loader spinner"></i>';
-  elements.btnShareBrytonActive.disabled = true;
+  const idInput = document.getElementById('brytonUserId');
+  const brytonUserId = idInput?.value?.trim();
+  if (!brytonUserId) {
+    showToast(t('toastNoBrytonId'), 'error');
+    return;
+  }
+
+  const btnShare = document.getElementById('btnShareBrytonActive');
+  const origHtml = btnShare?.innerHTML;
+  if (btnShare) {
+    btnShare.innerHTML = '<i class="lucide lucide-loader spinner"></i>';
+    btnShare.disabled = true;
+  }
 
   try {
-    const blob = buildFitBlob();
-    let routeName = elements.brytonRouteName.value.trim() || state.baseName || 'BrytonRoute';
-    let prefix = routeName.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const fileName = `${prefix}.fit`;
+    const fitBlob = buildFitBlob();
+    const routeName = elements.brytonRouteName?.value?.trim() || state.baseName || 'BrytonRoute';
 
-    showToast(t('toastUploadingTemp'), 'info', false);
+    showToast(t('toastSharingToBryton'), 'info', false);
 
-    const uploadUrl = `/api/upload?filename=${encodeURIComponent(fileName)}`;
-
-    const response = await fetch(uploadUrl, {
+    const url = `/api/bryton-share?userId=${encodeURIComponent(brytonUserId)}&name=${encodeURIComponent(routeName)}`;
+    const resp = await fetch(url, {
       method: 'POST',
-      body: blob
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: fitBlob
     });
 
-    if (!response.ok) {
-      let errMsg = 'Unknown error';
-      try {
-        const errorData = await response.json();
-        errMsg = errorData.error || response.statusText;
-      } catch (e) {
-        errMsg = response.statusText;
-      }
-      throw new Error(`Upload failed (${response.status}): ${errMsg}`);
+    const result = await resp.json();
+
+    if (!resp.ok || result.success === false) {
+      throw new Error(result.body || result.error || `HTTP ${resp.status}`);
     }
 
-    const result = await response.json();
-    const fileUrl = result.url;
-
-    const brytonUrl = `https://www.brytonsport.com/applinkpt/#/?type=pt&fit=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(routeName)}`;
-
-    window.open(brytonUrl, '_blank');
-    showToast(t('toastOpeningBrytonActive'), 'success');
+    showToast(t('toastShareBrytonSuccess'), 'success');
+    console.log('Bryton share result:', result);
   } catch (err) {
-    console.error(err);
-    showToast('Error: ' + err.message, 'error');
+    console.error('Share to Bryton Active error:', err);
+    showToast(t('toastShareBrytonFailed') + err.message, 'error');
   } finally {
-    elements.btnShareBrytonActive.innerHTML = origBtnText;
-    elements.btnShareBrytonActive.disabled = false;
+    if (btnShare) {
+      btnShare.innerHTML = origHtml;
+      btnShare.disabled = false;
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
   }
 }
+
