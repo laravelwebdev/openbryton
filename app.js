@@ -1488,11 +1488,58 @@ function findBestInsertIndex(points, lat, lon) {
   return bestIdx;
 }
 
-async function routeSegmentOSRM(coords) {
-  const coordString = coords.map(c => `${c.lon.toFixed(6)},${c.lat.toFixed(6)}`).join(';');
-  const url = `https://router.project-osrm.org/route/v1/cycling/${coordString}?overview=full&geometries=geojson`;
+/**
+ * Route a segment using GraphHopper (elevation=true) with fallback to OSRM + open-meteo.
+ * GraphHopper returns [lon, lat, ele] natively — no separate elevation API needed.
+ * Fallback to OSRM if GraphHopper fails or returns no results.
+ *
+ * @param {Array<{lat, lon}>} coords - Array of waypoints (usually [startPt, endPt])
+ * @param {string} [vehicle='bike'] - GraphHopper vehicle profile
+ * @returns {Promise<Array<{lat, lon, ele, distFromStart}> | null>}
+ */
+async function routeSegmentOSRM(coords, vehicle = 'bike') {
+  // ── 1. Try GraphHopper first (elevation included natively) ──────────────────
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+    const apiKey = await getGraphHopperApiKey();
+    const pointParams = coords.map(c => `point=${c.lat.toFixed(6)},${c.lon.toFixed(6)}`).join('&');
+    const ghUrl =
+      `https://graphhopper.com/api/1/route?${pointParams}` +
+      `&elevation=true` +
+      `&vehicle=${vehicle}` +
+      `&calc_points=true` +
+      `&points_encoded=false` +
+      `&instructions=false` +
+      `&key=${apiKey.trim()}`;
+
+    const ghRes = await fetch(ghUrl, { signal: AbortSignal.timeout(8000) });
+    if (ghRes.ok) {
+      const ghData = await ghRes.json();
+      if (ghData.paths && ghData.paths.length > 0) {
+        const ghCoords = ghData.paths[0].points.coordinates; // [lon, lat, ele]
+        if (ghCoords && ghCoords.length > 1) {
+          const routedPoints = ghCoords.map(c => ({
+            lat: c[1],
+            lon: c[0],
+            ele: c.length > 2 ? (c[2] || 0) : 0,
+            distFromStart: 0
+          }));
+          console.log(`GraphHopper snap: ${routedPoints.length} titik dengan elevasi.`);
+          return routedPoints;
+        }
+      }
+    } else {
+      console.warn(`GraphHopper snap gagal (${ghRes.status}), fallback ke OSRM.`);
+    }
+  } catch (ghErr) {
+    console.warn('GraphHopper snap error, fallback ke OSRM:', ghErr);
+  }
+
+  // ── 2. Fallback: OSRM + open-meteo untuk elevasi ────────────────────────────
+  console.log('Fallback OSRM untuk snap-to-road...');
+  const coordString = coords.map(c => `${c.lon.toFixed(6)},${c.lat.toFixed(6)}`).join(';');
+  const osrmUrl = `https://router.project-osrm.org/route/v1/cycling/${coordString}?overview=full&geometries=geojson`;
+  try {
+    const res = await fetch(osrmUrl, { signal: AbortSignal.timeout(6000) });
     if (res.ok) {
       const data = await res.json();
       if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
@@ -1500,47 +1547,38 @@ async function routeSegmentOSRM(coords) {
         if (geom && geom.coordinates) {
           const rawPoints = geom.coordinates.map(c => ({ lat: c[1], lon: c[0], ele: 0, distFromStart: 0 }));
 
-          // Fetch elevations in chunks of 50 (aman di bawah batas 100 open-meteo)
+          // Fetch elevasi dari open-meteo dalam chunk kecil dengan delay antar chunk
           const chunkSize = 50;
           for (let i = 0; i < rawPoints.length; i += chunkSize) {
             const chunk = rawPoints.slice(i, i + chunkSize);
             const lats = chunk.map(p => p.lat.toFixed(5)).join(',');
             const lons = chunk.map(p => p.lon.toFixed(5)).join(',');
 
-            // Delay kecil antar chunk untuk hindari rate-limit 429 open-meteo
             if (i > 0) await new Promise(r => setTimeout(r, 150));
 
-            const tryFetchEle = async () => {
-              const eleRes = await fetch(
-                `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`,
-                { signal: AbortSignal.timeout(8000) }
-              );
-              return eleRes;
-            };
+            const tryFetchEle = async () => fetch(
+              `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`,
+              { signal: AbortSignal.timeout(8000) }
+            );
 
             try {
               let eleRes = await tryFetchEle();
-
-              // Retry sekali jika kena rate-limit (429) dengan jeda lebih lama
               if (eleRes.status === 429) {
                 await new Promise(r => setTimeout(r, 1500));
                 eleRes = await tryFetchEle();
               }
-
               if (eleRes.ok) {
                 const eleData = await eleRes.json();
                 if (eleData && eleData.elevation) {
                   eleData.elevation.forEach((ele, idx) => {
-                    if (ele !== null && !isNaN(ele)) {
-                      rawPoints[i + idx].ele = ele;
-                    }
+                    if (ele !== null && !isNaN(ele)) rawPoints[i + idx].ele = ele;
                   });
                 }
               } else {
-                console.warn(`Elevasi chunk ${i}-${i + chunkSize}: HTTP ${eleRes.status}`);
+                console.warn(`OSRM fallback elevasi chunk ${i}: HTTP ${eleRes.status}`);
               }
             } catch (err) {
-              console.warn(`Gagal menarik data elevasi chunk ${i}-${i + chunkSize}:`, err);
+              console.warn(`OSRM fallback elevasi chunk ${i} error:`, err);
             }
           }
           return rawPoints;
