@@ -1921,12 +1921,11 @@ async function openAddManualTurnModal(latlng) {
           const locale = typeof currentLang !== 'undefined' && currentLang === 'en' ? 'en' : 'id';
           const url = `https://graphhopper.com/api/1/route?point=${p1.lat},${p1.lon}&point=${p2.lat},${p2.lon}&elevation=true&vehicle=mtb&calc_points=true&instructions=true&locale=${locale}&key=${apiKey.trim()}`;
 
-          alert("GraphHopper Query URL:\n" + url);
-
           const res = await fetch(url);
           if (!res.ok) {
             const errText = await res.text();
             alert("GraphHopper API Error (" + res.status + "):\n" + errText);
+            return;
           }
 
           const data = await res.json();
