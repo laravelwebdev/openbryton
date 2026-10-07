@@ -84,16 +84,16 @@ window.loadRouteFromFirebase = function (data, isOwner = true) {
   if (state.climbTurns && state.climbTurns.length > 0) {
     const climbStarts = state.climbTurns.filter(t => t.directionCode === 190).sort((a, b) => a.index - b.index);
     const climbEnds = state.climbTurns.filter(t => t.directionCode === 191).sort((a, b) => a.index - b.index);
-    
+
     for (let i = 0; i < Math.min(climbStarts.length, climbEnds.length); i++) {
       const startIdx = climbStarts[i].index;
       const endIdx = climbEnds[i].index;
-      
+
       if (startIdx >= 0 && endIdx < state.points.length && startIdx < endIdx) {
         const totalDist = state.points[endIdx].distFromStart - state.points[startIdx].distFromStart;
         const totalEle = state.points[endIdx].ele - state.points[startIdx].ele;
         const avgGrad = totalDist > 0 ? (totalEle / totalDist) * 100 : 0;
-        
+
         state.climbs.push({
           startIndex: startIdx,
           endIndex: endIdx,
@@ -647,21 +647,21 @@ function bindEvents() {
   if (elements.elevationCanvas) {
     const handleChartHover = (clientX) => {
       if (state.points.length === 0) return;
-      
+
       const rect = elements.elevationCanvas.getBoundingClientRect();
       const padLeft = 40;
       const padRight = 10;
       const padTop = 10;
       const padBottom = 20;
       const drawWidth = rect.width - padLeft - padRight;
-      
+
       let x = clientX - rect.left - padLeft;
       if (x < 0) x = 0;
       if (x > drawWidth) x = drawWidth;
-      
+
       const fraction = x / drawWidth;
       const targetDist = fraction * state.totalDistance;
-      
+
       let closestIdx = 0;
       let minDist = Infinity;
       for (let i = 0; i < state.points.length; i++) {
@@ -671,9 +671,9 @@ function bindEvents() {
           closestIdx = i;
         }
       }
-      
+
       const pt = state.points[closestIdx];
-      
+
       let hoverLine = document.getElementById('chartHoverLine');
       if (!hoverLine) {
         hoverLine = document.createElement('div');
@@ -682,15 +682,15 @@ function bindEvents() {
         elements.elevationCanvas.parentNode.classList.add('elevation-canvas-wrapper');
         elements.elevationCanvas.parentNode.appendChild(hoverLine);
       }
-      
+
       const canvasOffsetLeft = elements.elevationCanvas.offsetLeft;
       const canvasOffsetTop = elements.elevationCanvas.offsetTop;
-      
+
       hoverLine.style.display = 'block';
       hoverLine.style.left = (canvasOffsetLeft + padLeft + (pt.distFromStart / state.totalDistance) * drawWidth) + 'px';
       hoverLine.style.top = (canvasOffsetTop + padTop) + 'px';
       hoverLine.style.height = (rect.height - padTop - padBottom) + 'px';
-      
+
       if (!state.mapLayers.hoverMarker) {
         state.mapLayers.hoverMarker = L.circleMarker([pt.lat, pt.lon], {
           radius: 7,
@@ -717,7 +717,7 @@ function bindEvents() {
     };
 
     elements.elevationCanvas.addEventListener('mousemove', (e) => handleChartHover(e.clientX));
-    
+
     elements.elevationCanvas.addEventListener('mouseleave', handleChartLeave);
 
     elements.elevationCanvas.addEventListener('touchmove', (e) => {
@@ -1202,7 +1202,7 @@ function simplifyRoute(epsilonMeters = 1.5) {
   updateTurns(state.extraTurns);
   updateTurns(state.manualTurns);
   updateTurns(state.climbTurns);
-  
+
   if (state.climbs) {
     state.climbs.forEach(c => {
       if (oldToNewMap.has(c.startIndex)) c.startIndex = oldToNewMap.get(c.startIndex);
@@ -1212,7 +1212,7 @@ function simplifyRoute(epsilonMeters = 1.5) {
 
   state.points = simplifiedPoints;
   recalculateRouteDistances();
-  
+
   if (state.climbs) {
     state.climbs.forEach(c => {
       const startPt = state.points[c.startIndex];
@@ -1711,7 +1711,7 @@ async function handleMapClick(e) {
   state.isProcessingMapClick = true;
   try {
     if (state.isAddingManualTurn) {
-      openAddManualTurnModal(e.latlng);
+      await openAddManualTurnModal(e.latlng);
     } else if (state.isCreatingRoute) {
       const lat = e.latlng.lat;
       const lon = e.latlng.lng;
@@ -1878,13 +1878,102 @@ function toggleCreateManualRoute() {
   updateCreateManualVisibility();
 }
 
-function openAddManualTurnModal(latlng) {
+async function openAddManualTurnModal(latlng) {
   state.pendingManualCoord = latlng;
   if (state.manualAddMode === 'turn') {
     document.getElementById('addTurnCoords').textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
     document.getElementById('addTurnText').value = '';
     document.getElementById('addTurnDirection').value = '1';
     document.getElementById('addTurnText').placeholder = getDirectionLabel(1);
+
+    const chk = document.getElementById('chkGraphHopperTbt');
+    if (chk && chk.checked && state.points.length > 0) {
+      try {
+        showToast('Mengambil instruksi dari GraphHopper...', 'info', false);
+        const keyRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.brytonsport.com/download/Docs/graphhopperKey'));
+        if (keyRes.ok) {
+          const apiKey = await keyRes.text();
+          const targetIdx = findClosestPointIndex(state.points, latlng.lat, latlng.lng);
+
+          function getPointAlongRoute(points, startIdx, distance, direction) {
+            let currIdx = startIdx;
+            let distRemaining = distance;
+            while (true) {
+              let nextIdx = currIdx + direction;
+              if (nextIdx < 0 || nextIdx >= points.length) return points[currIdx];
+              let d = haversineDistance(points[currIdx].lat, points[currIdx].lon, points[nextIdx].lat, points[nextIdx].lon);
+              if (distRemaining <= d && d > 0) {
+                const fraction = distRemaining / d;
+                return {
+                  lat: points[currIdx].lat + (points[nextIdx].lat - points[currIdx].lat) * fraction,
+                  lon: points[currIdx].lon + (points[nextIdx].lon - points[currIdx].lon) * fraction
+                };
+              }
+              distRemaining -= d;
+              currIdx = nextIdx;
+            }
+          }
+
+          const optimalDist = 30; // 30m is optimal to capture intersections in GraphHopper
+          const p1 = getPointAlongRoute(state.points, targetIdx, optimalDist, -1);
+          const p2 = getPointAlongRoute(state.points, targetIdx, optimalDist, 1);
+
+          const locale = typeof currentLang !== 'undefined' && currentLang === 'en' ? 'en' : 'id';
+          const url = `https://graphhopper.com/api/1/route?point=${p1.lat},${p1.lon}&point=${p2.lat},${p2.lon}&elevation=true&vehicle=mtb&calc_points=true&instructions=true&locale=${locale}&key=${apiKey.trim()}`;
+
+          alert("GraphHopper Query URL:\n" + url);
+
+          const res = await fetch(url);
+          if (!res.ok) {
+            const errText = await res.text();
+            alert("GraphHopper API Error (" + res.status + "):\n" + errText);
+          }
+
+          const data = await res.json();
+
+          if (data.paths && data.paths.length > 0) {
+            const insts = data.paths[0].instructions;
+            if (insts && insts.length > 0) {
+              let foundIdx = -1;
+              for (let i = 0; i < insts.length; i++) {
+                if (insts[i].sign !== 0 && insts[i].sign !== 4) {
+                  foundIdx = i;
+                  break;
+                }
+              }
+              if (foundIdx === -1 && insts.length > 0) foundIdx = 0;
+
+              if (foundIdx !== -1) {
+                const inst = insts[foundIdx];
+                const ghToBrytonMap = {
+                  "-8": 12, "-7": 14, "-6": 32, "-3": 7, "-2": 3, "-1": 5,
+                  "0": 1, "1": 4, "2": 2, "3": 6, "4": 33, "5": 30, "6": 31, "7": 13, "8": 11
+                };
+                const bCode = ghToBrytonMap[inst.sign] || 1;
+                document.getElementById('addTurnDirection').value = bCode;
+                document.getElementById('addTurnText').value = inst.text;
+
+                await confirmAddManualTurn();
+                return;
+              } else {
+                alert("GraphHopper: Tidak ada instruksi belokan valid dalam rute ini");
+              }
+            } else {
+              alert("GraphHopper: Tidak ada instruksi yang dikembalikan (array instructions kosong/undefined)");
+            }
+          } else {
+            alert("GraphHopper: Tidak ada rute yang ditemukan");
+          }
+        } else {
+          alert("Gagal fetch API Key: " + keyRes.statusText);
+        }
+      } catch (e) {
+        console.error(e);
+        alert("GraphHopper Exception:\n" + e.message);
+        showToast('Gagal memanggil GraphHopper', 'error');
+      }
+    }
+
     document.getElementById('modalAddTurn').classList.remove('hidden');
     document.getElementById('modalAddTurn').style.display = 'flex';
   } else {
@@ -3350,7 +3439,7 @@ function getDirectionLabel(code) {
     case 31: return t('optEnterRoundabout') || 'Masuk Bundaran';
     case 32: return t('optLeaveRoundabout') || 'Keluar Bundaran';
     case 33: return t('optFinish') || 'Tujuan (Finish)';
-    
+
     // Waypoints & Custom
     case 101: return t('poiFood');
     case 102: return t('poiWater');
