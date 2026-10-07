@@ -2487,6 +2487,14 @@ async function runTurnAnalysis() {
     // 4. Replace the global points with the cleaned‑up version
     state.points = finalPoints;
 
+    // *** PENTING: recalculate totalDistance dari finalPoints agar grafik elevasi
+    //     menampilkan jarak penuh dan bukan nilai stale dari sebelum densify. ***
+    if (finalPoints.length > 0) {
+      state.totalDistance = finalPoints[finalPoints.length - 1].distFromStart;
+    }
+    elements.statDistance.textContent = `${(state.totalDistance / 1000).toFixed(2)} km`;
+    elements.statPoints.textContent = finalPoints.length.toLocaleString();
+
     // 5. Adjust indexes of pre‑existing turn objects (OSM, extra, manual)
     state.osmTurns.forEach(t => t.index = indexMap.get(t.index));
     state.extraTurns.forEach(t => t.index = indexMap.get(t.index));
@@ -2531,6 +2539,8 @@ async function runTurnAnalysis() {
 
     state.combinedInstructions = combined;
     updateStatsAndUI();
+    renderElevationChart(); // Render ulang agar grafik menampilkan jarak rute penuh
+
 
     elements.btnDownloadBryton.disabled = false;
     elements.btnDownloadKml.disabled = false;
