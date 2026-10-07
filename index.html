@@ -268,47 +268,48 @@
             <h2 class="card-title"><i data-lucide="package-check"></i> <span data-i18n="downloadTitle">3. Download Paket
                 Bryton</span></h2>
 
-            <div class="custom-dropdown w-full mb-16" id="downloadDropdownContainer">
-              <button type="button" class="btn btn-primary btn-block flex-between-center" id="btnToggleDownload" disabled>
-                <span class="flex-center-gap-8">
-                  <i data-lucide="download"></i>
-                  <span data-i18n="btnDownloadMenu">Pilih Format Unduhan</span>
-                </span>
-                <i data-lucide="chevron-down" class="dropdown-chevron"></i>
+            <div class="download-action-group mb-16">
+              <div class="custom-dropdown download-dropdown-wrapper" id="downloadDropdownContainer">
+                <button type="button" class="btn btn-primary btn-block flex-between-center" id="btnToggleDownload" disabled>
+                  <span class="flex-center-gap-8">
+                    <i data-lucide="download"></i>
+                    <span data-i18n="btnDownloadMenu">Pilih Format Unduhan</span>
+                  </span>
+                  <i data-lucide="chevron-down" class="dropdown-chevron"></i>
+                </button>
+                
+                <ul class="dropdown-menu" id="downloadMenu">
+                  <li>
+                    <button type="button" class="dropdown-item" id="btnDownloadBryton">
+                      <i data-lucide="package-check"></i>
+                      <span data-i18n="btnDownloadBryton">Bryton (.ZIP)</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="dropdown-item" id="btnDownloadFit">
+                      <i data-lucide="activity"></i>
+                      <span data-i18n="btnDownloadFit">FIT</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="dropdown-item" id="btnDownloadKml">
+                      <i data-lucide="map"></i>
+                      <span data-i18n="btnDownloadKml">KML</span>
+                    </button>
+                  </li>
+                  <li>
+                    <button type="button" class="dropdown-item" id="btnDownloadGpx">
+                      <i data-lucide="map-pin"></i>
+                      <span data-i18n="btnDownloadGpx">GPX</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>
+
+              <button type="button" class="btn btn-bryton-share flex-center-gap-8" id="btnShareBrytonActive" disabled title="Share to Bryton Active" data-i18n-title="btnShareBrytonActive">
+                <i data-lucide="share-2"></i>
+                <span data-i18n="btnShareBrytonActive">Share to Bryton Active</span>
               </button>
-              
-              <ul class="dropdown-menu" id="downloadMenu">
-                <li>
-                  <button type="button" class="dropdown-item" id="btnDownloadBryton">
-                    <i data-lucide="package-check"></i>
-                    <span data-i18n="btnDownloadBryton">Bryton (.ZIP)</span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="dropdown-item" id="btnDownloadFit">
-                    <i data-lucide="activity"></i>
-                    <span data-i18n="btnDownloadFit">FIT</span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="dropdown-item" id="btnShareBrytonActive">
-                    <i data-lucide="share-2"></i>
-                    <span data-i18n="btnShareBrytonActive">Share to Bryton Active</span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="dropdown-item" id="btnDownloadKml">
-                    <i data-lucide="map"></i>
-                    <span data-i18n="btnDownloadKml">KML</span>
-                  </button>
-                </li>
-                <li>
-                  <button type="button" class="dropdown-item" id="btnDownloadGpx">
-                    <i data-lucide="map-pin"></i>
-                    <span data-i18n="btnDownloadGpx">GPX</span>
-                  </button>
-                </li>
-              </ul>
             </div>
 
             <div class="guide-box">
@@ -882,7 +883,6 @@
             <span data-i18n="rtNewSeed">Acak Variasi</span>
           </button>
           <div class="rt-footer-actions">
-            <button type="button" class="btn btn-outline btn-rt-cancel" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
             <button type="button" class="btn btn-primary btn-rt-submit" id="btnSubmitRoundTrip">
               <i data-lucide="sparkles"></i>
               <span data-i18n="btnGenerateRoundTrip">Generate Round Trip</span>
