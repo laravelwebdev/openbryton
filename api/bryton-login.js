@@ -70,9 +70,15 @@ async function loginViaSockJsXhr(email, passwordHash) {
   await httpsPost(`https://${baseUrl}/sockjs/${serverId}/${sessionId}/xhr_send`, connectMsg);
 
   // Step 4: Receive connected
-  let poll = await httpsPost(`https://${baseUrl}/sockjs/${serverId}/${sessionId}/xhr`, '');
-  const session = extractDDPSession(poll);
-  if (!session) throw new Error('DDP connect failed: ' + poll);
+  let session = null;
+  for (let i = 0; i < 3; i++) {
+    let poll = await httpsPost(`https://${baseUrl}/sockjs/${serverId}/${sessionId}/xhr`, '');
+    session = extractDDPSession(poll);
+    if (session) break;
+    // If it's an 'o' frame (open), just continue polling
+    if (poll.trim() === 'o') continue;
+  }
+  if (!session) throw new Error('DDP connect failed, no session found in response');
 
   // Step 5: Send login method
   const loginMsg = JSON.stringify([JSON.stringify({
