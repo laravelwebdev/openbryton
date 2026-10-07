@@ -2510,7 +2510,7 @@ function mapOsrmManeuverToDirectionCode(type, modifier) {
   if (modifier === 'sharp left') return 7;
   if (modifier === 'left') return 3;
   if (modifier === 'slight left') return 5;
-  if (modifier === 'straight') return 10;
+  if (modifier === 'straight') return 1;
   if (modifier === 'slight right') return 4;
   if (modifier === 'right') return 2;
   if (modifier === 'sharp right') return 6;
@@ -2550,7 +2550,11 @@ function detectAngleTurns(points, existingOsmTurns, angleThreshold, dupDistThres
     if (absAngle >= angleThreshold) {
       let dirCode = 1;
       let label = '';
-      if (absAngle >= 135) {
+      if (absAngle >= 165) {
+        // Jika sudut mendekati 180 derajat, itu adalah putar balik (U-Turn)
+        dirCode = angleDiff < 0 ? 12 : 11;
+        label = angleDiff < 0 ? `Putar Balik Kiri` : `Putar Balik Kanan`;
+      } else if (absAngle >= 135) {
         dirCode = angleDiff < 0 ? 7 : 6;
         label = angleDiff < 0 ? `Belok Tajam Kiri` : `Belok Tajam Kanan`;
       } else if (absAngle >= 55) {
@@ -3307,18 +3311,32 @@ function findClosestPointIndex(points, lat, lon) {
 
 function getDirectionLabel(code) {
   switch (code) {
-    case 7: return t('dirSharpLeft') || 'Belok Tajam Kiri';
-    case 3: return t('dirLeft') || 'Belok Kiri';
-    case 5: return t('dirSlightLeft') || 'Serong Kiri';
-    case 10: return t('dirStraight') || 'Lurus';
-    case 1: return t('dirGoAhead') || 'Go Ahead';
-    case 4: return t('dirSlightRight') || 'Serong Kanan';
+    case 1: return t('dirGoAhead') || 'Go Ahead / Lurus';
     case 2: return t('dirRight') || 'Belok Kanan';
+    case 3: return t('dirLeft') || 'Belok Kiri';
+    case 4: return t('dirSlightRight') || 'Serong Kanan';
+    case 5: return t('dirSlightLeft') || 'Serong Kiri';
     case 6: return t('dirSharpRight') || 'Belok Tajam Kanan';
-    case 8: return t('dirExitRight') || 'Exit Kanan';
-    case 9: return t('dirExitLeft') || 'Exit Kiri';
+    case 7: return t('dirSharpLeft') || 'Belok Tajam Kiri';
+    case 8: return t('dirExitRight') || 'Cabang Kanan (Fork)';
+    case 9: return t('dirExitLeft') || 'Cabang Kiri (Fork)';
     case 11: return t('dirUturn') || 'U-Turn Kanan';
     case 12: return t('dirUturnLeft') || 'U-Turn Kiri';
+    case 13: return t('optKeepRight') || 'Tetap di Kanan';
+    case 14: return t('optKeepLeft') || 'Tetap di Kiri';
+    case 15: return t('optRampRight') || 'Ramp Kanan';
+    case 16: return t('optRampLeft') || 'Ramp Kiri';
+    case 21: return t('optMerge') || 'Bergabung (Merge)';
+    case 24: return t('optRoundaboutRight') || 'Bundaran Kanan';
+    case 25: return t('optRoundaboutLeft') || 'Bundaran Kiri';
+    case 28: return t('optFerry') || 'Feri';
+    case 29: return t('optFerryTrain') || 'Feri/Kereta';
+    case 30: return t('optVia') || 'Titik Singgah (Via)';
+    case 31: return t('optEnterRoundabout') || 'Masuk Bundaran';
+    case 32: return t('optLeaveRoundabout') || 'Keluar Bundaran';
+    case 33: return t('optFinish') || 'Tujuan (Finish)';
+    
+    // Waypoints & Custom
     case 101: return t('poiFood');
     case 102: return t('poiWater');
     case 103: return t('poiSummit');
@@ -3327,24 +3345,38 @@ function getDirectionLabel(code) {
     case 106: return t('poiFirstAid');
     case 107: return t('poiValley');
     case 108: return t('poiGeneric');
-    default: return t('dirStraight');
+    default: return t('dirStraight') || 'Lurus';
   }
 }
 
 function getDirectionArrow(code) {
   switch (code) {
-    case 7: return '↰';
-    case 3: return '←';
-    case 5: return '↖';
-    case 10: return '↑';
     case 1: return '↑';
-    case 4: return '↗';
     case 2: return '→';
+    case 3: return '←';
+    case 4: return '↗';
+    case 5: return '↖';
     case 6: return '↱';
+    case 7: return '↰';
     case 8: return '⬈';
     case 9: return '⬉';
     case 11: return '↩';
     case 12: return '↪';
+    case 13: return '↗'; // Keep right
+    case 14: return '↖'; // Keep left
+    case 15: return '⬈'; // Ramp right
+    case 16: return '⬉'; // Ramp left
+    case 21: return '⤡'; // Merge
+    case 24: return '↻'; // Roundabout right
+    case 25: return '↺'; // Roundabout left
+    case 28: return '⛴'; // Ferry
+    case 29: return '⛴'; // Ferry train
+    case 30: return '📍'; // Reached via
+    case 31: return '↻'; // Enter roundabout
+    case 32: return '⤤'; // Leave roundabout
+    case 33: return '🏁'; // Finish
+
+    // Waypoints & Climbs
     case 100: return '🎯';
     case 101: return '⛺';
     case 102: return '🍴';
