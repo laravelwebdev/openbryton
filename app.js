@@ -1499,14 +1499,34 @@ async function routeSegmentOSRM(coords) {
         const geom = data.routes[0].geometry;
         if (geom && geom.coordinates) {
           const rawPoints = geom.coordinates.map(c => ({ lat: c[1], lon: c[0], ele: 0, distFromStart: 0 }));
-          // Fetch elevations in chunks of 100 to avoid URL length limits
-          const chunkSize = 100;
+
+          // Fetch elevations in chunks of 50 (aman di bawah batas 100 open-meteo)
+          const chunkSize = 50;
           for (let i = 0; i < rawPoints.length; i += chunkSize) {
             const chunk = rawPoints.slice(i, i + chunkSize);
             const lats = chunk.map(p => p.lat.toFixed(5)).join(',');
             const lons = chunk.map(p => p.lon.toFixed(5)).join(',');
+
+            // Delay kecil antar chunk untuk hindari rate-limit 429 open-meteo
+            if (i > 0) await new Promise(r => setTimeout(r, 150));
+
+            const tryFetchEle = async () => {
+              const eleRes = await fetch(
+                `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`,
+                { signal: AbortSignal.timeout(8000) }
+              );
+              return eleRes;
+            };
+
             try {
-              const eleRes = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`);
+              let eleRes = await tryFetchEle();
+
+              // Retry sekali jika kena rate-limit (429) dengan jeda lebih lama
+              if (eleRes.status === 429) {
+                await new Promise(r => setTimeout(r, 1500));
+                eleRes = await tryFetchEle();
+              }
+
               if (eleRes.ok) {
                 const eleData = await eleRes.json();
                 if (eleData && eleData.elevation) {
@@ -1516,9 +1536,11 @@ async function routeSegmentOSRM(coords) {
                     }
                   });
                 }
+              } else {
+                console.warn(`Elevasi chunk ${i}-${i + chunkSize}: HTTP ${eleRes.status}`);
               }
             } catch (err) {
-              console.warn('Gagal menarik data elevasi:', err);
+              console.warn(`Gagal menarik data elevasi chunk ${i}-${i + chunkSize}:`, err);
             }
           }
           return rawPoints;
@@ -1530,6 +1552,7 @@ async function routeSegmentOSRM(coords) {
   }
   return null;
 }
+
 
 async function fetchElevationForSinglePoint(point) {
   try {
