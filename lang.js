@@ -237,7 +237,78 @@ const translations = {
     rtModeActive: 'Mode Pilih Titik Awal Round Trip Aktif: Silakan klik di peta.',
     toastRtNoPoint: 'Silakan tentukan titik awal di peta terlebih dahulu.',
     toastRtGenerating: 'Menghitung rute round trip dari GraphHopper...',
-    toastRtSuccess: 'Rute round trip berhasil dibuat!'
+    toastRtSuccess: 'Rute round trip berhasil dibuat!',
+    // Additional dual language keys
+    navCreate: 'Buat Rute',
+    navMyRoutes: 'Rute Saya',
+    loginWelcome: 'Selamat datang di OpenBryton',
+    loginDesc: 'Aplikasi andalan Anda untuk menyelaraskan (snap) rute GPX ke jalan OSM, merencanakan Turn-by-Turn, dan mengekspor sempurna ke perangkat Bryton.',
+    loginWithGoogle: 'Lanjutkan dengan Google',
+    btnLogoutTitle: 'Keluar (Logout)',
+    btnUploadGpxToolbar: 'Upload GPX',
+    btnUploadGpxTitle: 'Upload file GPX',
+    btnCloseRoute: 'Tutup Rute',
+    btnCloseRouteTitle: 'Tutup Rute (Sambung ke Titik Awal)',
+    btnSimplifyRdpTitle: 'Optimasi Garis Lurus (RDP)',
+    btnRoundTripTitle: 'Buat Rute Round Trip (Loop)',
+    btnSaveRouteEdit: 'Selesai & Update Rute',
+    mySavedRoutesTitle: 'Rute Tersimpan Saya',
+    emptyMyRoutes: 'Tidak ada rute ditemukan.',
+    loadingRoutes: 'Memuat rute...',
+    failedLoadingRoutes: 'Gagal memuat: ',
+    cardDistanceLabel: 'Jarak',
+    cardElevationLabel: 'Elevasi',
+    cardUploadedOn: 'Diunggah pada',
+    cardBy: 'oleh',
+    cardJustNow: 'Baru saja',
+    alertDemoModeLogin: "Mode Demo aktif (Firebase belum di-setup). Login berhasil sebagai 'Goweser Lokal'.",
+    alertLoginFailed: 'Login gagal: ',
+    alertNeedLogin: 'Silakan login terlebih dahulu.',
+    alertNoRouteToSave: 'Tidak ada rute untuk disimpan.',
+    alertRouteSaved: 'Rute berhasil disimpan!',
+    alertSaveFailed: 'Gagal menyimpan rute: ',
+    alertRouteNotFound: 'Rute tidak ditemukan.',
+    alertEditorNotReady: 'Fungsi editor belum siap. Silakan muat ulang halaman.',
+    alertLoadRouteFailed: 'Gagal memuat rute: ',
+    savingRouteText: 'Menyimpan...',
+    confirmSwitchRoute: 'Anda sedang memiliki rute yang terbuka. Membuat rute baru akan mereset data rute saat ini di layar. Lanjutkan?',
+    confirmManualRouteStart: 'Memulai rute manual akan menghapus rute yang ada di peta saat ini. Lanjutkan?',
+    confirmRoundTripStart: 'Membuat rute round trip baru akan menimpa rute yang ada di peta saat ini. Lanjutkan?',
+    toastRouteLoadedEditor: 'Rute dimuat ke Editor!',
+    toastViewOnlyMode: 'Mode Lihat: Hanya bisa mengunduh',
+    toastNeed2PointsToClose: 'Rute harus memiliki minimal 2 titik untuk bisa ditutup.',
+    toastRouteAlreadyClosed: 'Rute sudah tertutup (Loop).',
+    toastClosingRouteSnap: 'Menutup rute ke titik awal (Snap)...',
+    toastRouteClosedSuccess: 'Rute berhasil ditutup (Loop)!',
+    toastRouteCloseFailed: 'Gagal menutup rute.',
+    toastGhFetching: 'Mengambil instruksi dari GraphHopper...',
+    toastGhNoTurn: 'GraphHopper: Tidak ada instruksi belokan di titik ini',
+    toastGhFailed: 'Gagal memanggil GraphHopper',
+    toastStartSetGps: 'Titik awal disetel ke lokasi GPS Anda.',
+    toastSearchingGps: 'Mencari sinyal lokasi GPS...',
+    toastSeedUpdated: 'Variasi acak diperbarui (Seed: {seed})',
+    toastRoundTripFailed: 'Gagal membuat Round Trip: ',
+    toastFitSuccess: 'Download file FIT berhasil!',
+    toastFitFailed: 'Gagal memproses file FIT: ',
+    toastUploadingTemp: 'Mengunggah ke server sementara...',
+    toastOpeningBrytonActive: 'Membuka Bryton Active...',
+    toastGpxDownloaded: 'File GPX berhasil diunduh!',
+    toastKmlDownloaded: 'File KML berhasil diunduh!',
+    btnAddPoiToolbar: 'Tambah POI',
+    btnCancelAddPoiToolbar: 'Batal Tambah POI',
+    modeAddPoiActive: 'Mode Tambah POI Aktif: Klik pada rute untuk meletakkan POI.',
+    closeModalTitle: 'Tutup',
+    useMyLocationTitle: 'Gunakan Lokasi Saya',
+    headingNorth: 'Utara',
+    headingNorthEast: 'Timur Laut',
+    headingEast: 'Timur',
+    headingSouthEast: 'Tenggara',
+    headingSouth: 'Selatan',
+    headingSouthWest: 'Barat Daya',
+    headingWest: 'Barat',
+    headingNorthWest: 'Barat Laut',
+    climbStartSuffix: 'Mulai',
+    climbEndSuffix: 'Selesai'
   },
   en: {
     appSubtitle: 'Route Creator',
@@ -477,14 +548,91 @@ const translations = {
     rtModeActive: 'Round Trip Pick Start Point Active: Click anywhere on the map.',
     toastRtNoPoint: 'Please choose a start point on the map first.',
     toastRtGenerating: 'Calculating round trip route from GraphHopper...',
-    toastRtSuccess: 'Round trip route generated successfully!'
+    toastRtSuccess: 'Round trip route generated successfully!',
+    // Additional dual language keys
+    navCreate: 'Create',
+    navMyRoutes: 'My Routes',
+    loginWelcome: 'Welcome to OpenBryton',
+    loginDesc: 'Your ultimate companion for snapping GPX routes to OSM roads, planning Turn-by-Turn, and exporting perfectly to Bryton devices.',
+    loginWithGoogle: 'Continue with Google',
+    btnLogoutTitle: 'Logout',
+    btnUploadGpxToolbar: 'Upload GPX',
+    btnUploadGpxTitle: 'Upload GPX file',
+    btnCloseRoute: 'Close Route',
+    btnCloseRouteTitle: 'Close Route (Connect to Start)',
+    btnSimplifyRdpTitle: 'Straight Line Optimization (RDP)',
+    btnRoundTripTitle: 'Create Round Trip Route (Loop)',
+    btnSaveRouteEdit: 'Finish & Update Route',
+    mySavedRoutesTitle: 'My Saved Routes',
+    emptyMyRoutes: 'No routes found.',
+    loadingRoutes: 'Loading routes...',
+    failedLoadingRoutes: 'Failed to load: ',
+    cardDistanceLabel: 'Distance',
+    cardElevationLabel: 'Elevation',
+    cardUploadedOn: 'Uploaded on',
+    cardBy: 'by',
+    cardJustNow: 'Just now',
+    alertDemoModeLogin: "Demo Mode active (Firebase not configured). Logged in as 'Goweser Lokal'.",
+    alertLoginFailed: 'Login failed: ',
+    alertNeedLogin: 'Please login first.',
+    alertNoRouteToSave: 'No route to save.',
+    alertRouteSaved: 'Route saved successfully!',
+    alertSaveFailed: 'Failed to save route: ',
+    alertRouteNotFound: 'Route not found.',
+    alertEditorNotReady: 'Editor is not ready yet. Please refresh the page.',
+    alertLoadRouteFailed: 'Failed to load route: ',
+    savingRouteText: 'Saving...',
+    confirmSwitchRoute: 'You currently have an active route open. Starting a new route will reset current route data. Continue?',
+    confirmManualRouteStart: 'Starting a manual route will overwrite the current route on the map. Continue?',
+    confirmRoundTripStart: 'Generating a new round trip will overwrite the current route on the map. Continue?',
+    toastRouteLoadedEditor: 'Route loaded to Editor!',
+    toastViewOnlyMode: 'View Mode: Download only',
+    toastNeed2PointsToClose: 'Route must have at least 2 points to be closed.',
+    toastRouteAlreadyClosed: 'Route is already closed (Loop).',
+    toastClosingRouteSnap: 'Closing route to start point (Snap)...',
+    toastRouteClosedSuccess: 'Route successfully closed (Loop)!',
+    toastRouteCloseFailed: 'Failed to close route.',
+    toastGhFetching: 'Fetching instructions from GraphHopper...',
+    toastGhNoTurn: 'GraphHopper: No turn instructions at this point',
+    toastGhFailed: 'Failed to call GraphHopper',
+    toastStartSetGps: 'Start point set to your GPS location.',
+    toastSearchingGps: 'Searching for GPS location signal...',
+    toastSeedUpdated: 'Random variation updated (Seed: {seed})',
+    toastRoundTripFailed: 'Failed to generate Round Trip: ',
+    toastFitSuccess: 'FIT file downloaded successfully!',
+    toastFitFailed: 'Failed to process FIT file: ',
+    toastUploadingTemp: 'Uploading to temporary server...',
+    toastOpeningBrytonActive: 'Opening Bryton Active...',
+    toastGpxDownloaded: 'GPX file downloaded successfully!',
+    toastKmlDownloaded: 'KML file downloaded successfully!',
+    btnAddPoiToolbar: 'Add POI',
+    btnCancelAddPoiToolbar: 'Cancel Add POI',
+    modeAddPoiActive: 'Add POI Mode Active: Click on the route to place a POI.',
+    closeModalTitle: 'Close',
+    useMyLocationTitle: 'Use My Location',
+    headingNorth: 'North',
+    headingNorthEast: 'North East',
+    headingEast: 'East',
+    headingSouthEast: 'South East',
+    headingSouth: 'South',
+    headingSouthWest: 'South West',
+    headingWest: 'West',
+    headingNorthWest: 'North West',
+    climbStartSuffix: 'Start',
+    climbEndSuffix: 'End'
   }
 };
 
 let currentLang = localStorage.getItem('openbryton_lang') || 'id';
 
 function t(key) {
-  return translations[currentLang][key] || key;
+  if (translations[currentLang] && translations[currentLang][key] !== undefined) {
+    return translations[currentLang][key];
+  }
+  if (translations['id'] && translations['id'][key] !== undefined) {
+    return translations['id'][key];
+  }
+  return key;
 }
 
 function switchLanguage(lang) {
@@ -496,31 +644,40 @@ function switchLanguage(lang) {
   if (typeof updateStatsAndUI === 'function') {
     updateStatsAndUI();
   }
+  if (typeof loadMyRoutes === 'function' && document.getElementById('page-myroutes')?.classList.contains('active')) {
+    loadMyRoutes();
+  }
+  if (typeof updateRoundTripUI === 'function') {
+    updateRoundTripUI();
+  }
 }
 
 function updateDOMText() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
-    if (translations[currentLang][key]) {
+    const val = t(key);
+    if (val && val !== key) {
       if (el.hasAttribute('data-i18n-html')) {
-        el.innerHTML = translations[currentLang][key];
+        el.innerHTML = val;
       } else {
-        el.textContent = translations[currentLang][key];
+        el.textContent = val;
       }
     }
   });
 
   document.querySelectorAll('[data-i18n-title]').forEach(el => {
     const key = el.getAttribute('data-i18n-title');
-    if (translations[currentLang][key]) {
-      el.title = translations[currentLang][key];
+    const val = t(key);
+    if (val && val !== key) {
+      el.title = val;
     }
   });
 
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
     const key = el.getAttribute('data-i18n-placeholder');
-    if (translations[currentLang][key]) {
-      el.placeholder = translations[currentLang][key];
+    const val = t(key);
+    if (val && val !== key) {
+      el.placeholder = val;
     }
   });
 

@@ -81,14 +81,14 @@ function updateAuthUI(user) {
 
 function loginWithGoogle() {
   if (isMockMode) {
-    alert("Mode Demo aktif (Firebase belum di-setup). Login berhasil sebagai 'Goweser Lokal'.");
+    alert(t('alertDemoModeLogin'));
     updateAuthUI(mockUser);
     return;
   }
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider).catch(err => {
     console.error("Login failed", err);
-    alert("Login gagal: " + err.message);
+    alert(t('alertLoginFailed') + err.message);
   });
 }
 
@@ -106,7 +106,7 @@ function logout() {
 function switchPage(pageId, isManualClick = false) {
   if (pageId === 'create' && isManualClick) {
     if (window.state && window.state.points && window.state.points.length > 0) {
-      if (!confirm("Anda sedang memiliki rute yang terbuka. Membuat rute baru akan mereset data rute saat ini di layar. Lanjutkan?")) {
+      if (!confirm(t('confirmSwitchRoute'))) {
         return; // Batalkan perpindahan
       }
     }
@@ -163,12 +163,12 @@ function switchPage(pageId, isManualClick = false) {
 // Database Operations (Mock/Real)
 // ==========================================
 async function saveRouteToDb() {
-  if (!currentUser) return alert("Silakan login terlebih dahulu.");
-  if (!window.state || window.state.points.length === 0) return alert("Tidak ada rute untuk disimpan.");
+  if (!currentUser) return alert(t('alertNeedLogin'));
+  if (!window.state || window.state.points.length === 0) return alert(t('alertNoRouteToSave'));
 
   const btnSave = document.getElementById('btnSaveRoute');
   const origHtml = btnSave.innerHTML;
-  btnSave.innerHTML = '<i class="lucide lucide-loader spinner"></i> <span>Menyimpan...</span>';
+  btnSave.innerHTML = `<i class="lucide lucide-loader spinner"></i> <span>${t('savingRouteText')}</span>`;
   btnSave.disabled = true;
 
   try {
@@ -212,11 +212,11 @@ async function saveRouteToDb() {
       }
     }
 
-    alert("Rute berhasil disimpan!");
+    alert(t('alertRouteSaved'));
     switchPage('myroutes');
   } catch (error) {
     console.error("Save error", error);
-    alert("Gagal menyimpan rute: " + error.message);
+    alert(t('alertSaveFailed') + error.message);
   } finally {
     btnSave.innerHTML = origHtml;
     btnSave.disabled = false;
@@ -243,14 +243,14 @@ function renderRouteCards(containerId, routes, isMyRoutes) {
   if (!container) return;
 
   if (routes.length === 0) {
-    container.innerHTML = '<p style="color:#9ca3af;">Tidak ada rute ditemukan.</p>';
+    container.innerHTML = `<p style="color:#9ca3af;">${t('emptyMyRoutes')}</p>`;
     return;
   }
 
   container.innerHTML = routes.map(r => {
     const dist = (r.distance / 1000).toFixed(2);
     const ele = r.elevation.toFixed(1);
-    let dateStr = 'Baru saja';
+    let dateStr = t('cardJustNow');
     if (isMockMode && r.createdAt) {
       dateStr = new Date(r.createdAt).toLocaleDateString();
     } else if (r.createdAt && r.createdAt.seconds) {
@@ -273,10 +273,10 @@ function renderRouteCards(containerId, routes, isMyRoutes) {
         <div class="route-card-body" style="padding:15px; border:1px solid var(--bg-card-border); border-top:none; border-radius:0 0 8px 8px; background:var(--bg-card);">
           <h3 class="route-title" style="margin:0 0 10px 0; font-size:16px;">${r.title}</h3>
           <div class="route-stats" style="font-size:13px; color:#9ca3af; margin-bottom:10px; display:flex; flex-direction:column; gap:4px;">
-            <span>Distance: ${dist}km</span>
-            <span>Elevation: ${ele}m</span>
+            <span>${t('cardDistanceLabel')}: ${dist}km</span>
+            <span>${t('cardElevationLabel')}: ${ele}m</span>
           </div>
-          <p class="route-meta" style="font-size:11px; color:#6b7280; margin-bottom:15px;">Uploaded on ${dateStr} by ${r.authorName || 'Unknown'}</p>
+          <p class="route-meta" style="font-size:11px; color:#6b7280; margin-bottom:15px;">${t('cardUploadedOn')} ${dateStr} ${t('cardBy')} ${r.authorName || 'Unknown'}</p>
           ${actionButtons}
         </div>
       </div>
@@ -302,7 +302,7 @@ function renderRouteCards(containerId, routes, isMyRoutes) {
 async function loadMyRoutes() {
   if (!currentUser) return;
   const container = document.getElementById('myroutesGrid');
-  container.innerHTML = '<p>Memuat rute...</p>';
+  container.innerHTML = `<p>${t('loadingRoutes')}</p>`;
   try {
     let routes = [];
     if (isMockMode) {
@@ -321,13 +321,14 @@ async function loadMyRoutes() {
     renderRouteCards('myroutesGrid', routes, true);
   } catch (err) {
     console.error(err);
-    container.innerHTML = '<p>Gagal memuat: ' + err.message + '</p>';
+    container.innerHTML = `<p>${t('failedLoadingRoutes')}${err.message}</p>`;
   }
 }
 
 async function loadExploreRoutes() {
   const container = document.getElementById('exploreGrid');
-  container.innerHTML = '<p>Memuat rute...</p>';
+  if (!container) return;
+  container.innerHTML = `<p>${t('loadingRoutes')}</p>`;
   try {
     let routes = [];
     if (isMockMode) {
@@ -339,7 +340,7 @@ async function loadExploreRoutes() {
     renderRouteCards('exploreGrid', routes, false);
   } catch (err) {
     console.error(err);
-    container.innerHTML = '<p>Gagal memuat: ' + err.message + '</p>';
+    container.innerHTML = `<p>${t('failedLoadingRoutes')}${err.message}</p>`;
   }
 }
 
@@ -373,15 +374,15 @@ async function editRoute(id) {
       }
     }
 
-    if (!data) return alert("Rute tidak ditemukan");
+    if (!data) return alert(t('alertRouteNotFound'));
     
     if (window.loadRouteFromFirebase) {
       switchPage('create');
       window.loadRouteFromFirebase(data, true);
     } else {
-      alert("Fungsi editor belum siap. Silakan muat ulang halaman.");
+      alert(t('alertEditorNotReady'));
     }
   } catch (e) {
-    alert("Gagal memuat rute: " + e.message);
+    alert(t('alertLoadRouteFailed') + e.message);
   }
 }

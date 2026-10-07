@@ -149,7 +149,7 @@ window.loadRouteFromFirebase = function (data, isOwner = true) {
   if (elements.btnToggleDownload) elements.btnToggleDownload.disabled = false;
 
   if (typeof showToast === 'function') {
-    showToast(isOwner ? 'Rute dimuat ke Editor!' : 'Mode Lihat: Hanya bisa mengunduh', 'success');
+    showToast(isOwner ? t('toastRouteLoadedEditor') : t('toastViewOnlyMode'), 'success');
   }
 };
 
@@ -1714,7 +1714,8 @@ function toggleAddManualTurnMode(mode = 'turn') {
   elements.btnAddTurnManual.querySelector('span').setAttribute('data-i18n', 'btnAddTurn');
   elements.btnAddTurnManual.querySelector('span').textContent = t('btnAddTurn');
   elements.btnAddPoiManual.classList.remove('active');
-  elements.btnAddPoiManual.querySelector('span').textContent = 'Tambah POI';
+  elements.btnAddPoiManual.querySelector('span').setAttribute('data-i18n', 'btnAddPoiToolbar');
+  elements.btnAddPoiManual.querySelector('span').textContent = t('btnAddPoiToolbar');
   elements.addTurnStatusBar.classList.add('hidden');
 
   if (state.isAddingManualTurn) {
@@ -1724,11 +1725,12 @@ function toggleAddManualTurnMode(mode = 'turn') {
       elements.btnAddTurnManual.querySelector('span').textContent = t('btnCancelAddTurn');
     } else {
       elements.btnAddPoiManual.classList.add('active');
-      elements.btnAddPoiManual.querySelector('span').textContent = 'Batal Tambah POI';
+      elements.btnAddPoiManual.querySelector('span').setAttribute('data-i18n', 'btnCancelAddPoiToolbar');
+      elements.btnAddPoiManual.querySelector('span').textContent = t('btnCancelAddPoiToolbar');
     }
 
     elements.addTurnStatusBar.classList.remove('hidden');
-    elements.addTurnStatusBar.querySelector('span').textContent = mode === 'turn' ? 'Mode Tambah Belokan Aktif: Klik pada garis rute di peta untuk memasang belokan manual.' : 'Mode Tambah POI Aktif: Klik pada rute untuk meletakkan POI.';
+    elements.addTurnStatusBar.querySelector('span').textContent = mode === 'turn' ? t('modeAddTurnActive') : t('modeAddPoiActive');
     showToast(t('toastClickManualTurn'), 'info');
   }
 }
@@ -1798,7 +1800,7 @@ async function handleMapClick(e) {
 
 async function closeRouteLoop() {
   if (state.points.length < 2) {
-    showToast("Rute harus memiliki minimal 2 titik untuk bisa ditutup.", "error");
+    showToast(t('toastNeed2PointsToClose'), "error");
     return;
   }
   state.isProcessing = true;
@@ -1809,7 +1811,7 @@ async function closeRouteLoop() {
     const lastPt = state.points[state.points.length - 1];
 
     if (firstPt.lat === lastPt.lat && firstPt.lon === lastPt.lon) {
-      showToast("Rute sudah tertutup (Loop).", "info");
+      showToast(t('toastRouteAlreadyClosed'), "info");
       return;
     }
 
@@ -1817,7 +1819,7 @@ async function closeRouteLoop() {
     const lon = firstPt.lon;
 
     if (elements.chkManualSnap && elements.chkManualSnap.checked) {
-      showToast("Menutup rute ke titik awal (Snap)...", "info", false);
+      showToast(t('toastClosingRouteSnap'), "info", false);
       const routedPoints = await routeSegmentOSRM([lastPt, { lat, lon }]);
       if (routedPoints && routedPoints.length > 0) {
         state.points.push(...routedPoints.slice(1));
@@ -1834,10 +1836,10 @@ async function closeRouteLoop() {
     renderTrackOnMap(false);
     saveHistoryState();
     updateStatsAndUI();
-    showToast("Rute berhasil ditutup (Loop)!", "success");
+    showToast(t('toastRouteClosedSuccess'), "success");
   } catch (err) {
     console.error(err);
-    showToast("Gagal menutup rute.", "error");
+    showToast(t('toastRouteCloseFailed'), "error");
   } finally {
     state.isProcessing = false;
     elements.btnProcess.disabled = false;
@@ -1868,7 +1870,7 @@ function toggleCreateManualRoute() {
 
   if (state.isCreatingRoute) {
     if (state.points.length > 0) {
-      if (!confirm('Memulai rute manual akan menghapus rute yang ada di peta saat ini. Lanjutkan?')) {
+      if (!confirm(t('confirmManualRouteStart'))) {
         state.isCreatingRoute = false;
         return;
       }
@@ -1924,7 +1926,7 @@ async function openAddManualTurnModal(latlng) {
     const chk = document.getElementById('chkGraphHopperTbt');
     if (chk && chk.checked && state.points.length > 0) {
       try {
-        showToast('Mengambil instruksi dari GraphHopper...', 'info', false);
+        showToast(t('toastGhFetching'), 'info', false);
         const apiKey = await getGraphHopperApiKey();
         const targetIdx = findClosestPointIndex(state.points, latlng.lat, latlng.lng);
         const locale = typeof currentLang !== 'undefined' && currentLang === 'en' ? 'en' : 'id';
@@ -1936,11 +1938,11 @@ async function openAddManualTurnModal(latlng) {
           await confirmAddManualTurn();
           return;
         } else {
-          showToast('GraphHopper: Tidak ada instruksi belokan di titik ini', 'warning');
+          showToast(t('toastGhNoTurn'), 'warning');
         }
       } catch (e) {
         console.error(e);
-        showToast('Gagal memanggil GraphHopper', 'error');
+        showToast(t('toastGhFailed'), 'error');
       }
     }
 
@@ -2069,14 +2071,14 @@ function updateRoundTripUI() {
 
 function getHeadingCardinal(deg) {
   deg = ((deg % 360) + 360) % 360;
-  if (deg >= 337.5 || deg < 22.5) return 'Utara';
-  if (deg >= 22.5 && deg < 67.5) return 'Timur Laut';
-  if (deg >= 67.5 && deg < 112.5) return 'Timur';
-  if (deg >= 112.5 && deg < 157.5) return 'Tenggara';
-  if (deg >= 157.5 && deg < 202.5) return 'Selatan';
-  if (deg >= 202.5 && deg < 247.5) return 'Barat Daya';
-  if (deg >= 247.5 && deg < 292.5) return 'Barat';
-  return 'Barat Laut';
+  if (deg >= 337.5 || deg < 22.5) return t('headingNorth');
+  if (deg >= 22.5 && deg < 67.5) return t('headingNorthEast');
+  if (deg >= 67.5 && deg < 112.5) return t('headingEast');
+  if (deg >= 112.5 && deg < 157.5) return t('headingSouthEast');
+  if (deg >= 157.5 && deg < 202.5) return t('headingSouth');
+  if (deg >= 202.5 && deg < 247.5) return t('headingSouthWest');
+  if (deg >= 247.5 && deg < 292.5) return t('headingWest');
+  return t('headingNorthWest');
 }
 
 function bindRoundTripEvents() {
@@ -2101,11 +2103,11 @@ function bindRoundTripEvents() {
         const pos = state.mapLayers.locationMarker.getLatLng();
         setRoundTripStartPoint(pos.lat, pos.lng);
         if (state.map) state.map.setView(pos, 14);
-        showToast('Titik awal disetel ke lokasi GPS Anda.', 'success');
+        showToast(t('toastStartSetGps'), 'success');
       } else {
         if (state.map) {
           state.map.locate({ setView: true, maxZoom: 15 });
-          showToast('Mencari sinyal lokasi GPS...', 'info');
+          showToast(t('toastSearchingGps'), 'info');
         }
       }
     });
@@ -2172,7 +2174,7 @@ function bindRoundTripEvents() {
   if (elements.btnRtRandomize) {
     elements.btnRtRandomize.addEventListener('click', () => {
       state.roundTripSeed = Math.floor(Math.random() * 100000);
-      showToast(`Variasi acak diperbarui (Seed: ${state.roundTripSeed})`, 'info');
+      showToast(t('toastSeedUpdated').replace('{seed}', state.roundTripSeed), 'info');
     });
   }
 
@@ -2205,7 +2207,7 @@ async function generateRoundTripRoute() {
   }
 
   if (state.points.length > 0) {
-    if (!confirm('Membuat rute round trip baru akan menimpa rute yang ada di peta saat ini. Lanjutkan?')) {
+    if (!confirm(t('confirmRoundTripStart'))) {
       return;
     }
   }
@@ -2341,8 +2343,8 @@ async function generateRoundTripRoute() {
     showToast(typeof t === 'function' ? t('toastRtSuccess') : 'Rute round trip berhasil dibuat!', 'success');
   } catch (err) {
     console.error('RoundTrip Error:', err);
-    alert('Gagal membuat Round Trip:\n' + err.message);
-    showToast('Gagal membuat Round Trip', 'error');
+    alert(t('toastRoundTripFailed') + err.message);
+    showToast(t('toastRoundTripFailed') + err.message, 'error');
     if (elements.btnProcess) elements.btnProcess.disabled = false;
   } finally {
     state.isProcessing = false;
@@ -3054,6 +3056,16 @@ function getTranslatedInstruction(text, dirCode) {
     }
   }
 
+  // Handle Climb translations
+  if (dirCode === 190 || dirCode === 191) {
+    const isStart = dirCode === 190;
+    const climbMatch = result.match(/Climb\s+(\d+)|Tanjakan\s+(\d+)/i);
+    const climbNum = climbMatch ? (climbMatch[1] || climbMatch[2]) : '';
+    const prefix = t('climbPrefix');
+    const suffix = isStart ? t('climbStartSuffix') : t('climbEndSuffix');
+    return `${prefix} ${climbNum} ${suffix}`.trim();
+  }
+
   // Handle some edge cases with " ke " / " to "
   if (currentLang === 'en') {
     result = result.replace(' ke ', ' to ');
@@ -3382,7 +3394,7 @@ async function generateGpxFile() {
   const gpxString = createGpxString(state.points, prefix);
   const blob = new Blob([gpxString], { type: 'application/gpx+xml' });
   saveAs(blob, `${prefix}.gpx`);
-  showToast('GPX file downloaded successfully!', 'success');
+  showToast(t('toastGpxDownloaded'), 'success');
 }
 
 async function generateKmlFile() {
@@ -3393,7 +3405,7 @@ async function generateKmlFile() {
   const kmlString = createKmlString(state.points, prefix);
   const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
   saveAs(blob, `${prefix}.kml`);
-  showToast('KML file downloaded successfully!', 'success');
+  showToast(t('toastKmlDownloaded'), 'success');
 }
 
 /**
@@ -3890,10 +3902,10 @@ async function generateFitFile() {
     let prefix = routeName.replace(/[^a-zA-Z0-9_-]/g, '_');
     saveAs(blob, `${prefix}.fit`);
 
-    showToast('Download file FIT berhasil!', 'success');
+    showToast(t('toastFitSuccess'), 'success');
   } catch (err) {
     console.error(err);
-    showToast('Gagal memproses file FIT: ' + err.message, 'error');
+    showToast(t('toastFitFailed') + err.message, 'error');
   } finally {
     elements.btnDownloadFit.innerHTML = origBtnText;
     elements.btnDownloadFit.disabled = false;
@@ -3913,7 +3925,7 @@ async function shareToBrytonActive() {
     let prefix = routeName.replace(/[^a-zA-Z0-9_-]/g, '_');
     const fileName = `${prefix}.fit`;
 
-    showToast(window.currentLang === 'id' ? 'Mengunggah ke server sementara...' : 'Uploading to temporary server...', 'info', false);
+    showToast(t('toastUploadingTemp'), 'info', false);
 
     const uploadUrl = `/api/upload?filename=${encodeURIComponent(fileName)}`;
 
@@ -3930,7 +3942,7 @@ async function shareToBrytonActive() {
       } catch (e) {
         errMsg = response.statusText;
       }
-      throw new Error(`Upload gagal (${response.status}): ${errMsg}`);
+      throw new Error(`Upload failed (${response.status}): ${errMsg}`);
     }
 
     const result = await response.json();
@@ -3939,7 +3951,7 @@ async function shareToBrytonActive() {
     const brytonUrl = `https://www.brytonsport.com/applinkpt/#/?type=pt&fit=${encodeURIComponent(fileUrl)}&name=${encodeURIComponent(routeName)}`;
 
     window.open(brytonUrl, '_blank');
-    showToast(window.currentLang === 'id' ? 'Membuka Bryton Active...' : 'Opening Bryton Active...', 'success');
+    showToast(t('toastOpeningBrytonActive'), 'success');
   } catch (err) {
     console.error(err);
     showToast('Error: ' + err.message, 'error');

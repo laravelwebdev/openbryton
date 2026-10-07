@@ -55,9 +55,9 @@
       <!-- Top Navigation -->
       <nav class="top-nav" id="mainNav" style="display:none;">
         <button class="nav-link" onclick="switchPage('create', true)" id="nav-create"><i data-lucide="pen-tool"></i>
-          <span>Create</span></button>
+          <span data-i18n="navCreate">Create</span></button>
         <button class="nav-link" onclick="switchPage('myroutes')" id="nav-myroutes"><i data-lucide="library"></i>
-          <span>My Routes</span></button>
+          <span data-i18n="navMyRoutes">My Routes</span></button>
       </nav>
 
       <div class="header-badges">
@@ -66,7 +66,7 @@
 
           <div id="userProfile" class="userProfile-style">
             <img id="userAvatar" src="" alt="User" class="userAvatar-style">
-            <button id="btnLogout" class="btn btn-icon btn-sm" onclick="logout()" title="Logout"><i
+            <button id="btnLogout" class="btn btn-icon btn-sm" onclick="logout()" title="Logout" data-i18n-title="btnLogoutTitle"><i
                 data-lucide="log-out"></i></button>
           </div>
         </div>
@@ -102,9 +102,9 @@
           class="feature-logo-box">
           <i data-lucide="navigation" class="inline-style-6"></i>
         </div>
-        <h2 class="inline-style-7">Welcome to
+        <h2 class="inline-style-7" data-i18n="loginWelcome">Welcome to
           OpenBryton</h2>
-        <p class="feature-description">
+        <p class="feature-description" data-i18n="loginDesc">
           Your ultimate companion for snapping GPX routes to OSM roads, planning Turn-by-Turn, and exporting perfectly
           to Bryton devices.
         </p>
@@ -120,7 +120,7 @@
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             <path fill="none" d="M1 1h22v22H1z" />
           </svg>
-          Continue with Google
+          <span data-i18n="loginWithGoogle">Continue with Google</span>
         </button>
       </div>
     </main>
@@ -393,25 +393,28 @@
                 <i data-lucide="redo"></i>
               </button>
               <button type="button" class="btn btn-sm btn-outline" id="btnUploadGpxToolbar" title="Upload file GPX"
-                data-i18n-title="uploadHintClick">
+                data-i18n-title="btnUploadGpxTitle">
                 <i data-lucide="upload"></i>
-                <span>Upload GPX</span>
+                <span data-i18n="btnUploadGpxToolbar">Upload GPX</span>
               </button>
               <button type="button" class="btn btn-sm btn-outline" id="btnCreateManualRoute">
                 <i data-lucide="pen-tool"></i>
                 <span data-i18n="btnCreateRoute">Buat Rute Manual</span>
               </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnRoundTrip" title="Buat Rute Round Trip (Loop)">
+              <button type="button" class="btn btn-sm btn-outline" id="btnRoundTrip" title="Buat Rute Round Trip (Loop)"
+                data-i18n-title="btnRoundTripTitle">
                 <i data-lucide="repeat"></i>
                 <span data-i18n="btnRoundTrip">Round Trip</span>
               </button>
               <button type="button" class="btn btn-sm btn-outline" id="btnCloseRoute"
-                title="Tutup Rute (Sambung ke Awal)">
+                title="Tutup Rute (Sambung ke Awal)"
+                data-i18n-title="btnCloseRouteTitle">
                 <i data-lucide="refresh-ccw"></i>
-                <span>Close Route</span>
+                <span data-i18n="btnCloseRoute">Close Route</span>
               </button>
               <button type="button" class="btn btn-sm btn-outline" id="btnSimplifyRdp"
-                title="Optimasi Garis Lurus (RDP)">
+                title="Optimasi Garis Lurus (RDP)"
+                data-i18n-title="btnSimplifyRdpTitle">
                 <i data-lucide="minimize"></i>
                 <span data-i18n="btnSimplifyRdp">RDP</span>
               </button>
@@ -429,7 +432,7 @@
               </button>
               <button type="button" class="btn btn-sm btn-outline hidden" id="btnSaveRouteEdit">
                 <i data-lucide="check"></i>
-                <span>Selesai & Update Rute</span>
+                <span data-i18n="btnSaveRouteEdit">Selesai & Update Rute</span>
               </button>
             </div>
           </div>
@@ -462,7 +465,7 @@
           <div class="map-status-bar hidden" id="roundTripStatusBar">
             <i data-lucide="crosshair"></i>
             <span data-i18n="rtModeActive">Mode Pilih Titik Awal Round Trip Aktif: Silakan klik di peta.</span>
-            <button type="button" class="btn btn-sm btn-outline" id="btnCancelPickRtStart" style="margin-left:auto; padding:2px 8px; font-size:11px;">Batal</button>
+            <button type="button" class="btn btn-sm btn-outline" id="btnCancelPickRtStart" style="margin-left:auto; padding:2px 8px; font-size:11px;" data-i18n="btnCancel">Batal</button>
           </div>
 
           <div id="map" class="map-container">
@@ -578,7 +581,7 @@
 
     <!-- PAGE: MY ROUTES -->
     <main class="container page-view hidden container-migrated-73" id="page-myroutes">
-      <h2>My Saved Routes</h2>
+      <h2 data-i18n="mySavedRoutesTitle">My Saved Routes</h2>
       <div id="myroutesGrid" class="route-grid route-grid-migrated-74">
         <!-- Cards rendered here -->
       </div>
@@ -609,7 +612,7 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden">
       <div class="toast-icon" id="toastIcon"><i data-lucide="check-circle"></i></div>
-      <div class="toast-msg" id="toastMsg">Notifikasi</div>
+      <div class="toast-msg" id="toastMsg" data-i18n="toastNotice">Notifikasi</div>
     </div>
 
     <!-- Modal Add TBT -->
@@ -667,14 +670,14 @@
         <div class="inline-style-49">
           <label class="inline-style-50" data-i18n="poiIconLabel">Ikon POI</label>
           <select id="addPoiDirection" class="input-full-width">
-            <option value="106">Waypoint</option>
-            <option value="101">Peak</option>
-            <option value="100">End Point</option>
-            <option value="102">Food</option>
-            <option value="103">Emergency</option>
-            <option value="104">Checkpoint</option>
-            <option value="105">Meeting Point</option>
-            <option value="107">Start Point</option>
+            <option value="106" data-i18n="poiWater">Waypoint</option>
+            <option value="101" data-i18n="poiSummit">Peak</option>
+            <option value="100" data-i18n="poiTarget">End Point</option>
+            <option value="102" data-i18n="poiFood">Food</option>
+            <option value="103" data-i18n="poiFirstAid">Emergency</option>
+            <option value="104" data-i18n="poiCheck">Checkpoint</option>
+            <option value="105" data-i18n="poiGroup">Meeting Point</option>
+            <option value="107" data-i18n="poiSprint">Start Point</option>
           </select>
         </div>
         <div class="inline-style-51">
@@ -743,14 +746,14 @@
           <label class="inline-style-64" data-i18n="poiIconLabel">Ikon POI</label>
           <select id="editPoiDirectionOnly"
             class="input-full-width">
-            <option value="106">Waypoint</option>
-            <option value="101">Peak</option>
-            <option value="100">End Point</option>
-            <option value="102">Food</option>
-            <option value="103">Emergency</option>
-            <option value="104">Checkpoint</option>
-            <option value="105">Meeting Point</option>
-            <option value="107">Start Point</option>
+            <option value="106" data-i18n="poiWater">Waypoint</option>
+            <option value="101" data-i18n="poiSummit">Peak</option>
+            <option value="100" data-i18n="poiTarget">End Point</option>
+            <option value="102" data-i18n="poiFood">Food</option>
+            <option value="103" data-i18n="poiFirstAid">Emergency</option>
+            <option value="104" data-i18n="poiCheck">Checkpoint</option>
+            <option value="105" data-i18n="poiGroup">Meeting Point</option>
+            <option value="107" data-i18n="poiSprint">Start Point</option>
           </select>
         </div>
         <div class="inline-style-65">
@@ -789,7 +792,7 @@
             <i data-lucide="repeat" class="text-primary"></i>
             <span data-i18n="modalTitleRoundTrip">Buat Round Trip Otomatis</span>
           </div>
-          <button type="button" class="btn btn-icon btn-sm" onclick="closeAllModals()" title="Tutup">
+          <button type="button" class="btn btn-icon btn-sm" onclick="closeAllModals()" title="Tutup" data-i18n-title="closeModalTitle">
             <i data-lucide="x"></i>
           </button>
         </div>
@@ -805,7 +808,7 @@
               <button type="button" class="btn btn-outline btn-sm" id="btnRtPickOnMap">
                 <i data-lucide="crosshair"></i> <span data-i18n="rtPickOnMap">Pilih di Peta</span>
               </button>
-              <button type="button" class="btn btn-outline btn-sm" id="btnRtMyLoc" title="Gunakan Lokasi Saya">
+              <button type="button" class="btn btn-outline btn-sm" id="btnRtMyLoc" title="Gunakan Lokasi Saya" data-i18n-title="useMyLocationTitle">
                 <i data-lucide="navigation"></i>
               </button>
             </div>
@@ -849,10 +852,10 @@
               <div class="rt-compass-slider-box">
                 <input type="range" id="rtHeadingSlider" min="0" max="355" value="0" step="5" class="slider">
                 <div class="rt-heading-presets">
-                  <button type="button" class="preset-btn active" data-deg="0">Utara (0°)</button>
-                  <button type="button" class="preset-btn" data-deg="90">Timur (90°)</button>
-                  <button type="button" class="preset-btn" data-deg="180">Selatan (180°)</button>
-                  <button type="button" class="preset-btn" data-deg="270">Barat (270°)</button>
+                  <button type="button" class="preset-btn active" data-deg="0"><span data-i18n="headingNorth">Utara</span> (0°)</button>
+                  <button type="button" class="preset-btn" data-deg="90"><span data-i18n="headingEast">Timur</span> (90°)</button>
+                  <button type="button" class="preset-btn" data-deg="180"><span data-i18n="headingSouth">Selatan</span> (180°)</button>
+                  <button type="button" class="preset-btn" data-deg="270"><span data-i18n="headingWest">Barat</span> (270°)</button>
                 </div>
               </div>
             </div>
@@ -874,7 +877,7 @@
         </div>
 
         <div class="rt-modal-footer">
-          <button type="button" class="btn btn-outline btn-rt-random" id="btnRtRandomize" title="Ubah variasi loop">
+          <button type="button" class="btn btn-outline btn-rt-random" id="btnRtRandomize" title="Ubah variasi loop" data-i18n-title="btnRoundTripTitle">
             <i data-lucide="shuffle"></i>
             <span data-i18n="rtNewSeed">Acak Variasi</span>
           </button>
