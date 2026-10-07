@@ -2322,3 +2322,341 @@ body {
   border: 2px solid #ffffff;
   cursor: pointer;
 }
+
+/* ==========================================================================
+   ROUND TRIP MODAL & INTERACTIVE CONTROLS
+   ========================================================================== */
+.modal-roundtrip-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 15, 30, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.rt-modal-card {
+  width: 100%;
+  max-width: 530px;
+  background: var(--bg-card);
+  border: 1px solid var(--bg-card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 25px rgba(59, 130, 246, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: rtModalFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes rtModalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.rt-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--bg-card-border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rt-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.rt-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-height: calc(85vh - 120px);
+  overflow-y: auto;
+}
+
+.rt-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.rt-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.rt-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rt-point-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.rt-point-input-row input {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  letter-spacing: -0.2px;
+}
+
+.rt-hint {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.rt-slider-marks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: -2px;
+  padding: 0 4px;
+}
+
+/* Compass Disc & Interactive Heading */
+.rt-compass-wrapper {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+.rt-compass-disc {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+  border: 2px solid rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.25), inset 0 0 8px rgba(0, 0, 0, 0.5);
+  position: relative;
+  flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.rt-compass-disc:active {
+  cursor: grabbing;
+}
+
+.rt-compass-needle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 52px;
+  margin-top: -26px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, #ef4444 50%, #94a3b8 50%);
+  transform-origin: center center;
+  transform: rotate(0deg);
+  transition: transform 0.08s ease-out;
+  pointer-events: none;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+}
+
+.rt-compass-needle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-top: -4px;
+  margin-left: -4px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #0f172a;
+}
+
+.compass-label {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.compass-label.north {
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ef4444;
+}
+
+.compass-label.east {
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.compass-label.south {
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #94a3b8;
+}
+
+.compass-label.west {
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.rt-compass-slider-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rt-heading-presets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.preset-btn {
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.preset-btn:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+}
+
+.preset-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #3b82f6;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.rt-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--bg-card-border);
+  background: rgba(255, 255, 255, 0.02);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.rt-footer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-rt-random {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.btn-rt-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 14px;
+  font-size: 0.82rem;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.btn-rt-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+@media (max-width: 540px) {
+  .rt-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .rt-footer-actions {
+    width: 100%;
+    display: flex;
+  }
+
+  .btn-rt-random {
+    width: 100%;
+  }
+
+  .btn-rt-cancel {
+    flex: 1;
+  }
+
+  .btn-rt-submit {
+    flex: 1.6;
+  }
+}

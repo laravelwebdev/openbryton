@@ -34,7 +34,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=33">
+  <link rel="stylesheet" href="style.css?v=35">
 </head>
 
 <body>
@@ -421,6 +421,10 @@
                 <i data-lucide="pen-tool"></i>
                 <span data-i18n="btnCreateRoute">Buat Rute Manual</span>
               </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnRoundTrip" title="Buat Rute Round Trip (Loop)">
+                <i data-lucide="repeat"></i>
+                <span data-i18n="btnRoundTrip">Round Trip</span>
+              </button>
               <button type="button" class="btn btn-sm btn-outline" id="btnCloseRoute"
                 title="Tutup Rute (Sambung ke Awal)">
                 <i data-lucide="refresh-ccw"></i>
@@ -473,6 +477,12 @@
             <label class="inline-style-28">
               <input type="checkbox" id="chkGraphHopperTbt"> <span data-i18n="chkGraphHopperTbt">Ambil dari GraphHopper</span>
             </label>
+          </div>
+
+          <div class="map-status-bar hidden" id="roundTripStatusBar">
+            <i data-lucide="crosshair"></i>
+            <span data-i18n="rtModeActive">Mode Pilih Titik Awal Round Trip Aktif: Silakan klik di peta.</span>
+            <button type="button" class="btn btn-sm btn-outline" id="btnCancelPickRtStart" style="margin-left:auto; padding:2px 8px; font-size:11px;">Batal</button>
           </div>
 
           <div id="map" class="map-container">
@@ -791,6 +801,114 @@
       </div>
     </div>
 
+    <!-- Modal Round Trip (GraphHopper) -->
+    <div id="modalRoundTrip" class="modal-backdrop hidden modal-roundtrip-backdrop">
+      <div class="card rt-modal-card">
+        <div class="rt-modal-header">
+          <div class="rt-modal-title">
+            <i data-lucide="repeat" class="text-primary"></i>
+            <span data-i18n="modalTitleRoundTrip">Buat Round Trip Otomatis</span>
+          </div>
+          <button type="button" class="btn btn-icon btn-sm" onclick="closeAllModals()" title="Tutup">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div class="rt-modal-body">
+          <!-- Start Point Selection -->
+          <div class="rt-form-group">
+            <label class="rt-label">
+              <i data-lucide="map-pin"></i> <span data-i18n="rtStartPoint">Titik Awal (Start/Finish)</span>
+            </label>
+            <div class="rt-point-input-row">
+              <input type="text" id="rtStartCoordInput" class="input-full-width" placeholder="-6.2088, 106.8456" readonly>
+              <button type="button" class="btn btn-outline btn-sm" id="btnRtPickOnMap">
+                <i data-lucide="crosshair"></i> <span data-i18n="rtPickOnMap">Pilih di Peta</span>
+              </button>
+              <button type="button" class="btn btn-outline btn-sm" id="btnRtMyLoc" title="Gunakan Lokasi Saya">
+                <i data-lucide="navigation"></i>
+              </button>
+            </div>
+            <p class="rt-hint" data-i18n="rtStartHint">Klik tombol di atas untuk menentukan titik di peta atau pakai lokasi GPS saat ini.</p>
+          </div>
+
+          <!-- Distance Slider -->
+          <div class="rt-form-group">
+            <div class="rt-label-row">
+              <label class="rt-label" for="rtDistanceSlider">
+                <i data-lucide="gauge"></i> <span data-i18n="rtDistance">Perkiraan Jarak Target</span>
+              </label>
+              <span class="value-bubble" id="rtDistanceValue">25 km</span>
+            </div>
+            <input type="range" id="rtDistanceSlider" min="5" max="150" value="25" step="5" class="slider">
+            <div class="rt-slider-marks">
+              <span>5 km</span>
+              <span>30 km</span>
+              <span>60 km</span>
+              <span>100 km</span>
+              <span>150 km</span>
+            </div>
+          </div>
+
+          <!-- Heading Compass / Interactive Angle -->
+          <div class="rt-form-group">
+            <div class="rt-label-row">
+              <label class="rt-label" for="rtHeadingSlider">
+                <i data-lucide="compass"></i> <span data-i18n="rtHeading">Arah Awal (Heading)</span>
+              </label>
+              <span class="value-bubble" id="rtHeadingValue">0° (Utara)</span>
+            </div>
+            <div class="rt-compass-wrapper">
+              <div class="rt-compass-disc" id="rtCompassDisc">
+                <div class="rt-compass-needle" id="rtCompassNeedle"></div>
+                <span class="compass-label north">U</span>
+                <span class="compass-label east">T</span>
+                <span class="compass-label south">S</span>
+                <span class="compass-label west">B</span>
+              </div>
+              <div class="rt-compass-slider-box">
+                <input type="range" id="rtHeadingSlider" min="0" max="355" value="0" step="5" class="slider">
+                <div class="rt-heading-presets">
+                  <button type="button" class="preset-btn active" data-deg="0">Utara (0°)</button>
+                  <button type="button" class="preset-btn" data-deg="90">Timur (90°)</button>
+                  <button type="button" class="preset-btn" data-deg="180">Selatan (180°)</button>
+                  <button type="button" class="preset-btn" data-deg="270">Barat (270°)</button>
+                </div>
+              </div>
+            </div>
+            <p class="rt-hint" data-i18n="rtHeadingHint">Arah keberangkatan rute dari titik awal.</p>
+          </div>
+
+          <!-- Profile / Vehicle -->
+          <div class="rt-form-group">
+            <label class="rt-label" for="rtProfileSelect">
+              <i data-lucide="bike"></i> <span data-i18n="rtProfile">Mode Rute</span>
+            </label>
+            <select id="rtProfileSelect" class="input-full-width">
+              <option value="bike" selected data-i18n="rtProfileBike">Sepeda (Bike)</option>
+              <option value="racingbike" data-i18n="rtProfileRoad">Sepeda Balap (Road Bike)</option>
+              <option value="mtb" data-i18n="rtProfileMtb">Sepeda Gunung (MTB)</option>
+              <option value="foot" data-i18n="rtProfileFoot">Lari / Jalan Kaki (Foot)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="rt-modal-footer">
+          <button type="button" class="btn btn-outline btn-rt-random" id="btnRtRandomize" title="Ubah variasi loop">
+            <i data-lucide="shuffle"></i>
+            <span data-i18n="rtNewSeed">Acak Variasi</span>
+          </button>
+          <div class="rt-footer-actions">
+            <button type="button" class="btn btn-outline btn-rt-cancel" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
+            <button type="button" class="btn btn-primary btn-rt-submit" id="btnSubmitRoundTrip">
+              <i data-lucide="sparkles"></i>
+              <span data-i18n="btnGenerateRoundTrip">Generate Round Trip</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <button id="btnCloseModal" style="display:none;"></button>
 
   </div> <!-- End page-create -->
@@ -806,9 +924,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-  <script src="lang.js?v=32"></script>
-  <script src="firebase-db.js?v=32"></script>
-  <script src="app.js?v=32"></script>
+  <script src="lang.js?v=34"></script>
+  <script src="firebase-db.js?v=34"></script>
+  <script src="app.js?v=34"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Logic for language dropdown initialization is in lang.js

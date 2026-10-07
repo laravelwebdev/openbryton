@@ -28,6 +28,9 @@ const state = {
   isEditingRoute: false,
   isCreatingRoute: false,
   isAddingManualTurn: false,
+  isPickingRtStart: false,
+  roundTripStart: null,
+  roundTripSeed: 0,
   manualAddMode: 'turn',
   pendingManualCoord: null,
   history: [],
@@ -38,7 +41,8 @@ const state = {
     turnMarkers: [],
     editHandles: [],
     creationPins: [],
-    hoverMarker: null
+    hoverMarker: null,
+    rtStartMarker: null
   },
   currentClimbHighlight: null
 };
@@ -222,6 +226,22 @@ const elements = {
   manualTurnDirection: document.getElementById('manualTurnDirection'),
   manualTurnText: document.getElementById('manualTurnText'),
   manualTurnCoords: document.getElementById('manualTurnCoords'),
+  btnRoundTrip: document.getElementById('btnRoundTrip'),
+  modalRoundTrip: document.getElementById('modalRoundTrip'),
+  roundTripStatusBar: document.getElementById('roundTripStatusBar'),
+  btnCancelPickRtStart: document.getElementById('btnCancelPickRtStart'),
+  rtStartCoordInput: document.getElementById('rtStartCoordInput'),
+  btnRtPickOnMap: document.getElementById('btnRtPickOnMap'),
+  btnRtMyLoc: document.getElementById('btnRtMyLoc'),
+  rtDistanceSlider: document.getElementById('rtDistanceSlider'),
+  rtDistanceValue: document.getElementById('rtDistanceValue'),
+  rtHeadingSlider: document.getElementById('rtHeadingSlider'),
+  rtHeadingValue: document.getElementById('rtHeadingValue'),
+  rtCompassDisc: document.getElementById('rtCompassDisc'),
+  rtCompassNeedle: document.getElementById('rtCompassNeedle'),
+  rtProfileSelect: document.getElementById('rtProfileSelect'),
+  btnRtRandomize: document.getElementById('btnRtRandomize'),
+  btnSubmitRoundTrip: document.getElementById('btnSubmitRoundTrip'),
   toast: document.getElementById('toast'),
   toastMsg: document.getElementById('toastMsg'),
   toastIcon: document.getElementById('toastIcon')
@@ -621,6 +641,8 @@ function bindEvents() {
     });
   }
 
+  bindRoundTripEvents();
+
   const btnRdp = document.getElementById('btnSimplifyRdp');
   if (btnRdp) {
     btnRdp.addEventListener('click', () => {
@@ -812,6 +834,11 @@ function resetState() {
     state.map.removeLayer(state.mapLayers.trackLine);
     state.mapLayers.trackLine = null;
   }
+  if (state.mapLayers.rtStartMarker) {
+    state.map.removeLayer(state.mapLayers.rtStartMarker);
+    state.mapLayers.rtStartMarker = null;
+  }
+  stopPickRtStartMode();
   clearTurnMarkers();
   clearEditHandles();
   clearCreationPins();
@@ -1270,6 +1297,7 @@ function toggleRouteEditing() {
     state.map.on('moveend', setupRouteEditHandles);
 
     setupRouteEditHandles();
+    updateCreateManualVisibility();
     showToast(t('toastEditModeOn'), 'info');
   } else {
     elements.btnToggleEditRoute.classList.remove('active');
@@ -1290,6 +1318,7 @@ function toggleRouteEditing() {
     state.map.off('moveend', setupRouteEditHandles);
     clearEditHandles();
     renderTrackOnMap(false);
+    updateCreateManualVisibility();
   }
 }
 
@@ -1710,7 +1739,12 @@ async function handleMapClick(e) {
   if (state.isProcessingMapClick) return;
   state.isProcessingMapClick = true;
   try {
-    if (state.isAddingManualTurn) {
+    if (state.isPickingRtStart) {
+      setRoundTripStartPoint(e.latlng.lat, e.latlng.lng);
+      stopPickRtStartMode();
+      openRoundTripModal();
+      return;
+    } else if (state.isAddingManualTurn) {
       await openAddManualTurnModal(e.latlng);
     } else if (state.isCreatingRoute) {
       const lat = e.latlng.lat;
@@ -1813,14 +1847,17 @@ async function closeRouteLoop() {
 }
 
 function updateCreateManualVisibility() {
-  if (state.isCreatingRoute) {
-    if (elements.btnCreateManualRoute) elements.btnCreateManualRoute.classList.remove('hidden');
+  if (state.isCreatingRoute || state.isEditingRoute) {
+    if (elements.btnCreateManualRoute) elements.btnCreateManualRoute.classList.toggle('hidden', state.isEditingRoute);
+    if (elements.btnRoundTrip) elements.btnRoundTrip.classList.add('hidden');
     if (elements.btnUploadGpxToolbar) elements.btnUploadGpxToolbar.classList.add('hidden');
   } else if (state.points.length > 0) {
     if (elements.btnCreateManualRoute) elements.btnCreateManualRoute.classList.add('hidden');
+    if (elements.btnRoundTrip) elements.btnRoundTrip.classList.add('hidden');
     if (elements.btnUploadGpxToolbar) elements.btnUploadGpxToolbar.classList.add('hidden');
   } else {
     if (elements.btnCreateManualRoute) elements.btnCreateManualRoute.classList.remove('hidden');
+    if (elements.btnRoundTrip) elements.btnRoundTrip.classList.remove('hidden');
     if (elements.btnUploadGpxToolbar) elements.btnUploadGpxToolbar.classList.remove('hidden');
   }
 }
@@ -1985,7 +2022,7 @@ async function openAddManualTurnModal(latlng) {
 }
 
 function closeAllModals() {
-  const modals = ['modalAddTurn', 'modalAddPoi', 'modalEditTurn', 'modalEditPoi', 'modalEditClimb'];
+  const modals = ['modalAddTurn', 'modalAddPoi', 'modalEditTurn', 'modalEditPoi', 'modalEditClimb', 'modalRoundTrip'];
   modals.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -2004,6 +2041,380 @@ window.closeAllModals = closeAllModals;
 function closeModal() {
   closeAllModals();
 }
+
+/**
+ * ============================================================================
+ * ROUND TRIP GENERATOR (GRAPHHOPPER)
+ * ============================================================================
+ */
+function openRoundTripModal() {
+  if (state.isEditingRoute) toggleRouteEditing();
+  if (state.isCreatingRoute) toggleCreateManualRoute();
+  if (state.isAddingManualTurn) toggleAddManualTurnMode();
+
+  // If no start coordinate chosen yet, try to default to existing route first point or map center
+  if (!state.roundTripStart) {
+    if (state.points.length > 0) {
+      setRoundTripStartPoint(state.points[0].lat, state.points[0].lon);
+    } else if (state.mapLayers.locationMarker) {
+      const loc = state.mapLayers.locationMarker.getLatLng();
+      setRoundTripStartPoint(loc.lat, loc.lng);
+    } else if (state.map) {
+      const center = state.map.getCenter();
+      setRoundTripStartPoint(center.lat, center.lng);
+    }
+  }
+
+  updateRoundTripUI();
+
+  if (elements.modalRoundTrip) {
+    elements.modalRoundTrip.classList.remove('hidden');
+    elements.modalRoundTrip.style.display = 'flex';
+  }
+}
+window.openRoundTripModal = openRoundTripModal;
+
+function setRoundTripStartPoint(lat, lon) {
+  state.roundTripStart = { lat: parseFloat(lat), lon: parseFloat(lon) };
+  if (elements.rtStartCoordInput) {
+    elements.rtStartCoordInput.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+  }
+
+  // Draw or update start marker on map
+  if (state.map) {
+    if (state.mapLayers.rtStartMarker) {
+      state.map.removeLayer(state.mapLayers.rtStartMarker);
+    }
+    const icon = L.divIcon({
+      className: 'rt-start-pin',
+      html: '<div style="background:#10b981; color:#fff; width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:3px solid #fff; box-shadow:0 0 10px rgba(16,185,129,0.7); font-weight:bold; font-size:12px;">★</div>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+    state.mapLayers.rtStartMarker = L.marker([lat, lon], { icon, draggable: true }).addTo(state.map);
+    state.mapLayers.rtStartMarker.on('dragend', function (e) {
+      const pos = e.target.getLatLng();
+      setRoundTripStartPoint(pos.lat, pos.lng);
+    });
+  }
+}
+
+function startPickRtStartMode() {
+  closeAllModals();
+  state.isPickingRtStart = true;
+  if (elements.roundTripStatusBar) {
+    elements.roundTripStatusBar.classList.remove('hidden');
+  }
+  showToast(typeof t === 'function' ? t('rtModeActive') : 'Silakan klik di peta untuk memilih titik awal round trip.', 'info');
+}
+
+function stopPickRtStartMode() {
+  state.isPickingRtStart = false;
+  if (elements.roundTripStatusBar) {
+    elements.roundTripStatusBar.classList.add('hidden');
+  }
+}
+
+function updateRoundTripUI() {
+  if (elements.rtDistanceSlider && elements.rtDistanceValue) {
+    elements.rtDistanceValue.textContent = `${elements.rtDistanceSlider.value} km`;
+  }
+  if (elements.rtHeadingSlider && elements.rtHeadingValue) {
+    const deg = parseInt(elements.rtHeadingSlider.value, 10);
+    elements.rtHeadingValue.textContent = `${deg}° (${getHeadingCardinal(deg)})`;
+    if (elements.rtCompassNeedle) {
+      elements.rtCompassNeedle.style.transform = `rotate(${deg}deg)`;
+    }
+    // Update active preset button
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      const bDeg = parseInt(btn.getAttribute('data-deg'), 10);
+      btn.classList.toggle('active', Math.abs(bDeg - deg) < 15);
+    });
+  }
+}
+
+function getHeadingCardinal(deg) {
+  deg = ((deg % 360) + 360) % 360;
+  if (deg >= 337.5 || deg < 22.5) return 'Utara';
+  if (deg >= 22.5 && deg < 67.5) return 'Timur Laut';
+  if (deg >= 67.5 && deg < 112.5) return 'Timur';
+  if (deg >= 112.5 && deg < 157.5) return 'Tenggara';
+  if (deg >= 157.5 && deg < 202.5) return 'Selatan';
+  if (deg >= 202.5 && deg < 247.5) return 'Barat Daya';
+  if (deg >= 247.5 && deg < 292.5) return 'Barat';
+  return 'Barat Laut';
+}
+
+function bindRoundTripEvents() {
+  if (elements.btnRoundTrip) {
+    elements.btnRoundTrip.addEventListener('click', openRoundTripModal);
+  }
+
+  if (elements.btnCancelPickRtStart) {
+    elements.btnCancelPickRtStart.addEventListener('click', () => {
+      stopPickRtStartMode();
+      openRoundTripModal();
+    });
+  }
+
+  if (elements.btnRtPickOnMap) {
+    elements.btnRtPickOnMap.addEventListener('click', startPickRtStartMode);
+  }
+
+  if (elements.btnRtMyLoc) {
+    elements.btnRtMyLoc.addEventListener('click', () => {
+      if (state.mapLayers.locationMarker) {
+        const pos = state.mapLayers.locationMarker.getLatLng();
+        setRoundTripStartPoint(pos.lat, pos.lng);
+        if (state.map) state.map.setView(pos, 14);
+        showToast('Titik awal disetel ke lokasi GPS Anda.', 'success');
+      } else {
+        if (state.map) {
+          state.map.locate({ setView: true, maxZoom: 15 });
+          showToast('Mencari sinyal lokasi GPS...', 'info');
+        }
+      }
+    });
+  }
+
+  if (elements.rtDistanceSlider) {
+    elements.rtDistanceSlider.addEventListener('input', updateRoundTripUI);
+  }
+
+  if (elements.rtHeadingSlider) {
+    elements.rtHeadingSlider.addEventListener('input', updateRoundTripUI);
+  }
+
+  // Preset buttons
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const deg = parseInt(btn.getAttribute('data-deg'), 10);
+      if (elements.rtHeadingSlider) {
+        elements.rtHeadingSlider.value = deg;
+        updateRoundTripUI();
+      }
+    });
+  });
+
+  // Compass disc interactive dragging/clicking
+  if (elements.rtCompassDisc) {
+    let isDraggingCompass = false;
+    const calculateAngleFromEvent = (e) => {
+      const rect = elements.rtCompassDisc.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const dx = clientX - cx;
+      const dy = clientY - cy;
+      let angle = Math.atan2(dx, -dy) * (180 / Math.PI); // 0 is North, clockwise
+      if (angle < 0) angle += 360;
+      angle = Math.round(angle / 5) * 5;
+      if (angle >= 360) angle = 0;
+      if (elements.rtHeadingSlider) {
+        elements.rtHeadingSlider.value = angle;
+        updateRoundTripUI();
+      }
+    };
+
+    elements.rtCompassDisc.addEventListener('pointerdown', (e) => {
+      isDraggingCompass = true;
+      elements.rtCompassDisc.setPointerCapture(e.pointerId);
+      calculateAngleFromEvent(e);
+    });
+    elements.rtCompassDisc.addEventListener('pointermove', (e) => {
+      if (isDraggingCompass) calculateAngleFromEvent(e);
+    });
+    const finishDrag = (e) => {
+      if (isDraggingCompass) {
+        isDraggingCompass = false;
+        try { elements.rtCompassDisc.releasePointerCapture(e.pointerId); } catch (err) {}
+      }
+    };
+    elements.rtCompassDisc.addEventListener('pointerup', finishDrag);
+    elements.rtCompassDisc.addEventListener('pointercancel', finishDrag);
+  }
+
+  if (elements.btnRtRandomize) {
+    elements.btnRtRandomize.addEventListener('click', () => {
+      state.roundTripSeed = Math.floor(Math.random() * 100000);
+      showToast(`Variasi acak diperbarui (Seed: ${state.roundTripSeed})`, 'info');
+    });
+  }
+
+  if (elements.btnSubmitRoundTrip) {
+    elements.btnSubmitRoundTrip.addEventListener('click', generateRoundTripRoute);
+  }
+}
+
+async function getGraphHopperApiKey() {
+  // Strategy: Try Bryton document direct key first, fallback to known working brytonsport active key
+  const fallbackKey = '917f326f-93f8-4e9f-97a0-679b508012b9';
+  try {
+    const keyRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://www.brytonsport.com/download/Docs/graphhopperKey'), {
+      signal: AbortSignal.timeout(3000)
+    });
+    if (keyRes.ok) {
+      const text = (await keyRes.text()).trim();
+      if (text && text.length > 10) return text;
+    }
+  } catch (err) {
+    console.warn('Fallback ke default GraphHopper Key:', err);
+  }
+  return fallbackKey;
+}
+
+async function generateRoundTripRoute() {
+  if (!state.roundTripStart) {
+    showToast(typeof t === 'function' ? t('toastRtNoPoint') : 'Silakan tentukan titik awal terlebih dahulu.', 'error');
+    return;
+  }
+
+  if (state.points.length > 0) {
+    if (!confirm('Membuat rute round trip baru akan menimpa rute yang ada di peta saat ini. Lanjutkan?')) {
+      return;
+    }
+  }
+
+  const startPt = state.roundTripStart;
+  const targetKm = parseInt(elements.rtDistanceSlider ? elements.rtDistanceSlider.value : 25, 10);
+  const targetMeters = targetKm * 1000;
+  const heading = parseInt(elements.rtHeadingSlider ? elements.rtHeadingSlider.value : 0, 10);
+  const vehicle = elements.rtProfileSelect ? elements.rtProfileSelect.value : 'bike';
+  const seed = state.roundTripSeed || Math.floor(Math.random() * 10000);
+
+  closeAllModals();
+  showToast(typeof t === 'function' ? t('toastRtGenerating') : 'Menghitung rute round trip dari GraphHopper...', 'info', false);
+
+  state.isProcessing = true;
+  if (elements.btnProcess) elements.btnProcess.disabled = true;
+
+  try {
+    const apiKey = await getGraphHopperApiKey();
+    const locale = typeof currentLang !== 'undefined' && currentLang === 'en' ? 'en' : 'id';
+
+    const url = `https://graphhopper.com/api/1/route?point=${startPt.lat.toFixed(6)},${startPt.lon.toFixed(6)}` +
+      `&algorithm=round_trip` +
+      `&round_trip.distance=${targetMeters}` +
+      `&round_trip.seed=${seed}` +
+      `&heading=${heading}` +
+      `&ch.disable=true` +
+      `&elevation=true` +
+      `&vehicle=${vehicle}` +
+      `&calc_points=true` +
+      `&instructions=true` +
+      `&points_encoded=false` +
+      `&locale=${locale}` +
+      `&key=${apiKey.trim()}`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`GraphHopper Error (${res.status}): ${errText}`);
+    }
+
+    const data = await res.json();
+    if (!data.paths || data.paths.length === 0) {
+      throw new Error('GraphHopper tidak menemukan rute loop untuk titik & parameter yang dipilih.');
+    }
+
+    const path = data.paths[0];
+    const coords = path.points.coordinates; // Array of [lon, lat, ele]
+
+    if (!coords || coords.length < 2) {
+      throw new Error('Titik koordinat dari GraphHopper tidak cukup.');
+    }
+
+    resetState();
+
+    // Map GraphHopper Coordinates to internal Points
+    let runningDist = 0;
+    const newPoints = [];
+    for (let i = 0; i < coords.length; i++) {
+      const lon = coords[i][0];
+      const lat = coords[i][1];
+      const ele = coords[i].length > 2 ? coords[i][2] : 0;
+
+      if (i > 0) {
+        const prev = newPoints[i - 1];
+        runningDist += haversineDistance(prev.lat, prev.lon, lat, lon);
+      }
+
+      newPoints.push({
+        lat,
+        lon,
+        ele: ele || 0,
+        distFromStart: runningDist
+      });
+    }
+
+    state.points = newPoints;
+    state.rawBackupPoints = JSON.parse(JSON.stringify(newPoints));
+    state.totalDistance = runningDist;
+
+    const rName = `Round Trip ${Math.round(runningDist / 1000)}km`;
+    state.fileName = `${rName.toLowerCase().replace(/\s+/g, '_')}.gpx`;
+    state.baseName = rName.toLowerCase().replace(/\s+/g, '_');
+    if (elements.brytonRouteName) elements.brytonRouteName.value = rName;
+
+    // Parse Turn-by-Turn instructions returned directly by GraphHopper
+    const ghToBrytonMap = {
+      "-8": 12, "-7": 14, "-6": 32, "-3": 7, "-2": 3, "-1": 5,
+      "0": 1, "1": 4, "2": 2, "3": 6, "4": 33, "5": 30, "6": 31, "7": 13, "8": 11
+    };
+
+    const insts = path.instructions || [];
+    state.osmTurns = [];
+    insts.forEach((inst, idx) => {
+      // Find point index for instruction interval
+      const ptIdx = (inst.interval && inst.interval.length > 0) ? inst.interval[0] : 0;
+      if (ptIdx >= 0 && ptIdx < newPoints.length) {
+        const pt = newPoints[ptIdx];
+        const dirCode = ghToBrytonMap[inst.sign] || 1;
+        state.osmTurns.push({
+          id: Math.random().toString(36).substr(2, 9),
+          source: 'osm',
+          index: ptIdx,
+          lat: pt.lat,
+          lon: pt.lon,
+          directionCode: dirCode,
+          instruction: inst.text || getDirectionLabel(dirCode),
+          distFromStart: pt.distFromStart
+        });
+      }
+    });
+
+    state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+
+    // Update UI & Render
+    elements.statDistance.textContent = `${(runningDist / 1000).toFixed(2)} km`;
+    elements.statPoints.textContent = newPoints.length.toLocaleString();
+
+    renderTrackOnMap(true);
+    renderElevationChart();
+    updateStatsAndUI();
+    saveHistoryState();
+    updateCreateManualVisibility();
+
+    // Disable tombol Generate TBT karena TBT GraphHopper sudah otomatis dihasilkan & siap pakai
+    elements.btnProcess.disabled = true;
+    elements.btnDownloadBryton.disabled = false;
+    elements.btnDownloadKml.disabled = false;
+    elements.btnDownloadGpx.disabled = false;
+    elements.btnDownloadFit.disabled = false;
+    if (elements.btnToggleDownload) elements.btnToggleDownload.disabled = false;
+
+    showToast(typeof t === 'function' ? t('toastRtSuccess') : 'Rute round trip berhasil dibuat!', 'success');
+  } catch (err) {
+    console.error('RoundTrip Error:', err);
+    alert('Gagal membuat Round Trip:\n' + err.message);
+    showToast('Gagal membuat Round Trip', 'error');
+    if (elements.btnProcess) elements.btnProcess.disabled = false;
+  } finally {
+    state.isProcessing = false;
+  }
+}
+window.generateRoundTripRoute = generateRoundTripRoute;
 
 async function confirmAddManualTurn() {
   if (!state.pendingManualCoord) return;
