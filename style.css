@@ -1105,16 +1105,18 @@ body {
 }
 
 .turns-table tr:hover td {
-  background: rgba(59, 130, 246, 0.05);
+  background: rgba(59, 130, 246, 0.08);
 }
 
-.highlighted-row td {
-  background: rgba(59, 130, 246, 0.3) !important;
+.turns-table tr.highlighted-row,
+.turns-table tr.highlighted-row td {
+  background: rgba(59, 130, 246, 0.35) !important;
   transition: background 0.3s ease;
 }
 
-.active-row td {
-  background: rgba(59, 130, 246, 0.3) !important;
+.turns-table tr.active-row,
+.turns-table tr.active-row td {
+  background: rgba(59, 130, 246, 0.35) !important;
   transition: background 0.3s ease;
 }
 

@@ -110,7 +110,14 @@ window.loadRouteFromFirebase = function (data, isOwner = true) {
   }
 
   state.totalDistance = state.points.length > 0 ? state.points[state.points.length - 1].distFromStart : 0;
+  let totalEleGain = 0;
+  for (let i = 1; i < state.points.length; i++) {
+    const diff = (state.points[i].ele || 0) - (state.points[i - 1].ele || 0);
+    if (diff > 0) totalEleGain += diff;
+  }
+  state.totalElevationGain = totalEleGain;
   if (elements.statDistance) elements.statDistance.textContent = `${(state.totalDistance / 1000).toFixed(2)} km`;
+  if (elements.statElevationGain) elements.statElevationGain.textContent = `${Math.round(totalEleGain)} m`;
   if (elements.statPoints) elements.statPoints.textContent = state.points.length.toLocaleString();
 
   state.rawBackupPoints = JSON.parse(JSON.stringify(state.points));
@@ -195,6 +202,7 @@ const elements = {
   turnsCard: document.querySelector('.turns-card'),
   mapContainer: document.querySelector('.map-container'),
   statDistance: document.getElementById('statDistance'),
+  statElevationGain: document.getElementById('statElevationGain'),
   statPoints: document.getElementById('statPoints'),
   statOsmTurns: document.getElementById('statOsmTurns'),
   statExtraTurns: document.getElementById('statExtraTurns'),
@@ -843,6 +851,7 @@ function resetState() {
   elements.mapPlaceholder.classList.remove('hidden');
 
   elements.statDistance.textContent = '0.00 km';
+  if (elements.statElevationGain) elements.statElevationGain.textContent = '0 m';
   elements.statPoints.textContent = '0';
   elements.statOsmTurns.textContent = '0';
   elements.statExtraTurns.textContent = '0';
@@ -856,7 +865,7 @@ function resetState() {
   const poisBody = document.getElementById('poisTableBody');
   const climbsBody = document.getElementById('climbsTableBody');
   if (poisBody) poisBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyPois') : 'Belum ada data.'}</td></tr>`;
-  if (climbsBody) climbsBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
+  if (climbsBody) climbsBody.innerHTML = `<tr class="empty-row"><td colspan="7" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
 
   const bTurns = document.getElementById('badge-turns');
   const bPois = document.getElementById('badge-pois');
@@ -941,7 +950,15 @@ function parseGpx() {
   state.totalDistance = runningDist;
   state.boundingBox = { latMin, latMax, lonMin, lonMax };
 
+  let totalEleGain = 0;
+  for (let i = 1; i < points.length; i++) {
+    const diff = (points[i].ele || 0) - (points[i - 1].ele || 0);
+    if (diff > 0) totalEleGain += diff;
+  }
+  state.totalElevationGain = totalEleGain;
+
   elements.statDistance.textContent = `${(runningDist / 1000).toFixed(2)} km`;
+  if (elements.statElevationGain) elements.statElevationGain.textContent = `${Math.round(totalEleGain)} m`;
   elements.statPoints.textContent = points.length.toLocaleString();
 
   updateCreateManualVisibility();
@@ -1284,7 +1301,14 @@ function toggleRouteEditing() {
     saveHistoryState();
 
     // Save original state for cancel
-    state.originalPointsBeforeEdit = state.points.map(p => ({ ...p }));
+    state.originalStateBeforeEdit = {
+      points: state.points.map(p => ({ ...p })),
+      osmTurns: state.osmTurns.map(t => ({ ...t })),
+      extraTurns: state.extraTurns.map(t => ({ ...t })),
+      manualTurns: state.manualTurns.map(t => ({ ...t })),
+      climbTurns: state.climbTurns.map(t => ({ ...t })),
+      climbs: state.climbs ? state.climbs.map(c => ({ ...c })) : []
+    };
 
     // Jadikan SEMUA titik di rute sebagai handle, tanpa batasan!
     state.points.forEach((p, i) => {
@@ -1306,11 +1330,18 @@ function toggleRouteEditing() {
     if (elements.btnRedoEdit) elements.btnRedoEdit.classList.add('hidden');
     elements.editStatusBar.classList.add('hidden');
 
-    // Restore points if canceled (not saved)
-    if (state.originalPointsBeforeEdit) {
-      state.points = state.originalPointsBeforeEdit;
-      state.originalPointsBeforeEdit = null;
+    // Restore state if canceled (not saved)
+    if (state.originalStateBeforeEdit) {
+      state.points = state.originalStateBeforeEdit.points;
+      state.osmTurns = state.originalStateBeforeEdit.osmTurns;
+      state.extraTurns = state.originalStateBeforeEdit.extraTurns;
+      state.manualTurns = state.originalStateBeforeEdit.manualTurns;
+      state.climbTurns = state.originalStateBeforeEdit.climbTurns;
+      state.climbs = state.originalStateBeforeEdit.climbs;
+      state.originalStateBeforeEdit = null;
       recalculateRouteDistances();
+      state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+      updateStatsAndUI();
     }
 
     state.map.off('moveend', setupRouteEditHandles);
@@ -1378,8 +1409,27 @@ function setupRouteEditHandles() {
 
     const deletePoint = (e) => {
       if (e && e.originalEvent) e.originalEvent.preventDefault();
+      // 1. Hapus semua turn / POI / climbTurn yang berada tepat di titik ini
+      const removeAtIdx = (arr) => {
+        if (!arr) return arr;
+        return arr.filter(item => item.index !== pointIndex);
+      };
+      state.osmTurns = removeAtIdx(state.osmTurns);
+      state.extraTurns = removeAtIdx(state.extraTurns);
+      state.manualTurns = removeAtIdx(state.manualTurns);
+      state.climbTurns = removeAtIdx(state.climbTurns);
+
+      // 2. Geser indeks yang berada di atas pointIndex ke kiri sebanyak 1 (-1)
       shiftTurnIndices(pointIndex + 1, -1);
+
+      // 3. Hapus titik fisik dari points
       state.points.splice(pointIndex, 1);
+
+      // 4. Validasi climbs agar startIndex < endIndex
+      if (state.climbs) {
+        state.climbs = state.climbs.filter(c => c.startIndex < c.endIndex && c.endIndex < state.points.length);
+      }
+
       recalculateRouteDistances();
       saveHistoryState();
       renderTrackOnMap(false);
@@ -1397,19 +1447,25 @@ function shiftTurnIndices(startIndex, amount) {
   const shiftArr = (arr) => {
     if (!arr) return;
     for (let i = arr.length - 1; i >= 0; i--) {
-      if (arr[i].index >= startIndex) arr[i].index += amount;
+      if (arr[i].index >= startIndex) {
+        arr[i].index += amount;
+        if (arr[i].index < 0) arr[i].index = 0;
+      }
     }
   };
   shiftArr(state.osmTurns);
   shiftArr(state.extraTurns);
   shiftArr(state.manualTurns);
   shiftArr(state.climbTurns);
-  // Do not shift combinedInstructions to prevent double-shifting of the same object references
 
   if (state.climbs) {
-    for (let i = 0; i < state.climbs.length; i++) {
+    for (let i = state.climbs.length - 1; i >= 0; i--) {
       if (state.climbs[i].startIndex >= startIndex) state.climbs[i].startIndex += amount;
       if (state.climbs[i].endIndex >= startIndex) state.climbs[i].endIndex += amount;
+      // Filter out invalid climb intervals
+      if (state.climbs[i].startIndex >= state.climbs[i].endIndex) {
+        state.climbs.splice(i, 1);
+      }
     }
   }
 }
@@ -1619,6 +1675,7 @@ function saveHistoryState() {
   const extraClone = state.extraTurns.map(t => ({ ...t }));
   const manualClone = state.manualTurns.map(t => ({ ...t }));
   const climbClone = state.climbTurns.map(t => ({ ...t }));
+  const climbsClone = state.climbs ? state.climbs.map(c => ({ ...c })) : [];
   const combinedClone = state.combinedInstructions.map(t => ({ ...t }));
 
   state.history.push({
@@ -1628,6 +1685,7 @@ function saveHistoryState() {
     extraTurns: extraClone,
     manualTurns: manualClone,
     climbTurns: climbClone,
+    climbs: climbsClone,
     combinedInstructions: combinedClone
   });
   if (state.history.length > 20) {
@@ -1667,6 +1725,7 @@ function restoreHistoryState(historyItem) {
   if (historyItem.extraTurns) state.extraTurns = historyItem.extraTurns.map(t => ({ ...t }));
   if (historyItem.manualTurns) state.manualTurns = historyItem.manualTurns.map(t => ({ ...t }));
   if (historyItem.climbTurns) state.climbTurns = historyItem.climbTurns.map(t => ({ ...t }));
+  if (historyItem.climbs) state.climbs = historyItem.climbs.map(c => ({ ...c }));
   if (historyItem.combinedInstructions) state.combinedInstructions = historyItem.combinedInstructions.map(t => ({ ...t }));
 
   if (state.isCreatingRoute) {
@@ -1710,7 +1769,15 @@ function recalculateRouteDistances() {
   state.totalDistance = runningDist;
   state.boundingBox = { latMin, latMax, lonMin, lonMax };
 
+  let totalEleGain = 0;
+  for (let i = 1; i < state.points.length; i++) {
+    const diff = (state.points[i].ele || 0) - (state.points[i - 1].ele || 0);
+    if (diff > 0) totalEleGain += diff;
+  }
+  state.totalElevationGain = totalEleGain;
+
   elements.statDistance.textContent = `${(runningDist / 1000).toFixed(2)} km`;
+  if (elements.statElevationGain) elements.statElevationGain.textContent = `${Math.round(totalEleGain)} m`;
   elements.statPoints.textContent = state.points.length.toLocaleString();
 
   // Sync turn positions and distances!
@@ -1731,15 +1798,26 @@ function recalculateRouteDistances() {
   syncTurns(state.manualTurns);
   syncTurns(state.climbTurns);
 
-  if (state.combinedInstructions && state.combinedInstructions.length > 0) {
-    state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+  // Sync climb metadata (distance, elevation gain, average gradient)
+  if (state.climbs) {
+    state.climbs.forEach(c => {
+      if (c.startIndex >= 0 && c.endIndex < state.points.length) {
+        const startPt = state.points[c.startIndex];
+        const endPt = state.points[c.endIndex];
+        if (startPt && endPt) {
+          c.dist = Math.max(0, endPt.distFromStart - startPt.distFromStart);
+          c.eleGain = endPt.ele - startPt.ele;
+          c.avgGrad = c.dist > 0 ? (c.eleGain / c.dist) * 100 : 0;
+        }
+      }
+    });
   }
 
   renderElevationChart();
 }
 
 async function saveRouteEditing() {
-  state.originalPointsBeforeEdit = null;
+  state.originalStateBeforeEdit = null;
   recalculateRouteDistances();
   state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
   updateStatsAndUI();
@@ -2381,11 +2459,75 @@ async function generateRoundTripRoute() {
       }
     });
 
+    // ------------------------------------------------
+    // SMART CLIMB DENSIFICATION & DETECTION FOR ROUND TRIP
+    // ------------------------------------------------
+    const densePoints = densifyRoute(state.points, 50);
+    const denseClimbs = detectClimbs(densePoints);
+
+    const finalPoints = [];
+    const indexMap = new Map();
+    let originalIdx = 0;
+    densePoints.forEach((p, denseIdx) => {
+      const inClimb = denseClimbs.some(c => denseIdx >= c.startIndex && denseIdx <= c.endIndex);
+      if (p.isOriginal || inClimb) {
+        finalPoints.push(p);
+        if (p.isOriginal) {
+          indexMap.set(originalIdx, finalPoints.length - 1);
+          originalIdx++;
+        }
+      }
+    });
+
+    state.points = finalPoints;
+    state.osmTurns.forEach(t => {
+      if (indexMap.has(t.index)) t.index = indexMap.get(t.index);
+    });
+
+    state.climbs = [];
+    state.climbTurns = [];
+    denseClimbs.forEach((c, idx) => {
+      const startPt = densePoints[c.startIndex];
+      const endPt = densePoints[c.endIndex];
+      const newStartIdx = finalPoints.indexOf(startPt);
+      const newEndIdx = finalPoints.indexOf(endPt);
+      state.climbs.push({ ...c, startIndex: newStartIdx, endIndex: newEndIdx });
+
+      state.climbTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'climb',
+        index: newStartIdx,
+        lat: startPt.lat,
+        lon: startPt.lon,
+        directionCode: 190,
+        instruction: `Climb ${idx + 1} Start`,
+        distFromStart: startPt.distFromStart
+      });
+      state.climbTurns.push({
+        id: Math.random().toString(36).substr(2, 9),
+        source: 'climb',
+        index: newEndIdx,
+        lat: endPt.lat,
+        lon: endPt.lon,
+        directionCode: 191,
+        instruction: `Climb ${idx + 1} End`,
+        distFromStart: endPt.distFromStart
+      });
+    });
+
     state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
 
     // Update UI & Render
+    let totalEleGain = 0;
+    for (let i = 1; i < state.points.length; i++) {
+      const diff = (state.points[i].ele || 0) - (state.points[i - 1].ele || 0);
+      if (diff > 0) totalEleGain += diff;
+    }
+    state.totalElevationGain = totalEleGain;
+
     elements.statDistance.textContent = `${(runningDist / 1000).toFixed(2)} km`;
-    elements.statPoints.textContent = newPoints.length.toLocaleString();
+    if (elements.statElevationGain) elements.statElevationGain.textContent = `${Math.round(totalEleGain)} m`;
+    elements.statPoints.textContent = state.points.length.toLocaleString();
 
     renderTrackOnMap(true);
     renderElevationChart();
@@ -2393,8 +2535,8 @@ async function generateRoundTripRoute() {
     saveHistoryState();
     updateCreateManualVisibility();
 
-    // Disable tombol Generate TBT karena TBT GraphHopper sudah otomatis dihasilkan & siap pakai
-    elements.btnProcess.disabled = true;
+    // Biarkan tombol Generate TBT aktif jika pengguna ingin menganalisis ulang
+    if (elements.btnProcess) elements.btnProcess.disabled = false;
     elements.btnDownloadBryton.disabled = false;
     elements.btnDownloadKml.disabled = false;
     elements.btnDownloadGpx.disabled = false;
@@ -3156,7 +3298,7 @@ function renderTurnsTable(instructions) {
   if (instructions.length === 0) {
     turnsBody.innerHTML = `<tr class="empty-row"><td colspan="8" class="text-center">${typeof t === 'function' ? t('emptyTable') : 'Belum ada data.'}</td></tr>`;
     poisBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyPois') : 'Belum ada data.'}</td></tr>`;
-    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
+    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="7" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
     return;
   }
 
@@ -3219,7 +3361,7 @@ function renderTurnsTable(instructions) {
 
   // Render Climbs separately
   if (state.climbs.length === 0) {
-    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data Tanjakan.'}</td></tr>`;
+    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="7" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data Tanjakan.'}</td></tr>`;
   } else {
     const climbPrefix = typeof t === 'function' ? t('climbPrefix') : 'Tanjakan';
     state.climbs.forEach((climb, idx) => {

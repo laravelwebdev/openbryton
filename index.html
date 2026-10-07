@@ -342,6 +342,13 @@
             </div>
           </div>
           <div class="stat-card">
+            <div class="stat-icon text-cyan"><i data-lucide="trending-up"></i></div>
+            <div>
+              <div class="stat-label" data-i18n="statElevationGain">Elevation Gain</div>
+              <div class="stat-value text-cyan" id="statElevationGain">0 m</div>
+            </div>
+          </div>
+          <div class="stat-card">
             <div class="stat-icon"><i data-lucide="map-pin"></i></div>
             <div>
               <div class="stat-label" data-i18n="statPoints">Titik Koordinat</div>
@@ -562,16 +569,17 @@
               <thead>
                 <tr>
                   <th width="45">#</th>
-                  <th width="65" data-i18n="climbHeaderIcon">Aksi</th>
+                  <th width="65" data-i18n="climbHeaderIcon">Ikon</th>
                   <th data-i18n="climbHeaderName">Nama Tanjakan</th>
                   <th width="85" data-i18n="climbHeaderGrade">Grade (%)</th>
                   <th width="85" data-i18n="turnHeaderDist">Jarak (m)</th>
                   <th width="115" data-i18n="turnHeaderCoord">Koordinat</th>
+                  <th width="75" class="text-center" data-i18n="turnHeaderAction">Aksi</th>
                 </tr>
               </thead>
               <tbody id="climbsTableBody">
                 <tr class="empty-row">
-                  <td colspan="6" class="text-center" data-i18n="emptyClimbs">Belum ada data Tanjakan.</td>
+                  <td colspan="7" class="text-center" data-i18n="emptyClimbs">Belum ada data Tanjakan.</td>
                 </tr>
               </tbody>
             </table>
