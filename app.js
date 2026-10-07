@@ -607,6 +607,20 @@ function bindEvents() {
   const btnConfirmAddPoi = document.getElementById('btnConfirmAddPoi');
   if (btnConfirmAddPoi) btnConfirmAddPoi.addEventListener('click', confirmAddPoi);
 
+  const addTurnDirEl = document.getElementById('addTurnDirection');
+  if (addTurnDirEl) {
+    addTurnDirEl.addEventListener('change', (e) => {
+      document.getElementById('addTurnText').placeholder = getDirectionLabel(parseInt(e.target.value, 10));
+    });
+  }
+
+  const editTurnDirEl = document.getElementById('editTurnDirectionOnly');
+  if (editTurnDirEl) {
+    editTurnDirEl.addEventListener('change', (e) => {
+      document.getElementById('editTurnTextOnly').placeholder = getDirectionLabel(parseInt(e.target.value, 10));
+    });
+  }
+
   const btnRdp = document.getElementById('btnSimplifyRdp');
   if (btnRdp) {
     btnRdp.addEventListener('click', () => {
@@ -1869,7 +1883,8 @@ function openAddManualTurnModal(latlng) {
   if (state.manualAddMode === 'turn') {
     document.getElementById('addTurnCoords').textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
     document.getElementById('addTurnText').value = '';
-    document.getElementById('addTurnDirection').value = '10';
+    document.getElementById('addTurnDirection').value = '1';
+    document.getElementById('addTurnText').placeholder = getDirectionLabel(1);
     document.getElementById('modalAddTurn').classList.remove('hidden');
     document.getElementById('modalAddTurn').style.display = 'flex';
   } else {
@@ -3311,17 +3326,17 @@ function findClosestPointIndex(points, lat, lon) {
 
 function getDirectionLabel(code) {
   switch (code) {
-    case 1: return t('dirGoAhead') || 'Go Ahead / Lurus';
-    case 2: return t('dirRight') || 'Belok Kanan';
-    case 3: return t('dirLeft') || 'Belok Kiri';
-    case 4: return t('dirSlightRight') || 'Serong Kanan';
-    case 5: return t('dirSlightLeft') || 'Serong Kiri';
-    case 6: return t('dirSharpRight') || 'Belok Tajam Kanan';
-    case 7: return t('dirSharpLeft') || 'Belok Tajam Kiri';
-    case 8: return t('dirExitRight') || 'Cabang Kanan (Fork)';
-    case 9: return t('dirExitLeft') || 'Cabang Kiri (Fork)';
-    case 11: return t('dirUturn') || 'U-Turn Kanan';
-    case 12: return t('dirUturnLeft') || 'U-Turn Kiri';
+    case 1: return t('optStraight') || 'Go Ahead / Lurus';
+    case 2: return t('optRight') || 'Belok Kanan';
+    case 3: return t('optLeft') || 'Belok Kiri';
+    case 4: return t('optSlightRight') || 'Serong Kanan';
+    case 5: return t('optSlightLeft') || 'Serong Kiri';
+    case 6: return t('optSharpRight') || 'Belok Tajam Kanan';
+    case 7: return t('optSharpLeft') || 'Belok Tajam Kiri';
+    case 8: return t('optExitRight') || 'Cabang Kanan (Fork)';
+    case 9: return t('optExitLeft') || 'Cabang Kiri (Fork)';
+    case 11: return t('optUturnRight') || 'U-Turn Kanan';
+    case 12: return t('optUturnLeft') || 'U-Turn Kiri';
     case 13: return t('optKeepRight') || 'Tetap di Kanan';
     case 14: return t('optKeepLeft') || 'Tetap di Kiri';
     case 15: return t('optRampRight') || 'Ramp Kanan';
