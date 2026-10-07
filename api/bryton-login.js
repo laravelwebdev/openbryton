@@ -42,7 +42,7 @@ module.exports = async function handler(req, res) {
   // kita gunakan http.get ke SockJS polling endpoint sebagai fallback
   
   try {
-    const result = await loginViaSockJsXhr(email, passwordHash);
+    const result = await loginViaWebSocket(email, passwordHash);
     return res.status(200).json(result);
   } catch (err) {
     console.error('Bryton login error:', err.message);
@@ -51,137 +51,84 @@ module.exports = async function handler(req, res) {
 };
 
 /**
- * Login via SockJS XHR-streaming transport (tanpa WebSocket)
- * SockJS endpoint: https://active.brytonsport.com/sockjs/{server}/{session}/xhr
+ * Login via WebSocket (Lebih cepat dan tidak kena timeout XHR di Vercel)
+ * Membutuhkan package 'ws' (sudah diinstall di package.json)
  */
-async function loginViaSockJsXhr(email, passwordHash) {
-  const serverId = String(Math.floor(Math.random() * 999)).padStart(3, '0');
-  const sessionId = Array.from({ length: 8 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
-  const baseUrl = `active.brytonsport.com`;
+const WebSocket = require('ws');
 
-  // Step 1: SockJS info request
-  await httpsGet(`https://${baseUrl}/sockjs/info`);
+function loginViaWebSocket(email, passwordHash) {
+  return new Promise((resolve, reject) => {
+    const serverId = String(Math.floor(Math.random() * 999)).padStart(3, '0');
+    const sessionId = Array.from({ length: 8 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
+    const wsUrl = `wss://active.brytonsport.com/sockjs/${serverId}/${sessionId}/websocket`;
 
-  // Step 2: XHR open session
-  await httpsPost(`https://${baseUrl}/sockjs/${serverId}/${sessionId}/xhr`, '');
+    const ws = new WebSocket(wsUrl);
+    let isConnected = false;
 
-  // Step 3: Send DDP connect
-  const connectMsg = JSON.stringify([JSON.stringify({ msg: 'connect', version: '1', support: ['1'] })]);
-  await httpsPost(`https://${baseUrl}/sockjs/${serverId}/${sessionId}/xhr_send`, connectMsg);
+    // Timeout proteksi (10 detik)
+    const timeout = setTimeout(() => {
+      ws.close();
+      reject(new Error('WebSocket login timeout'));
+    }, 10000);
 
-  // Step 4: Receive connected
-  let session = null;
-  for (let i = 0; i < 3; i++) {
-    let poll = await httpsPost(`https://${baseUrl}/sockjs/${serverId}/${sessionId}/xhr`, '');
-    session = extractDDPSession(poll);
-    if (session) break;
-    // If it's an 'o' frame (open), just continue polling
-    if (poll.trim() === 'o') continue;
-  }
-  if (!session) throw new Error('DDP connect failed, no session found in response');
+    ws.on('open', () => {
+      // Step 1: Send DDP connect
+      const connectMsg = JSON.stringify([JSON.stringify({ msg: 'connect', version: '1', support: ['1'] })]);
+      ws.send(connectMsg);
+    });
 
-  // Step 5: Send login method
-  const loginMsg = JSON.stringify([JSON.stringify({
-    msg: 'method',
-    method: 'login',
-    id: '1',
-    params: [{
-      user: { email },
-      password: { digest: passwordHash, algorithm: 'sha-256' }
-    }]
-  })]);
-  await httpsPost(`https://${baseUrl}/sockjs/${serverId}/${sessionId}/xhr_send`, loginMsg);
+    ws.on('message', (data) => {
+      const raw = data.toString();
+      
+      // Abaikan frame 'o' (open) atau 'h' (heartbeat)
+      if (raw === 'o' || raw === 'h') return;
 
-  // Step 6: Poll untuk result (beberapa kali karena mungkin ada pesan added/updated dulu)
-  for (let i = 0; i < 5; i++) {
-    let pollData = await httpsPost(`https://${baseUrl}/sockjs/${serverId}/${sessionId}/xhr`, '');
-    const loginResult = extractDDPResult(pollData, '1');
-    if (loginResult !== null) return loginResult;
-    await sleep(300);
-  }
+      if (raw.startsWith('a[')) {
+        try {
+          const frames = JSON.parse(raw.substring(1));
+          for (const frameStr of frames) {
+            const msg = JSON.parse(frameStr);
 
-  throw new Error('Login timeout — no result received from Bryton server');
-}
+            // Step 2: Terima connected, lalu kirim login
+            if (msg.msg === 'connected') {
+              isConnected = true;
+              const loginMsg = JSON.stringify([JSON.stringify({
+                msg: 'method',
+                method: 'login',
+                id: '1',
+                params: [{
+                  user: { email },
+                  password: { digest: passwordHash, algorithm: 'sha-256' }
+                }]
+              })]);
+              ws.send(loginMsg);
+            }
 
-function extractDDPSession(raw) {
-  try {
-    const frames = parseSockJsFrames(raw);
-    for (const f of frames) {
-      const msg = JSON.parse(f);
-      if (msg.msg === 'connected') return msg.session;
-    }
-  } catch(e) {}
-  return null;
-}
-
-function extractDDPResult(raw, id) {
-  try {
-    const frames = parseSockJsFrames(raw);
-    for (const f of frames) {
-      const msg = JSON.parse(f);
-      if (msg.msg === 'result' && msg.id === id) {
-        if (msg.error) throw new Error(msg.error.reason || msg.error.message || 'Login failed');
-        return msg.result;
+            // Step 3: Terima result dari login
+            if (msg.msg === 'result' && msg.id === '1') {
+              clearTimeout(timeout);
+              ws.close();
+              if (msg.error) {
+                reject(new Error(msg.error.reason || msg.error.message || 'Login failed'));
+              } else {
+                resolve(msg.result); // Mengembalikan { id: userId, token: ... }
+              }
+            }
+          }
+        } catch (e) {
+          console.error('WebSocket parse error:', e);
+        }
       }
-    }
-  } catch(e) {
-    if (e.message && (e.message.includes('Login') || e.message.includes('Match') || e.message.includes('password'))) throw e;
-  }
-  return null;
-}
-
-function parseSockJsFrames(raw) {
-  const frames = [];
-  if (!raw) return frames;
-  // SockJS format: a["msg1","msg2"] or h or o or c[...]
-  if (raw.startsWith('a[')) {
-    try {
-      const arr = JSON.parse(raw.substring(1));
-      frames.push(...arr);
-    } catch(e) {}
-  }
-  return frames;
-}
-
-function httpsGet(url) {
-  return new Promise((resolve, reject) => {
-    const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Origin': 'https://active.brytonsport.com' }, timeout: 10000 }, (res) => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => resolve(data));
     });
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+
+    ws.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+
+    ws.on('close', () => {
+      clearTimeout(timeout);
+      if (!isConnected) reject(new Error('WebSocket closed before connection established'));
+    });
   });
 }
-
-function httpsPost(url, body) {
-  return new Promise((resolve, reject) => {
-    const bodyBuf = Buffer.from(body, 'utf8');
-    const u = new URL(url);
-    const options = {
-      hostname: u.hostname,
-      path: u.pathname,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': bodyBuf.length,
-        'User-Agent': 'Mozilla/5.0',
-        'Origin': 'https://active.brytonsport.com',
-        'Referer': 'https://active.brytonsport.com/'
-      },
-      timeout: 15000
-    };
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', c => data += c);
-      res.on('end', () => resolve(data));
-    });
-    req.on('error', reject);
-    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
-    req.write(bodyBuf);
-    req.end();
-  });
-}
-
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

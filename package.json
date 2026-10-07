@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "OpenBryton route creator",
   "dependencies": {
-    "@vercel/blob": "^0.23.2"
+    "@vercel/blob": "^0.23.2",
+    "ws": "^8.22.0"
   }
 }
