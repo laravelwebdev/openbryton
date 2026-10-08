@@ -155,7 +155,6 @@ function switchPage(pageId, isManualClick = false) {
     }
   }
 
-  if (pageId === 'explore') loadExploreRoutes();
   if (pageId === 'myroutes') loadMyRoutes();
 
   if (window.lucide) {
@@ -186,7 +185,7 @@ async function saveRouteToDb() {
       distance: window.state.points[window.state.points.length - 1].distFromStart,
       elevation: calculateTotalElevation(window.state.points),
       createdAt: isMockMode ? Date.now() : firebase.firestore.FieldValue.serverTimestamp(),
-      points: JSON.stringify(window.state.points.map(p => [parseFloat(p.lat.toFixed(5)), parseFloat(p.lon.toFixed(5)), parseFloat((p.ele||0).toFixed(1))])),
+      points: JSON.stringify(window.state.points.map(p => [parseFloat(p.lat.toFixed(5)), parseFloat(p.lon.toFixed(5)), parseFloat((p.ele || 0).toFixed(1))])),
       instructions: JSON.stringify(window.state.combinedInstructions)
     };
 
@@ -329,41 +328,6 @@ async function loadMyRoutes() {
   }
 }
 
-async function loadExploreRoutes() {
-  const container = document.getElementById('exploreGrid');
-  if (!container) return;
-  container.innerHTML = `<p>${t('loadingRoutes')}</p>`;
-  try {
-    let routes = [];
-    if (isMockMode) {
-      routes = JSON.parse(localStorage.getItem('openbryton_mock_db') || '[]').sort((a, b) => b.createdAt - a.createdAt);
-    } else {
-      const snap = await db.collection('routes').orderBy('createdAt', 'desc').limit(20).get();
-      routes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }
-    renderRouteCards('exploreGrid', routes, false);
-  } catch (err) {
-    console.error(err);
-    container.innerHTML = `<p>${t('failedLoadingRoutes')}${err.message}</p>`;
-  }
-}
-
-async function deleteRoute(id) {
-  if (!confirm(t('confirmDeleteRoute'))) return;
-  try {
-    if (isMockMode) {
-      let dbMock = JSON.parse(localStorage.getItem('openbryton_mock_db') || '[]');
-      dbMock = dbMock.filter(r => r.id !== id);
-      localStorage.setItem('openbryton_mock_db', JSON.stringify(dbMock));
-    } else {
-      await db.collection('routes').doc(id).delete();
-    }
-    loadMyRoutes();
-  } catch (err) {
-    alert(t('alertDeleteFailed') + err.message);
-  }
-}
-
 async function editRoute(id) {
   try {
     let data = null;
@@ -379,7 +343,7 @@ async function editRoute(id) {
     }
 
     if (!data) return alert(t('alertRouteNotFound'));
-    
+
     if (window.loadRouteFromFirebase) {
       switchPage('create');
       window.loadRouteFromFirebase(data, true);
