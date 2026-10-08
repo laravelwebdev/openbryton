@@ -97,6 +97,7 @@ function loginWithGoogle() {
 }
 
 function logout() {
+  localStorage.removeItem('openbryton_userid');
   if (isMockMode) {
     updateAuthUI(null);
     return;
@@ -148,6 +149,9 @@ function switchPage(pageId, isManualClick = false) {
       setTimeout(fixMap, 50);
       setTimeout(fixMap, 300);
       setTimeout(fixMap, 800);
+      if (typeof window.loadBrytonUserIdFromFirestore === 'function') {
+        window.loadBrytonUserIdFromFirestore();
+      }
     } else if (pageId === 'login') {
       activePage.style.display = 'flex'; // maintain flex centering
     } else {

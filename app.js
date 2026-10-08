@@ -4119,15 +4119,26 @@ async function generateFitFile() {
 // BRYTON ACTIVE — Get ID & Share
 // ============================================================
 
-/** Load saved Bryton userId dari Firestore untuk current user */
+/** Load saved Bryton userId dari Firestore (dan LocalStorage) untuk current user */
 async function loadBrytonUserIdFromFirestore() {
   const input = document.getElementById('brytonUserId');
   if (!input) return;
+
+  // 1. Prioritaskan load dari localStorage agar langsung muncul tanpa delay
+  const cachedId = localStorage.getItem('openbryton_userid');
+  if (cachedId) {
+    input.value = cachedId;
+  }
+
+  // 2. Fetch dari Firestore jika user login, dan timpa/update jika ada
   if (!currentUser || !db) return;
   try {
     const doc = await db.collection('users').doc(currentUser.uid).get();
     if (doc.exists && doc.data() && doc.data().brytonUserId) {
-      input.value = doc.data().brytonUserId;
+      const idFromDb = doc.data().brytonUserId;
+      input.value = idFromDb;
+      // Perbarui juga cache localStorage
+      localStorage.setItem('openbryton_userid', idFromDb);
     }
   } catch (e) {
     console.warn('Could not load brytonUserId from Firestore:', e);
@@ -4135,8 +4146,15 @@ async function loadBrytonUserIdFromFirestore() {
 }
 window.loadBrytonUserIdFromFirestore = loadBrytonUserIdFromFirestore;
 
-/** Simpan Bryton userId ke Firestore untuk current user */
+/** Simpan Bryton userId ke Firestore dan LocalStorage untuk current user */
 async function saveBrytonUserIdToFirestore(userId) {
+  // Selalu simpan ke localStorage sebagai backup
+  if (userId) {
+    localStorage.setItem('openbryton_userid', userId);
+  } else {
+    localStorage.removeItem('openbryton_userid');
+  }
+
   if (!currentUser || !db) return;
   try {
     await db.collection('users').doc(currentUser.uid).set(
@@ -4151,12 +4169,12 @@ window.saveBrytonUserIdToFirestore = saveBrytonUserIdToFirestore;
 
 /** Inisialisasi logika panel Bryton Active */
 function initBrytonActivePanel() {
-  // Selalu coba fetch ID dari Firestore jika user sudah terautentikasi
+  // Selalu coba fetch ID dari localStorage dan Firestore saat inisialisasi
   loadBrytonUserIdFromFirestore();
 
   const idInput = document.getElementById('brytonUserId');
   if (idInput) {
-    // Simpan otomatis ke Firestore jika user mengubah atau mem-paste ID manual
+    // Simpan otomatis ke localStorage/Firestore jika user mengubah atau mem-paste ID manual
     idInput.addEventListener('change', () => {
       saveBrytonUserIdToFirestore(idInput.value.trim());
     });
