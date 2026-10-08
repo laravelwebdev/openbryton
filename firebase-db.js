@@ -68,9 +68,12 @@ function updateAuthUI(user) {
       switchPage('myroutes');
     }
     // Load Bryton userId jika sudah pernah disimpan
-    if (typeof loadBrytonUserIdFromFirestore === 'function') {
-      loadBrytonUserIdFromFirestore();
-    }
+    // Gunakan setTimeout(0) agar menunggu app.js selesai dimuat (hindari race condition)
+    setTimeout(() => {
+      if (typeof window.loadBrytonUserIdFromFirestore === 'function') {
+        window.loadBrytonUserIdFromFirestore();
+      }
+    }, 0);
   } else {
     currentUser = null;
     if (btnLogin) btnLogin.style.display = 'inline-flex';
