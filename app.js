@@ -4126,13 +4126,14 @@ async function loadBrytonUserIdFromFirestore() {
   if (!currentUser || !db) return;
   try {
     const doc = await db.collection('users').doc(currentUser.uid).get();
-    if (doc.exists && doc.data().brytonUserId) {
+    if (doc.exists && doc.data() && doc.data().brytonUserId) {
       input.value = doc.data().brytonUserId;
     }
   } catch (e) {
     console.warn('Could not load brytonUserId from Firestore:', e);
   }
 }
+window.loadBrytonUserIdFromFirestore = loadBrytonUserIdFromFirestore;
 
 /** Simpan Bryton userId ke Firestore untuk current user */
 async function saveBrytonUserIdToFirestore(userId) {
@@ -4146,9 +4147,21 @@ async function saveBrytonUserIdToFirestore(userId) {
     console.warn('Could not save brytonUserId to Firestore:', e);
   }
 }
+window.saveBrytonUserIdToFirestore = saveBrytonUserIdToFirestore;
 
 /** Inisialisasi logika panel Bryton Active */
 function initBrytonActivePanel() {
+  // Selalu coba fetch ID dari Firestore jika user sudah terautentikasi
+  loadBrytonUserIdFromFirestore();
+
+  const idInput = document.getElementById('brytonUserId');
+  if (idInput) {
+    // Simpan otomatis ke Firestore jika user mengubah atau mem-paste ID manual
+    idInput.addEventListener('change', () => {
+      saveBrytonUserIdToFirestore(idInput.value.trim());
+    });
+  }
+
   const btnGetId = document.getElementById('btnGetBrytonId');
   const btnShare = document.getElementById('btnShareBrytonActive');
   const btnConfirm = document.getElementById('btnConfirmGetId');
