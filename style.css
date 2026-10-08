@@ -1334,9 +1334,33 @@ body {
   }
 
   .main-layout {
+    display: flex;
+    flex-direction: column;
     gap: 16px;
     padding-top: 16px;
     padding-bottom: 28px;
+  }
+
+  .content-panel {
+    display: flex;
+    flex-direction: column;
+    order: 1;
+  }
+
+  .sidebar-panel {
+    order: 2;
+  }
+
+  .map-card {
+    order: 1;
+  }
+
+  .turns-card {
+    order: 2;
+  }
+
+  .stats-grid {
+    order: 3;
   }
 
   .main-layout.sidebar-collapsed {
