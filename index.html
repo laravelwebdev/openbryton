@@ -66,8 +66,8 @@
 
           <div id="userProfile" class="userProfile-style">
             <img id="userAvatar" src="" alt="User" class="userAvatar-style">
-            <button id="btnLogout" class="btn btn-icon btn-sm" onclick="logout()" title="Logout" data-i18n-title="btnLogoutTitle"><i
-                data-lucide="log-out"></i></button>
+            <button id="btnLogout" class="btn btn-icon btn-sm" onclick="logout()" title="Logout"
+              data-i18n-title="btnLogoutTitle"><i data-lucide="log-out"></i></button>
           </div>
         </div>
 
@@ -98,8 +98,7 @@
     <!-- PAGE: LOGIN -->
     <main class="container page-view active container-migrated-4" id="page-login">
       <div class="card card-migrated-5">
-        <div
-          class="feature-logo-box">
+        <div class="feature-logo-box">
           <i data-lucide="navigation" class="inline-style-6"></i>
         </div>
         <h2 class="inline-style-7" data-i18n="loginWelcome">Welcome to
@@ -166,8 +165,7 @@
             </button>
 
             <!-- Settings / Configuration Collapsible -->
-            <div id="settingsCardToggle"
-              class="cursor-pointer-between">
+            <div id="settingsCardToggle" class="cursor-pointer-between">
               <span class="inline-style-16">
                 <i data-lucide="sliders" class="inline-style-17"></i>
                 <span data-i18n="tbtTitle">Advanced Options</span>
@@ -184,7 +182,8 @@
                   </label>
                   <input type="checkbox" id="enableOsmTbt" class="switch-checkbox" checked>
                 </div>
-                <p class="setting-desc" data-i18n="tbtOsmDesc">Mengambil instruksi belokan & nama jalan otomatis dari GraphHopper API.</p>
+                <p class="setting-desc" data-i18n="tbtOsmDesc">Mengambil instruksi belokan & nama jalan otomatis dari
+                  GraphHopper API.</p>
               </div>
 
               <!-- Angle Threshold -->
@@ -230,8 +229,7 @@
               </div>
 
               <!-- ClimbPro Settings -->
-              <h3
-                class="border-bottom-card">
+              <h3 class="border-bottom-card">
                 <i data-lucide="mountain"></i> <span data-i18n="climbTitle">Kriteria Deteksi Tanjakan</span>
               </h3>
 
@@ -270,14 +268,15 @@
 
             <div class="download-action-group mb-16">
               <div class="custom-dropdown download-dropdown-wrapper" id="downloadDropdownContainer">
-                <button type="button" class="btn btn-primary btn-block flex-between-center" id="btnToggleDownload" disabled>
+                <button type="button" class="btn btn-primary btn-block flex-between-center" id="btnToggleDownload"
+                  disabled>
                   <span class="flex-center-gap-8">
                     <i data-lucide="download"></i>
                     <span data-i18n="btnDownloadMenu">Pilih Format Unduhan</span>
                   </span>
                   <i data-lucide="chevron-down" class="dropdown-chevron"></i>
                 </button>
-                
+
                 <ul class="dropdown-menu" id="downloadMenu">
                   <li>
                     <button type="button" class="dropdown-item" id="btnDownloadBryton">
@@ -311,7 +310,8 @@
             <!-- Bryton Active Share Panel -->
             <div class="bryton-active-panel" id="brytonActivePanel">
               <div class="bryton-active-header">
-                <img src="https://active.brytonsport.com/favicon.ico" class="bryton-active-icon" onerror="this.style.display='none'" alt="" />
+                <img src="https://active.brytonsport.com/favicon.ico" class="bryton-active-icon"
+                  onerror="this.style.display='none'" alt="" />
                 <span data-i18n="brytonActivePanelTitle">Bryton Active</span>
               </div>
 
@@ -319,15 +319,14 @@
               <div class="bryton-id-row">
                 <label class="bryton-id-label" data-i18n="brytonIdLabel">Bryton ID</label>
                 <div class="bryton-id-input-group">
-                  <input type="text" id="brytonUserId" class="bryton-id-input"
-                    placeholder="4bD2zLPECdDx5ffrP"
-                    data-i18n-placeholder="brytonIdPlaceholder" />
+                  <input type="text" id="brytonUserId" class="bryton-id-input" />
                   <button type="button" id="btnGetBrytonId" class="btn-get-id" title="Ambil Bryton ID dari akun">
                     <i data-lucide="search"></i>
                     <span data-i18n="btnGetBrytonId">Get ID</span>
                   </button>
                 </div>
-                <p class="bryton-id-hint" data-i18n="brytonIdHint">Masukkan Bryton ID Anda, atau klik Get ID untuk mengambil otomatis.</p>
+                <p class="bryton-id-hint" data-i18n="brytonIdHint">Masukkan Bryton ID Anda, atau klik Get ID untuk
+                  mengambil otomatis.</p>
               </div>
 
               <!-- Share Button -->
@@ -441,14 +440,12 @@
                 <span data-i18n="btnRoundTrip">Round Trip</span>
               </button>
               <button type="button" class="btn btn-sm btn-outline" id="btnCloseRoute"
-                title="Tutup Rute (Sambung ke Awal)"
-                data-i18n-title="btnCloseRouteTitle">
+                title="Tutup Rute (Sambung ke Awal)" data-i18n-title="btnCloseRouteTitle">
                 <i data-lucide="refresh-ccw"></i>
                 <span data-i18n="btnCloseRoute">Close Route</span>
               </button>
               <button type="button" class="btn btn-sm btn-outline" id="btnSimplifyRdp"
-                title="Optimasi Garis Lurus (RDP)"
-                data-i18n-title="btnSimplifyRdpTitle">
+                title="Optimasi Garis Lurus (RDP)" data-i18n-title="btnSimplifyRdpTitle">
                 <i data-lucide="minimize"></i>
                 <span data-i18n="btnSimplifyRdp">RDP</span>
               </button>
@@ -492,14 +489,16 @@
               belokan manual. Klik lagi tombol
               untuk membatalkan.</span>
             <label class="inline-style-28">
-              <input type="checkbox" id="chkGraphHopperTbt"> <span data-i18n="chkGraphHopperTbt">Ambil dari GraphHopper</span>
+              <input type="checkbox" id="chkGraphHopperTbt"> <span data-i18n="chkGraphHopperTbt">Ambil dari
+                GraphHopper</span>
             </label>
           </div>
 
           <div class="map-status-bar hidden" id="roundTripStatusBar">
             <i data-lucide="crosshair"></i>
             <span data-i18n="rtModeActive">Mode Pilih Titik Awal Round Trip Aktif: Silakan klik di peta.</span>
-            <button type="button" class="btn btn-sm btn-outline" id="btnCancelPickRtStart" style="margin-left:auto; padding:2px 8px; font-size:11px;" data-i18n="btnCancel">Batal</button>
+            <button type="button" class="btn btn-sm btn-outline" id="btnCancelPickRtStart"
+              style="margin-left:auto; padding:2px 8px; font-size:11px;" data-i18n="btnCancel">Batal</button>
           </div>
 
           <div id="map" class="map-container">
@@ -687,8 +686,8 @@
         </div>
         <div class="inline-style-43">
           <label class="inline-style-44" data-i18n="turnNameLabel">Nama Jalan / Instruksi</label>
-          <input type="text" id="addTurnText" placeholder="Contoh: Jl. Sudirman" data-i18n-placeholder="turnNamePlaceholder"
-            class="input-full-width">
+          <input type="text" id="addTurnText" placeholder="Contoh: Jl. Sudirman"
+            data-i18n-placeholder="turnNamePlaceholder" class="input-full-width">
         </div>
         <div class="inline-style-45">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
@@ -717,8 +716,8 @@
         </div>
         <div class="inline-style-51">
           <label class="inline-style-52" data-i18n="poiNameLabel">Nama POI</label>
-          <input type="text" id="addPoiText" placeholder="Contoh: Warung Kopi" data-i18n-placeholder="poiNamePlaceholder"
-            class="input-full-width">
+          <input type="text" id="addPoiText" placeholder="Contoh: Warung Kopi"
+            data-i18n-placeholder="poiNamePlaceholder" class="input-full-width">
         </div>
         <div class="inline-style-53">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
@@ -730,11 +729,11 @@
     <!-- Modal Edit TBT -->
     <div id="modalEditTurn" class="modal-backdrop hidden modal-backdrop-migrated-54">
       <div class="card card-400-p20">
-        <h3 class="inline-style-55"><i data-lucide="edit"></i> <span data-i18n="modalEditTitleTbt">Edit Belokan</span></h3>
+        <h3 class="inline-style-55"><i data-lucide="edit"></i> <span data-i18n="modalEditTitleTbt">Edit Belokan</span>
+        </h3>
         <div class="inline-style-56">
           <label class="inline-style-57" data-i18n="turnDirectionLabel">Arah Belokan</label>
-          <select id="editTurnDirectionOnly"
-            class="input-full-width">
+          <select id="editTurnDirectionOnly" class="input-full-width">
             <option value="1" data-i18n="optStraight">Lurus (Go Ahead)</option>
             <option value="2" data-i18n="optRight">Belok Kanan</option>
             <option value="3" data-i18n="optLeft">Belok Kiri</option>
@@ -763,8 +762,7 @@
         </div>
         <div class="inline-style-58">
           <label class="inline-style-59" data-i18n="turnNameLabel">Nama Jalan / Instruksi</label>
-          <input type="text" id="editTurnTextOnly"
-            class="input-full-width">
+          <input type="text" id="editTurnTextOnly" class="input-full-width">
         </div>
         <div class="inline-style-60">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
@@ -779,8 +777,7 @@
         <h3 class="inline-style-62"><i data-lucide="edit"></i> <span data-i18n="modalEditTitlePoi">Edit POI</span></h3>
         <div class="inline-style-63">
           <label class="inline-style-64" data-i18n="poiIconLabel">Ikon POI</label>
-          <select id="editPoiDirectionOnly"
-            class="input-full-width">
+          <select id="editPoiDirectionOnly" class="input-full-width">
             <option value="106" data-i18n="poiWater">Waypoint</option>
             <option value="101" data-i18n="poiSummit">Peak</option>
             <option value="100" data-i18n="poiTarget">End Point</option>
@@ -793,8 +790,7 @@
         </div>
         <div class="inline-style-65">
           <label class="inline-style-66" data-i18n="poiNameLabel">Nama POI</label>
-          <input type="text" id="editPoiTextOnly"
-            class="input-full-width">
+          <input type="text" id="editPoiTextOnly" class="input-full-width">
         </div>
         <div class="inline-style-67">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
@@ -806,11 +802,11 @@
     <!-- Modal Edit Climb -->
     <div id="modalEditClimb" class="modal-backdrop hidden modal-backdrop-migrated-68">
       <div class="card card-400-p20">
-        <h3 class="inline-style-69"><i data-lucide="edit"></i> <span data-i18n="modalEditTitleClimb">Edit Tanjakan</span></h3>
+        <h3 class="inline-style-69"><i data-lucide="edit"></i> <span data-i18n="modalEditTitleClimb">Edit
+            Tanjakan</span></h3>
         <div class="inline-style-70">
           <label class="inline-style-71" data-i18n="climbNameLabel">Nama Tanjakan</label>
-          <input type="text" id="editClimbTextOnly"
-            class="input-full-width">
+          <input type="text" id="editClimbTextOnly" class="input-full-width">
         </div>
         <div class="inline-style-72">
           <button type="button" class="btn btn-outline" onclick="closeAllModals()" data-i18n="btnCancel">Batal</button>
@@ -827,7 +823,8 @@
             <i data-lucide="repeat" class="text-primary"></i>
             <span data-i18n="modalTitleRoundTrip">Buat Round Trip Otomatis</span>
           </div>
-          <button type="button" class="btn btn-icon btn-sm" onclick="closeAllModals()" title="Tutup" data-i18n-title="closeModalTitle">
+          <button type="button" class="btn btn-icon btn-sm" onclick="closeAllModals()" title="Tutup"
+            data-i18n-title="closeModalTitle">
             <i data-lucide="x"></i>
           </button>
         </div>
@@ -839,15 +836,18 @@
               <i data-lucide="map-pin"></i> <span data-i18n="rtStartPoint">Titik Awal (Start/Finish)</span>
             </label>
             <div class="rt-point-input-row">
-              <input type="text" id="rtStartCoordInput" class="input-full-width" placeholder="-6.2088, 106.8456" readonly>
+              <input type="text" id="rtStartCoordInput" class="input-full-width" placeholder="-6.2088, 106.8456"
+                readonly>
               <button type="button" class="btn btn-outline btn-sm" id="btnRtPickOnMap">
                 <i data-lucide="crosshair"></i> <span data-i18n="rtPickOnMap">Pilih di Peta</span>
               </button>
-              <button type="button" class="btn btn-outline btn-sm" id="btnRtMyLoc" title="Gunakan Lokasi Saya" data-i18n-title="useMyLocationTitle">
+              <button type="button" class="btn btn-outline btn-sm" id="btnRtMyLoc" title="Gunakan Lokasi Saya"
+                data-i18n-title="useMyLocationTitle">
                 <i data-lucide="navigation"></i>
               </button>
             </div>
-            <p class="rt-hint" data-i18n="rtStartHint">Klik tombol di atas untuk menentukan titik di peta atau pakai lokasi GPS saat ini.</p>
+            <p class="rt-hint" data-i18n="rtStartHint">Klik tombol di atas untuk menentukan titik di peta atau pakai
+              lokasi GPS saat ini.</p>
           </div>
 
           <!-- Distance Slider -->
@@ -887,10 +887,14 @@
               <div class="rt-compass-slider-box">
                 <input type="range" id="rtHeadingSlider" min="0" max="355" value="0" step="5" class="slider">
                 <div class="rt-heading-presets">
-                  <button type="button" class="preset-btn active" data-deg="0"><span data-i18n="headingNorth">Utara</span> (0°)</button>
-                  <button type="button" class="preset-btn" data-deg="90"><span data-i18n="headingEast">Timur</span> (90°)</button>
-                  <button type="button" class="preset-btn" data-deg="180"><span data-i18n="headingSouth">Selatan</span> (180°)</button>
-                  <button type="button" class="preset-btn" data-deg="270"><span data-i18n="headingWest">Barat</span> (270°)</button>
+                  <button type="button" class="preset-btn active" data-deg="0"><span
+                      data-i18n="headingNorth">Utara</span> (0°)</button>
+                  <button type="button" class="preset-btn" data-deg="90"><span data-i18n="headingEast">Timur</span>
+                    (90°)</button>
+                  <button type="button" class="preset-btn" data-deg="180"><span data-i18n="headingSouth">Selatan</span>
+                    (180°)</button>
+                  <button type="button" class="preset-btn" data-deg="270"><span data-i18n="headingWest">Barat</span>
+                    (270°)</button>
                 </div>
               </div>
             </div>
@@ -912,7 +916,8 @@
         </div>
 
         <div class="rt-modal-footer">
-          <button type="button" class="btn btn-outline btn-rt-random" id="btnRtRandomize" title="Ubah variasi loop" data-i18n-title="btnRoundTripTitle">
+          <button type="button" class="btn btn-outline btn-rt-random" id="btnRtRandomize" title="Ubah variasi loop"
+            data-i18n-title="btnRoundTripTitle">
             <i data-lucide="shuffle"></i>
             <span data-i18n="rtNewSeed">Acak Variasi</span>
           </button>
@@ -935,19 +940,23 @@
     <div class="card modal-card bryton-login-modal">
       <div class="modal-header-row">
         <h3><i data-lucide="log-in"></i> <span data-i18n="modalGetBrytonIdTitle">Ambil Bryton ID</span></h3>
-        <button type="button" class="btn btn-icon btn-sm" onclick="document.getElementById('modalGetBrytonId').classList.add('hidden')" title="Tutup">
+        <button type="button" class="btn btn-icon btn-sm"
+          onclick="document.getElementById('modalGetBrytonId').classList.add('hidden')" title="Tutup">
           <i data-lucide="x"></i>
         </button>
       </div>
-      <p class="bryton-login-desc" data-i18n="modalGetBrytonIdDesc">Masukkan email dan password akun Bryton Active Anda. Kredensial <strong>tidak disimpan</strong> — hanya digunakan sekali untuk mengambil ID.</p>
+      <p class="bryton-login-desc" data-i18n="modalGetBrytonIdDesc">Masukkan email dan password akun Bryton Active Anda.
+        Kredensial <strong>tidak disimpan</strong> — hanya digunakan sekali untuk mengambil ID.</p>
       <div class="form-group">
         <label data-i18n="labelEmail">Email</label>
-        <input type="email" id="brytonLoginEmail" class="form-control" placeholder="email@example.com" autocomplete="email" />
+        <input type="email" id="brytonLoginEmail" class="form-control" placeholder="email@example.com"
+          autocomplete="email" />
       </div>
       <div class="form-group">
         <label data-i18n="labelPassword">Password</label>
         <div class="password-input-wrapper">
-          <input type="password" id="brytonLoginPassword" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+          <input type="password" id="brytonLoginPassword" class="form-control" placeholder="••••••••"
+            autocomplete="current-password" />
           <button type="button" class="btn-toggle-password" id="btnTogglePassword" title="Tampilkan/Sembunyikan">
             <i data-lucide="eye" id="eyeIcon"></i>
           </button>
@@ -955,7 +964,9 @@
       </div>
       <div id="brytonLoginError" class="bryton-login-error hidden"></div>
       <div class="modal-footer-row">
-        <button type="button" class="btn btn-outline" onclick="document.getElementById('modalGetBrytonId').classList.add('hidden')" data-i18n="btnCancel">Batal</button>
+        <button type="button" class="btn btn-outline"
+          onclick="document.getElementById('modalGetBrytonId').classList.add('hidden')"
+          data-i18n="btnCancel">Batal</button>
         <button type="button" class="btn btn-primary" id="btnConfirmGetId">
           <i data-lucide="search"></i>
           <span data-i18n="btnConfirmGetId">Ambil ID Saya</span>
