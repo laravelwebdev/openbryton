@@ -4119,26 +4119,38 @@ async function generateFitFile() {
 // BRYTON ACTIVE — Get ID & Share
 // ============================================================
 
-/** Load saved Bryton userId dari Firestore (dan LocalStorage) untuk current user */
+/** Load saved Bryton userId dari Firestore (dan LocalStorage per-user) untuk current user */
 async function loadBrytonUserIdFromFirestore() {
   const input = document.getElementById('brytonUserId');
   if (!input) return;
 
-  // 1. Prioritaskan load dari localStorage agar langsung muncul tanpa delay
-  const cachedId = localStorage.getItem('openbryton_userid');
-  if (cachedId) {
-    input.value = cachedId;
+  // Jika belum login, kosongkan input agar tidak membocorkan ID pengguna sebelumnya
+  if (!currentUser) {
+    input.value = '';
+    return;
   }
 
-  // 2. Fetch dari Firestore jika user login, dan timpa/update jika ada
-  if (!currentUser || !db) return;
+  const userKey = 'openbryton_userid_' + currentUser.uid;
+
+  // 1. Prioritaskan load dari localStorage spesifik user ini agar langsung muncul tanpa delay
+  const cachedId = localStorage.getItem(userKey);
+  if (cachedId) {
+    input.value = cachedId;
+  } else {
+    input.value = ''; // Reset nilai jika user baru ini belum punya cache
+  }
+
+  // 2. Fetch dari Firestore jika db tersedia, dan timpa/update jika ada
+  if (!db) return;
   try {
     const doc = await db.collection('users').doc(currentUser.uid).get();
     if (doc.exists && doc.data() && doc.data().brytonUserId) {
       const idFromDb = doc.data().brytonUserId;
       input.value = idFromDb;
-      // Perbarui juga cache localStorage
-      localStorage.setItem('openbryton_userid', idFromDb);
+      // Perbarui juga cache localStorage untuk user ini
+      localStorage.setItem(userKey, idFromDb);
+    } else if (!cachedId) {
+      input.value = '';
     }
   } catch (e) {
     console.warn('Could not load brytonUserId from Firestore:', e);
@@ -4148,14 +4160,17 @@ window.loadBrytonUserIdFromFirestore = loadBrytonUserIdFromFirestore;
 
 /** Simpan Bryton userId ke Firestore dan LocalStorage untuk current user */
 async function saveBrytonUserIdToFirestore(userId) {
-  // Selalu simpan ke localStorage sebagai backup
+  if (!currentUser) return;
+  const userKey = 'openbryton_userid_' + currentUser.uid;
+
+  // Selalu simpan ke localStorage spesifik user
   if (userId) {
-    localStorage.setItem('openbryton_userid', userId);
+    localStorage.setItem(userKey, userId);
   } else {
-    localStorage.removeItem('openbryton_userid');
+    localStorage.removeItem(userKey);
   }
 
-  if (!currentUser || !db) return;
+  if (!db) return;
   try {
     await db.collection('users').doc(currentUser.uid).set(
       { brytonUserId: userId },

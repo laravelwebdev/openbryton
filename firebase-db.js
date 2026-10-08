@@ -78,6 +78,10 @@ function updateAuthUI(user) {
     if (btnSaveRoute) btnSaveRoute.disabled = true;
     if (mainNav) mainNav.style.display = 'none';
 
+    // Reset input Bryton ID jika user logout
+    const brytonInput = document.getElementById('brytonUserId');
+    if (brytonInput) brytonInput.value = '';
+
     // Redirect to login page
     switchPage('login');
   }
@@ -358,3 +362,29 @@ async function editRoute(id) {
     alert(t('alertLoadRouteFailed') + e.message);
   }
 }
+
+async function deleteRoute(id) {
+  if (!confirm(t('confirmDeleteRoute') || 'Hapus rute ini?')) {
+    return;
+  }
+
+  try {
+    if (isMockMode) {
+      let dbMock = JSON.parse(localStorage.getItem('openbryton_mock_db') || '[]');
+      dbMock = dbMock.filter(r => r.id !== id);
+      localStorage.setItem('openbryton_mock_db', JSON.stringify(dbMock));
+    } else {
+      if (!db) throw new Error("Database not initialized");
+      await db.collection('routes').doc(id).delete();
+    }
+
+    // Refresh daftar routes
+    loadMyRoutes();
+  } catch (err) {
+    console.error("Delete error", err);
+    alert((t('alertDeleteFailed') || 'Gagal menghapus rute: ') + err.message);
+  }
+}
+
+window.deleteRoute = deleteRoute;
+window.editRoute = editRoute;
