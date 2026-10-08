@@ -2797,12 +2797,12 @@ body {
 .bryton-id-input {
   flex: 1;
   padding: 8px 12px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  background: var(--bg-input, #0f1626);
+  border: 1px solid var(--bg-card-border, rgba(255, 255, 255, 0.15));
+  border-radius: var(--radius-sm, 8px);
+  color: var(--text-main, #ffffff);
+  font-size: 0.85rem;
+  font-family: var(--font-mono, 'JetBrains Mono', 'Courier New', monospace);
   letter-spacing: 0.02em;
   transition: var(--transition);
   min-width: 0;
@@ -2811,12 +2811,13 @@ body {
 .bryton-id-input:focus {
   outline: none;
   border-color: #f97316;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+  background: #141c30;
 }
 
 .bryton-id-input::placeholder {
-  color: var(--text-muted);
-  font-size: 0.78rem;
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.8rem;
 }
 
 .btn-get-id {
