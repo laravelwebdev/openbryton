@@ -1156,6 +1156,7 @@ function renderElevationChart(highlightClimbObj = null) {
   const drawWidth = logicalWidth - padLeft - padRight;
   const drawHeight = logicalHeight - padTop - padBottom;
 
+  // 1. Fill area under the profile
   ctx.beginPath();
   ctx.moveTo(padLeft, padTop + drawHeight);
 
@@ -1175,6 +1176,19 @@ function renderElevationChart(highlightClimbObj = null) {
 
   ctx.fillStyle = gradient;
   ctx.fill();
+
+  // 2. Stroke ONLY the top elevation line (no bottom, left, or right border lines)
+  ctx.beginPath();
+  for (let i = 0; i < state.points.length; i++) {
+    const p = state.points[i];
+    const x = padLeft + (totalDist > 0 ? (p.distFromStart / totalDist) * drawWidth : 0);
+    const y = padTop + drawHeight - ((p.ele - minEle) / eleRange) * drawHeight;
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
 
   ctx.strokeStyle = '#2563eb';
   ctx.lineWidth = 2.2;
