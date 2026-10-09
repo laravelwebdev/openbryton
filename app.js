@@ -1196,22 +1196,8 @@ function renderElevationChart(highlightClimbObj = null) {
   ctx.lineCap = 'round';
   ctx.stroke();
 
-  // Draw Highlighted Climb
+  // Draw Highlighted Climb (only the highlighted elevation path)
   if (highlightClimbObj) {
-    const startPt = state.points[highlightClimbObj.startIndex];
-    const endPt = state.points[highlightClimbObj.endIndex];
-
-    const startX = padLeft + (totalDist > 0 ? (startPt.distFromStart / totalDist) * drawWidth : 0);
-    const endX = padLeft + (totalDist > 0 ? (endPt.distFromStart / totalDist) * drawWidth : 0);
-
-    // draw vertical red separator lines
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(startX, padTop); ctx.lineTo(startX, padTop + drawHeight);
-    ctx.moveTo(endX, padTop); ctx.lineTo(endX, padTop + drawHeight);
-    ctx.stroke();
-
     // draw red segment
     ctx.beginPath();
     for (let i = highlightClimbObj.startIndex; i <= highlightClimbObj.endIndex; i++) {
