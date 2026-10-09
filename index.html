@@ -40,7 +40,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=45">
+  <link rel="stylesheet" href="style.css?v=47">
 </head>
 
 <body>
@@ -305,6 +305,13 @@
                 </ul>
               </div>
 
+              <!-- Button Help / Info (How to Install & Warning Popup) -->
+              <button type="button" class="btn btn-icon btn-help-guide" id="btnBrytonHelp"
+                title="Panduan Cara Pasang & Info Penting Bryton" data-i18n-title="guideHelpBtnTitle"
+                onclick="document.getElementById('modalBrytonGuide').classList.remove('hidden')">
+                <i data-lucide="info"></i>
+              </button>
+
             </div>
 
             <!-- Bryton Active Share Panel -->
@@ -335,21 +342,6 @@
                 <i data-lucide="share-2"></i>
                 <span data-i18n="btnShareBrytonActive">Kirim ke Bryton Active</span>
               </button>
-            </div>
-
-            <div class="guide-box">
-              <h4><i data-lucide="info"></i> <span data-i18n="guideTitle">Cara Pasang di Head Unit Bryton:</span></h4>
-              <ol>
-                <li data-i18n="guide1" data-i18n-html="true">Ekstrak file <code>.zip</code> hasil download.</li>
-                <li data-i18n="guide2">Hubungkan Bryton Rider ke Komputer via kabel USB.</li>
-                <li data-i18n="guide3" data-i18n-html="true">Buka folder <strong>Bryton &rarr; tracks</strong> di dalam
-                  storage perangkat.</li>
-                <li data-i18n="guide4" data-i18n-html="true">Salin file <code>.smy</code>, <code>.track</code>, dan
-                  <code>.tinfo</code> ke folder <strong>tracks</strong> tersebut.
-                </li>
-                <li data-i18n="guide5" data-i18n-html="true">Cabut aman (Eject), buka menu <strong>Follow Track / Ikuti
-                    Rute</strong> di Bryton Anda!</li>
-              </ol>
             </div>
           </section>
         </div> <!-- end sidebarContent -->
@@ -1010,6 +1002,67 @@
     </div>
   </div>
 
+  <!-- Modal: Bryton Install Guide & Warning -->
+  <div id="modalBrytonGuide" class="modal-backdrop hidden" onclick="if(event.target === this) this.classList.add('hidden')">
+    <div class="card modal-card bryton-guide-modal">
+      <div class="modal-header-row">
+        <h3>
+          <i data-lucide="help-circle" class="text-primary"></i>
+          <span data-i18n="guideTitle">Cara Pasang di Head Unit Bryton</span>
+        </h3>
+        <button type="button" class="btn btn-icon btn-sm"
+          onclick="document.getElementById('modalBrytonGuide').classList.add('hidden')" title="Tutup">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <!-- Warning Callout: Loop/Round Trip Bug -->
+      <div class="guide-warning-box">
+        <div class="guide-warning-header">
+          <i data-lucide="alert-triangle"></i>
+          <strong data-i18n="guideWarningTitle">Penting: Catatan Rute Loop / Round Trip</strong>
+        </div>
+        <p class="guide-warning-text" data-i18n="guideWarningDesc">
+          Karena bug firmware pada perangkat Bryton, untuk rute loop/tertutup (Closed / Round Trip Route), navigasi Turn-by-Turn tidak akan muncul jika navigasi dimulai tepat di titik start atau sebelum titik start. Solusinya: mulailah navigasi beberapa meter setelah titik start.
+        </p>
+      </div>
+
+      <!-- Steps List -->
+      <div class="guide-steps-wrap">
+        <ol class="guide-steps-list">
+          <li>
+            <span class="step-num">1</span>
+            <span data-i18n="guide1" data-i18n-html="true">Ekstrak file <code>.zip</code> hasil download.</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span data-i18n="guide2">Hubungkan Bryton Rider ke Komputer via kabel USB.</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span data-i18n="guide3" data-i18n-html="true">Buka folder <strong>Bryton &rarr; tracks</strong> di dalam storage perangkat.</span>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <span data-i18n="guide4" data-i18n-html="true">Salin file <code>.smy</code>, <code>.track</code>, dan <code>.tinfo</code> ke folder <strong>tracks</strong> tersebut.</span>
+          </li>
+          <li>
+            <span class="step-num">5</span>
+            <span data-i18n="guide5" data-i18n-html="true">Cabut aman (Eject), lalu buka menu <strong>Follow Track / Ikuti Rute</strong> di Bryton Anda!</span>
+          </li>
+        </ol>
+      </div>
+
+      <div class="modal-footer-row">
+        <button type="button" class="btn btn-primary btn-block"
+          onclick="document.getElementById('modalBrytonGuide').classList.add('hidden')">
+          <i data-lucide="check"></i>
+          <span data-i18n="guideUnderstandBtn">Mengerti</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   </div> <!-- End appContainer -->
 
   <!-- App Script -->
@@ -1019,12 +1072,14 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-  <script src="lang.js?v=44"></script>
-  <script src="firebase-db.js?v=44"></script>
-  <script src="app.js?v=44"></script>
+  <script src="lang.js?v=47"></script>
+  <script src="firebase-db.js?v=47"></script>
+  <script src="app.js?v=47"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // Logic for language dropdown initialization is in lang.js
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
     });
   </script>
 </body>

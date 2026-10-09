@@ -2262,24 +2262,52 @@ body {
 
 .download-action-group {
   display: flex;
-  align-items: stretch;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
   width: 100%;
 }
 
 .download-dropdown-wrapper {
-  flex: 1 1 50%;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
+.btn-help-guide {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: var(--radius-md);
+  color: #60a5fa;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-help-guide:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #60a5fa;
+  color: #ffffff;
+  transform: scale(1.05);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+.btn-help-guide i,
+.btn-help-guide svg {
+  width: 20px;
+  height: 20px;
+}
+
 .btn-bryton-share {
-  flex: 1 1 50%;
-  min-width: 0;
+  width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 14px;
+  padding: 11px 14px;
   font-size: 0.88rem;
   font-weight: 600;
   background: linear-gradient(135deg, #f97316, #ea580c);
@@ -2308,14 +2336,8 @@ body {
 
 @media (max-width: 580px) {
   .download-action-group {
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
-  }
-
-  .download-dropdown-wrapper,
-  .btn-bryton-share {
-    flex: 1 1 100%;
-    width: 100%;
   }
 }
 
@@ -3298,6 +3320,10 @@ body {
     padding: 20px 16px;
   }
 
+  .bryton-guide-modal {
+    padding: 20px 16px !important;
+  }
+
   .modal-footer-row {
     flex-direction: column-reverse;
   }
@@ -3305,6 +3331,114 @@ body {
   .modal-footer-row .btn {
     width: 100%;
   }
+}
+
+/* ============================================================
+   MODAL: BRYTON INSTALL GUIDE & IMPORTANT NOTICE
+   ============================================================ */
+.bryton-guide-modal {
+  width: 100%;
+  max-width: 520px;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Elegant Warning Callout */
+.guide-warning-box {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(234, 88, 12, 0.08));
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-left: 4px solid #f59e0b;
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guide-warning-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fbbf24;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.guide-warning-header i,
+.guide-warning-header svg {
+  width: 18px;
+  height: 18px;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+
+.guide-warning-text {
+  font-size: 0.82rem;
+  color: #fde68a;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Steps Wrap & List */
+.guide-steps-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guide-steps-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 0.84rem;
+  color: var(--text-main);
+  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+.guide-steps-list .step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.guide-steps-list code {
+  font-family: var(--font-mono);
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.guide-steps-list strong {
+  color: #ffffff;
 }
 
 /* ============================================================
