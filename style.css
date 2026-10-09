@@ -2296,9 +2296,14 @@ body {
 }
 
 .btn-help-guide i,
-.btn-help-guide svg {
-  width: 20px;
-  height: 20px;
+.btn-help-guide svg,
+.help-info-icon {
+  width: 20px !important;
+  height: 20px !important;
+  display: block !important;
+  stroke: currentColor !important;
+  stroke-width: 2px !important;
+  fill: none !important;
 }
 
 .btn-bryton-share {

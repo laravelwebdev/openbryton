@@ -12,7 +12,7 @@
   <meta name="author" content="OpenBryton Pro">
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <meta name="googlebot" content="index, follow">
-
+  <link rel="icon" type="image/x-icon" href="https://active.brytonsport.com/favicon.ico">
   <link rel="canonical" href="https://openbryton.vercel.app/">
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -40,7 +40,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=47">
+  <link rel="stylesheet" href="style.css?v=48">
 </head>
 
 <body>
@@ -309,7 +309,13 @@
               <button type="button" class="btn btn-icon btn-help-guide" id="btnBrytonHelp"
                 title="Panduan Cara Pasang & Info Penting Bryton" data-i18n-title="guideHelpBtnTitle"
                 onclick="document.getElementById('modalBrytonGuide').classList.remove('hidden')">
-                <i data-lucide="info"></i>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  class="help-info-icon">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 16v-4"></path>
+                  <path d="M12 8h.01"></path>
+                </svg>
               </button>
 
             </div>
@@ -363,54 +369,54 @@
                 data-i18n-title="btnLocateMe">
                 <i data-lucide="crosshair"></i>
               </button>
-                <button type="button" class="btn btn-sm btn-outline hidden" id="btnUndoEdit" title="Undo (Ctrl+Z)"
-                  data-i18n-title="btnUndoEdit">
-                  <i data-lucide="undo"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline hidden" id="btnRedoEdit" title="Redo (Ctrl+Y)"
-                  data-i18n-title="btnRedoEdit">
-                  <i data-lucide="redo"></i>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" id="btnUploadGpxToolbar" title="Upload file GPX"
-                  data-i18n-title="btnUploadGpxTitle">
-                  <i data-lucide="upload"></i>
-                  <span data-i18n="btnUploadGpxToolbar">Upload GPX</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" id="btnCreateManualRoute">
-                  <i data-lucide="pen-tool"></i>
-                  <span data-i18n="btnCreateRoute">Buat Rute Manual</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" id="btnRoundTrip"
-                  title="Buat Rute Round Trip (Loop)" data-i18n-title="btnRoundTripTitle">
-                  <i data-lucide="repeat"></i>
-                  <span data-i18n="btnRoundTrip">Round Trip</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" id="btnCloseRoute"
-                  title="Tutup Rute (Sambung ke Awal)" data-i18n-title="btnCloseRouteTitle">
-                  <i data-lucide="refresh-ccw"></i>
-                  <span data-i18n="btnCloseRoute">Close Route</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" id="btnSimplifyRdp"
-                  title="Optimasi Garis Lurus (RDP)" data-i18n-title="btnSimplifyRdpTitle">
-                  <i data-lucide="minimize"></i>
-                  <span data-i18n="btnSimplifyRdp">RDP</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" id="btnToggleEditRoute">
-                  <i data-lucide="move"></i>
-                  <span id="btnEditRouteText" data-i18n="btnEditModeOn">Mode Edit (Geser Titik)</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" id="btnAddTurnManual">
-                  <i data-lucide="corner-up-right"></i>
-                  <span data-i18n="btnAddTurn">Tambah Belokan</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline" id="btnAddPoiManual">
-                  <i data-lucide="map-pin"></i>
-                  <span data-i18n="btnAddPoi">Tambah POI</span>
-                </button>
-                <button type="button" class="btn btn-sm btn-outline hidden" id="btnSaveRouteEdit">
-                  <i data-lucide="check"></i>
-                  <span data-i18n="btnSaveRouteEdit">Selesai & Update Rute</span>
-                </button>
+              <button type="button" class="btn btn-sm btn-outline hidden" id="btnUndoEdit" title="Undo (Ctrl+Z)"
+                data-i18n-title="btnUndoEdit">
+                <i data-lucide="undo"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline hidden" id="btnRedoEdit" title="Redo (Ctrl+Y)"
+                data-i18n-title="btnRedoEdit">
+                <i data-lucide="redo"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnUploadGpxToolbar" title="Upload file GPX"
+                data-i18n-title="btnUploadGpxTitle">
+                <i data-lucide="upload"></i>
+                <span data-i18n="btnUploadGpxToolbar">Upload GPX</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnCreateManualRoute">
+                <i data-lucide="pen-tool"></i>
+                <span data-i18n="btnCreateRoute">Buat Rute Manual</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnRoundTrip" title="Buat Rute Round Trip (Loop)"
+                data-i18n-title="btnRoundTripTitle">
+                <i data-lucide="repeat"></i>
+                <span data-i18n="btnRoundTrip">Round Trip</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnCloseRoute"
+                title="Tutup Rute (Sambung ke Awal)" data-i18n-title="btnCloseRouteTitle">
+                <i data-lucide="refresh-ccw"></i>
+                <span data-i18n="btnCloseRoute">Close Route</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnSimplifyRdp"
+                title="Optimasi Garis Lurus (RDP)" data-i18n-title="btnSimplifyRdpTitle">
+                <i data-lucide="minimize"></i>
+                <span data-i18n="btnSimplifyRdp">RDP</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnToggleEditRoute">
+                <i data-lucide="move"></i>
+                <span id="btnEditRouteText" data-i18n="btnEditModeOn">Mode Edit (Geser Titik)</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnAddTurnManual">
+                <i data-lucide="corner-up-right"></i>
+                <span data-i18n="btnAddTurn">Tambah Belokan</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline" id="btnAddPoiManual">
+                <i data-lucide="map-pin"></i>
+                <span data-i18n="btnAddPoi">Tambah POI</span>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline hidden" id="btnSaveRouteEdit">
+                <i data-lucide="check"></i>
+                <span data-i18n="btnSaveRouteEdit">Selesai & Update Rute</span>
+              </button>
             </div>
           </div>
 
@@ -1003,7 +1009,8 @@
   </div>
 
   <!-- Modal: Bryton Install Guide & Warning -->
-  <div id="modalBrytonGuide" class="modal-backdrop hidden" onclick="if(event.target === this) this.classList.add('hidden')">
+  <div id="modalBrytonGuide" class="modal-backdrop hidden"
+    onclick="if(event.target === this) this.classList.add('hidden')">
     <div class="card modal-card bryton-guide-modal">
       <div class="modal-header-row">
         <h3>
@@ -1023,7 +1030,9 @@
           <strong data-i18n="guideWarningTitle">Penting: Catatan Rute Loop / Round Trip</strong>
         </div>
         <p class="guide-warning-text" data-i18n="guideWarningDesc">
-          Karena bug firmware pada perangkat Bryton, untuk rute loop/tertutup (Closed / Round Trip Route), navigasi Turn-by-Turn tidak akan muncul jika navigasi dimulai tepat di titik start atau sebelum titik start. Solusinya: mulailah navigasi beberapa meter setelah titik start.
+          Karena bug firmware pada perangkat Bryton, untuk rute loop/tertutup (Closed / Round Trip Route), navigasi
+          Turn-by-Turn tidak akan muncul jika navigasi dimulai tepat di titik start atau sebelum titik start. Solusinya:
+          mulailah navigasi beberapa meter setelah titik start.
         </p>
       </div>
 
@@ -1040,15 +1049,18 @@
           </li>
           <li>
             <span class="step-num">3</span>
-            <span data-i18n="guide3" data-i18n-html="true">Buka folder <strong>Bryton &rarr; tracks</strong> di dalam storage perangkat.</span>
+            <span data-i18n="guide3" data-i18n-html="true">Buka folder <strong>Bryton &rarr; tracks</strong> di dalam
+              storage perangkat.</span>
           </li>
           <li>
             <span class="step-num">4</span>
-            <span data-i18n="guide4" data-i18n-html="true">Salin file <code>.smy</code>, <code>.track</code>, dan <code>.tinfo</code> ke folder <strong>tracks</strong> tersebut.</span>
+            <span data-i18n="guide4" data-i18n-html="true">Salin file <code>.smy</code>, <code>.track</code>, dan
+              <code>.tinfo</code> ke folder <strong>tracks</strong> tersebut.</span>
           </li>
           <li>
             <span class="step-num">5</span>
-            <span data-i18n="guide5" data-i18n-html="true">Cabut aman (Eject), lalu buka menu <strong>Follow Track / Ikuti Rute</strong> di Bryton Anda!</span>
+            <span data-i18n="guide5" data-i18n-html="true">Cabut aman (Eject), lalu buka menu <strong>Follow Track /
+                Ikuti Rute</strong> di Bryton Anda!</span>
           </li>
         </ol>
       </div>
