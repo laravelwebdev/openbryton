@@ -3,17 +3,17 @@
 
 <head>
   <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>OpenBryton Pro - GPX to Bryton Route Converter & Route Planner</title>
-<meta name="description"
-  content="Convert GPX routes to Bryton-compatible formats with OpenBryton Pro. Create and edit routes with OSM road snapping, Turn-by-Turn navigation, smart turn detection, road smoothing, and satellite maps.">
-<meta name="keywords"
-  content="GPX to Bryton, GPX to Bryton route, Bryton route converter, Bryton route maker, Bryton GPX converter, Bryton Turn-by-Turn, Bryton navigation, OpenBryton, OSM route planner, GPX route planner">
-<meta name="author" content="OpenBryton Pro">
-<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
-<meta name="googlebot" content="index, follow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpenBryton Pro - GPX to Bryton Route Converter & Route Planner</title>
+  <meta name="description"
+    content="Convert GPX routes to Bryton-compatible formats with OpenBryton Pro. Create and edit routes with OSM road snapping, Turn-by-Turn navigation, smart turn detection, road smoothing, and satellite maps.">
+  <meta name="keywords"
+    content="GPX to Bryton, GPX to Bryton route, Bryton route converter, Bryton route maker, Bryton GPX converter, Bryton Turn-by-Turn, Bryton navigation, OpenBryton, OSM route planner, GPX route planner">
+  <meta name="author" content="OpenBryton Pro">
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+  <meta name="googlebot" content="index, follow">
 
-<link rel="canonical" href="https://openbryton.vercel.app/">
+  <link rel="canonical" href="https://openbryton.vercel.app/">
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,7 +40,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=36">
+  <link rel="stylesheet" href="style.css?v=44">
 </head>
 
 <body>
@@ -135,12 +135,6 @@
       <!-- Left Column: Controls & Upload -->
       <aside class="sidebar-panel">
         <!-- Sidebar Header / Minimize Button -->
-        <div class="sidebar-top-bar sidebar-top-bar-migrated-10">
-          <span class="sidebar-title sidebar-title-migrated-11" id="sidebarTitle"><i data-lucide="settings"></i>
-            <span data-i18n="panelHeader">Panel</span></span>
-          <button class="btn btn-outline btn-sm btn-migrated-12" id="btnToggleSidebarUI" title="Minimize Panel"><i
-              data-lucide="minimize-2"></i> <span data-i18n="btnHidePanel">Sembunyikan</span></button>
-        </div>
         <div class="sidebar-content" id="sidebarContent">
           <input type="file" id="fileInput" accept=".gpx" style="display:none;">
 
@@ -363,22 +357,11 @@
 
       <!-- Right Column: Map Preview & Turn Details -->
       <section class="content-panel">
-        <!-- Route Stats Bar -->
+        <!-- Route Stats Bar (Distance & Elevation gain are displayed in the floating profile card) -->
         <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon"><i data-lucide="milestone"></i></div>
-            <div>
-              <div class="stat-label" data-i18n="statDist">Total Jarak</div>
-              <div class="stat-value" id="statDistance">0.00 km</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon text-cyan"><i data-lucide="trending-up"></i></div>
-            <div>
-              <div class="stat-label" data-i18n="statElevationGain">Elevation Gain</div>
-              <div class="stat-value text-cyan" id="statElevationGain">0 m</div>
-            </div>
-          </div>
+          <!-- Hidden fallback elements to maintain JS element bindings -->
+          <span id="statDistance" style="display:none;">0.00 km</span>
+          <span id="statElevationGain" style="display:none;">0 m</span>
           <div class="stat-card">
             <div class="stat-icon"><i data-lucide="map-pin"></i></div>
             <div>
@@ -418,59 +401,59 @@
               </h2>
             </div>
 
-            <div class="map-tools">
+            <div class="map-tools" id="mapToolsContainer">
               <button type="button" class="btn btn-sm btn-outline" id="btnLocateMe" title="Pergi ke Lokasi Saat Ini"
                 data-i18n-title="btnLocateMe">
                 <i data-lucide="crosshair"></i>
               </button>
-              <button type="button" class="btn btn-sm btn-outline hidden" id="btnUndoEdit" title="Undo (Ctrl+Z)"
-                data-i18n-title="btnUndoEdit">
-                <i data-lucide="undo"></i>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline hidden" id="btnRedoEdit" title="Redo (Ctrl+Y)"
-                data-i18n-title="btnRedoEdit">
-                <i data-lucide="redo"></i>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnUploadGpxToolbar" title="Upload file GPX"
-                data-i18n-title="btnUploadGpxTitle">
-                <i data-lucide="upload"></i>
-                <span data-i18n="btnUploadGpxToolbar">Upload GPX</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnCreateManualRoute">
-                <i data-lucide="pen-tool"></i>
-                <span data-i18n="btnCreateRoute">Buat Rute Manual</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnRoundTrip" title="Buat Rute Round Trip (Loop)"
-                data-i18n-title="btnRoundTripTitle">
-                <i data-lucide="repeat"></i>
-                <span data-i18n="btnRoundTrip">Round Trip</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnCloseRoute"
-                title="Tutup Rute (Sambung ke Awal)" data-i18n-title="btnCloseRouteTitle">
-                <i data-lucide="refresh-ccw"></i>
-                <span data-i18n="btnCloseRoute">Close Route</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnSimplifyRdp"
-                title="Optimasi Garis Lurus (RDP)" data-i18n-title="btnSimplifyRdpTitle">
-                <i data-lucide="minimize"></i>
-                <span data-i18n="btnSimplifyRdp">RDP</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnToggleEditRoute">
-                <i data-lucide="move"></i>
-                <span id="btnEditRouteText" data-i18n="btnEditModeOn">Mode Edit (Geser Titik)</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnAddTurnManual">
-                <i data-lucide="corner-up-right"></i>
-                <span data-i18n="btnAddTurn">Tambah Belokan</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnAddPoiManual">
-                <i data-lucide="map-pin"></i>
-                <span data-i18n="btnAddPoi">Tambah POI</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline hidden" id="btnSaveRouteEdit">
-                <i data-lucide="check"></i>
-                <span data-i18n="btnSaveRouteEdit">Selesai & Update Rute</span>
-              </button>
+                <button type="button" class="btn btn-sm btn-outline hidden" id="btnUndoEdit" title="Undo (Ctrl+Z)"
+                  data-i18n-title="btnUndoEdit">
+                  <i data-lucide="undo"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline hidden" id="btnRedoEdit" title="Redo (Ctrl+Y)"
+                  data-i18n-title="btnRedoEdit">
+                  <i data-lucide="redo"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" id="btnUploadGpxToolbar" title="Upload file GPX"
+                  data-i18n-title="btnUploadGpxTitle">
+                  <i data-lucide="upload"></i>
+                  <span data-i18n="btnUploadGpxToolbar">Upload GPX</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" id="btnCreateManualRoute">
+                  <i data-lucide="pen-tool"></i>
+                  <span data-i18n="btnCreateRoute">Buat Rute Manual</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" id="btnRoundTrip"
+                  title="Buat Rute Round Trip (Loop)" data-i18n-title="btnRoundTripTitle">
+                  <i data-lucide="repeat"></i>
+                  <span data-i18n="btnRoundTrip">Round Trip</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" id="btnCloseRoute"
+                  title="Tutup Rute (Sambung ke Awal)" data-i18n-title="btnCloseRouteTitle">
+                  <i data-lucide="refresh-ccw"></i>
+                  <span data-i18n="btnCloseRoute">Close Route</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" id="btnSimplifyRdp"
+                  title="Optimasi Garis Lurus (RDP)" data-i18n-title="btnSimplifyRdpTitle">
+                  <i data-lucide="minimize"></i>
+                  <span data-i18n="btnSimplifyRdp">RDP</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" id="btnToggleEditRoute">
+                  <i data-lucide="move"></i>
+                  <span id="btnEditRouteText" data-i18n="btnEditModeOn">Mode Edit (Geser Titik)</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" id="btnAddTurnManual">
+                  <i data-lucide="corner-up-right"></i>
+                  <span data-i18n="btnAddTurn">Tambah Belokan</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" id="btnAddPoiManual">
+                  <i data-lucide="map-pin"></i>
+                  <span data-i18n="btnAddPoi">Tambah POI</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline hidden" id="btnSaveRouteEdit">
+                  <i data-lucide="check"></i>
+                  <span data-i18n="btnSaveRouteEdit">Selesai & Update Rute</span>
+                </button>
             </div>
           </div>
 
@@ -483,9 +466,9 @@
           <div class="map-status-bar hidden" id="createStatusBar">
             <i data-lucide="pen-tool"></i>
             <span data-i18n="modeCreateActive">Mode Buat Rute Aktif: Klik pada peta untuk menggambar.</span>
-            <label class="inline-style-28">
-              <input type="checkbox" id="chkManualSnap" checked> <span data-i18n="chkSnapToRoad">Snap to Road
-                (OSM)</span>
+            <label class="switch-label-group">
+              <span data-i18n="chkSnapToRoad">Snap to Road (OSM)</span>
+              <input type="checkbox" id="chkManualSnap" class="switch-checkbox" checked>
             </label>
           </div>
 
@@ -494,9 +477,9 @@
             <span data-i18n="modeAddTurnActive">Mode Tambah Belokan Aktif: Klik pada garis rute di peta untuk memasang
               belokan manual. Klik lagi tombol
               untuk membatalkan.</span>
-            <label class="inline-style-28">
-              <input type="checkbox" id="chkGraphHopperTbt"> <span data-i18n="chkGraphHopperTbt">Ambil dari
-                GraphHopper</span>
+            <label class="switch-label-group">
+              <span data-i18n="chkGraphHopperTbt">Ambil dari GraphHopper</span>
+              <input type="checkbox" id="chkGraphHopperTbt" class="switch-checkbox">
             </label>
           </div>
 
@@ -508,17 +491,63 @@
           </div>
 
           <div id="map" class="map-container">
+            <!-- Floating Fullscreen Control inside Map -->
+            <button type="button" class="map-floating-fullscreen-btn" id="btnToggleFullscreen"
+              title="Layar Penuh (Fullscreen)" data-i18n-title="btnFullscreen">
+              <i data-lucide="maximize"></i>
+            </button>
             <div class="map-placeholder" id="mapPlaceholder">
               <i data-lucide="map-pinned"></i>
               <p data-i18n="mapPlaceholderText" data-i18n-html="true">Unggah file GPX atau klik <strong>Buat Rute
                   Manual</strong> untuk memulai</p>
             </div>
+
+            <!-- Floating Elevation Profile Card (Exact look matching user reference) -->
+            <div class="map-floating-elevation-card" id="mapFloatingElevationCard">
+              <div class="float-card-stats-col">
+                <div class="float-stat-box">
+                  <span class="float-stat-label">DISTANCE</span>
+                  <div class="float-stat-val-row">
+                    <span class="float-stat-num" id="floatStatDist">0.0</span>
+                    <span class="float-stat-unit">km</span>
+                  </div>
+                </div>
+                <div class="float-stat-box">
+                  <span class="float-stat-label">ELEVATION</span>
+                  <div class="float-stat-val-row">
+                    <span class="float-stat-num" id="floatStatElev">0</span>
+                    <span class="float-stat-unit">m</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="float-card-chart-col">
+                <div class="float-chart-header" id="elevationTitleContainer">
+                  <span>ELEVATION PROFILE</span>
+                </div>
+                <div class="elevation-canvas-wrap">
+                  <!-- Floating Hover Badge (DIST | ELEV | GRADE) -->
+                  <div class="elevation-hover-badge" id="elevationHoverBadge">
+                    <div class="hover-stat-item">
+                      <span class="hover-lbl">DIST</span>
+                      <span class="hover-val" id="hoverBadgeDist">0.0 km</span>
+                    </div>
+                    <div class="hover-stat-item">
+                      <span class="hover-lbl">ELEV</span>
+                      <span class="hover-val" id="hoverBadgeElev">0 m</span>
+                    </div>
+                    <div class="hover-stat-item">
+                      <span class="hover-lbl">GRADE</span>
+                      <span class="hover-val" id="hoverBadgeGrade">0.0%</span>
+                    </div>
+                  </div>
+                  <canvas id="elevationCanvas" class="elevationCanvas-style"></canvas>
+                  <!-- Elevation Hover Point Dot on Canvas -->
+                  <div id="elevationHoverDot" class="elevation-hover-dot"></div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div id="elevationTitleContainer" class="elevationTitleContainer-style">
-            <i data-lucide="activity" class="icon-primary-18"></i>
-            <h3 class="inline-style-30"><span data-i18n="elevationChartTitle">Profil Elevasi</span></h3>
-          </div>
-          <canvas id="elevationCanvas" class="elevationCanvas-style"></canvas>
 
           <div class="map-footer-info">
             <div class="map-legend">
@@ -990,9 +1019,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-  <script src="lang.js?v=37"></script>
-  <script src="firebase-db.js?v=37"></script>
-  <script src="app.js?v=37"></script>
+  <script src="lang.js?v=44"></script>
+  <script src="firebase-db.js?v=44"></script>
+  <script src="app.js?v=44"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // Logic for language dropdown initialization is in lang.js

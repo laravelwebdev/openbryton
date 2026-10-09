@@ -194,15 +194,19 @@ const elements = {
   downloadDropdownContainer: document.getElementById('downloadDropdownContainer'),
   btnToggleSidebarUI: document.getElementById('btnToggleSidebarUI'),
   btnToggleTableUI: document.getElementById('btnToggleTableUI'),
+  btnToggleFullscreen: document.getElementById('btnToggleFullscreen'),
   sidebarContent: document.getElementById('sidebarContent'),
   sidebarTitle: document.getElementById('sidebarTitle'),
   turnsTableContent: document.getElementById('turnsTableContent'),
   sidebarPanel: document.querySelector('.sidebar-panel'),
   mainLayout: document.querySelector('.main-layout'),
   turnsCard: document.querySelector('.turns-card'),
+  mapCard: document.querySelector('.map-card'),
   mapContainer: document.querySelector('.map-container'),
   statDistance: document.getElementById('statDistance'),
   statElevationGain: document.getElementById('statElevationGain'),
+  floatStatDist: document.getElementById('floatStatDist'),
+  floatStatElev: document.getElementById('floatStatElev'),
   statPoints: document.getElementById('statPoints'),
   statOsmTurns: document.getElementById('statOsmTurns'),
   statExtraTurns: document.getElementById('statExtraTurns'),
@@ -425,7 +429,7 @@ function initMapWithLayers() {
 }
 
 function createCustomLayerControl() {
-  const customControl = L.control({ position: 'bottomleft' });
+  const customControl = L.control({ position: 'bottomright' });
 
   customControl.onAdd = function (map) {
     const div = L.DomUtil.create('div', 'custom-layer-control');
@@ -594,18 +598,20 @@ function bindEvents() {
 
 
 
-  elements.btnToggleSidebarUI.addEventListener('click', () => {
-    elements.sidebarContent.classList.toggle('collapsed-hidden');
-    elements.sidebarTitle.classList.toggle('collapsed-hidden');
-    elements.mainLayout.classList.toggle('sidebar-collapsed');
-    const isHidden = elements.sidebarContent.classList.contains('collapsed-hidden');
-    const icon = isHidden ? 'maximize-2' : 'minimize-2';
-    const text = isHidden ? (typeof t === 'function' ? t('btnShowPanel') : 'Tampilkan') : (typeof t === 'function' ? t('btnHidePanel') : 'Sembunyikan');
-    const dataI18n = isHidden ? 'btnShowPanel' : 'btnHidePanel';
-    elements.btnToggleSidebarUI.innerHTML = `<i data-lucide="${icon}"></i> <span data-i18n="${dataI18n}">${text}</span>`;
-    lucide.createIcons();
-    setTimeout(() => { if (state.map) state.map.invalidateSize(); }, 350);
-  });
+  if (elements.btnToggleSidebarUI) {
+    elements.btnToggleSidebarUI.addEventListener('click', () => {
+      elements.sidebarContent.classList.toggle('collapsed-hidden');
+      elements.sidebarTitle.classList.toggle('collapsed-hidden');
+      elements.mainLayout.classList.toggle('sidebar-collapsed');
+      const isHidden = elements.sidebarContent.classList.contains('collapsed-hidden');
+      const icon = isHidden ? 'maximize-2' : 'minimize-2';
+      const text = isHidden ? (typeof t === 'function' ? t('btnShowPanel') : 'Tampilkan') : (typeof t === 'function' ? t('btnHidePanel') : 'Sembunyikan');
+      const dataI18n = isHidden ? 'btnShowPanel' : 'btnHidePanel';
+      elements.btnToggleSidebarUI.innerHTML = `<i data-lucide="${icon}"></i> <span data-i18n="${dataI18n}">${text}</span>`;
+      lucide.createIcons();
+      setTimeout(() => { if (state.map) state.map.invalidateSize(); }, 350);
+    });
+  }
 
   if (elements.settingsCardToggle && elements.settingsCardContent && elements.settingsCardIcon) {
     elements.settingsCardToggle.addEventListener('click', () => {
@@ -624,6 +630,55 @@ function bindEvents() {
     elements.btnToggleTableUI.innerHTML = `<i data-lucide="${icon}"></i>`;
     lucide.createIcons();
     setTimeout(() => { if (state.map) state.map.invalidateSize(); }, 350);
+  });
+
+  function updateFullscreenBtnUI(isFullscreen) {
+    if (!elements.btnToggleFullscreen) return;
+    const icon = isFullscreen ? 'minimize-2' : 'maximize-2';
+    const titleKey = isFullscreen ? 'btnExitFullscreen' : 'btnFullscreen';
+    const fallbackTitle = isFullscreen ? 'Keluar Layar Penuh (Normal)' : 'Layar Penuh (Fullscreen)';
+    const titleText = typeof t === 'function' ? t(titleKey) : fallbackTitle;
+
+    elements.btnToggleFullscreen.setAttribute('title', titleText);
+    elements.btnToggleFullscreen.setAttribute('data-i18n-title', titleKey);
+    elements.btnToggleFullscreen.innerHTML = `<i data-lucide="${icon}"></i>`;
+    lucide.createIcons();
+  }
+
+  function toggleMapFullscreen(forceState) {
+    if (!elements.mainLayout || !elements.mapContainer) return;
+    const isCurrentlyExpanded = elements.mainLayout.classList.contains('sidebar-collapsed') && elements.mapContainer.classList.contains('map-tall-mode');
+    const willBeExpanded = typeof forceState === 'boolean' ? forceState : !isCurrentlyExpanded;
+
+    if (willBeExpanded) {
+      elements.mainLayout.classList.add('sidebar-collapsed');
+      elements.mapContainer.classList.add('map-tall-mode');
+    } else {
+      elements.mainLayout.classList.remove('sidebar-collapsed');
+      elements.mapContainer.classList.remove('map-tall-mode');
+    }
+
+    updateFullscreenBtnUI(willBeExpanded);
+
+    setTimeout(() => {
+      if (state.map) state.map.invalidateSize();
+      if (typeof drawElevationChart === 'function' && state.points && state.points.length > 0) {
+        drawElevationChart();
+      }
+    }, 200);
+  }
+
+  if (elements.btnToggleFullscreen) {
+    elements.btnToggleFullscreen.addEventListener('click', () => {
+      toggleMapFullscreen();
+    });
+  }
+
+  // Allow ESC key to exit expanded fullscreen mode
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && elements.mainLayout && elements.mainLayout.classList.contains('sidebar-collapsed') && elements.mapContainer && elements.mapContainer.classList.contains('map-tall-mode')) {
+      toggleMapFullscreen(false);
+    }
   });
 
   // Modal events
@@ -677,11 +732,12 @@ function bindEvents() {
       if (state.points.length === 0) return;
 
       const rect = elements.elevationCanvas.getBoundingClientRect();
-      const padLeft = 40;
-      const padRight = 10;
-      const padTop = 10;
-      const padBottom = 20;
+      const padLeft = 6;
+      const padRight = 6;
+      const padTop = 6;
+      const padBottom = 6;
       const drawWidth = rect.width - padLeft - padRight;
+      const drawHeight = rect.height - padTop - padBottom;
 
       let x = clientX - rect.left - padLeft;
       if (x < 0) x = 0;
@@ -702,29 +758,76 @@ function bindEvents() {
 
       const pt = state.points[closestIdx];
 
-      let hoverLine = document.getElementById('chartHoverLine');
-      if (!hoverLine) {
-        hoverLine = document.createElement('div');
-        hoverLine.id = 'chartHoverLine';
-        hoverLine.className = 'chart-hover-line';
-        elements.elevationCanvas.parentNode.classList.add('elevation-canvas-wrapper');
-        elements.elevationCanvas.parentNode.appendChild(hoverLine);
+      // Calculate grade (slope in %) around this point
+      let grade = 0;
+      const prevIdx = Math.max(0, closestIdx - 2);
+      const nextIdx = Math.min(state.points.length - 1, closestIdx + 2);
+      if (prevIdx !== nextIdx) {
+        const dDist = state.points[nextIdx].distFromStart - state.points[prevIdx].distFromStart;
+        const dEle = state.points[nextIdx].ele - state.points[prevIdx].ele;
+        if (dDist > 0) {
+          grade = (dEle / dDist) * 100;
+        }
       }
 
-      const canvasOffsetLeft = elements.elevationCanvas.offsetLeft;
-      const canvasOffsetTop = elements.elevationCanvas.offsetTop;
+      // Min & max elevation for Y positioning on canvas
+      let minEle = Infinity;
+      let maxEle = -Infinity;
+      for (const p of state.points) {
+        if (p.ele < minEle) minEle = p.ele;
+        if (p.ele > maxEle) maxEle = p.ele;
+      }
+      if (maxEle - minEle < 10) {
+        maxEle += 5;
+        minEle -= 5;
+      }
+      const eleRange = maxEle - minEle;
+      const normY = eleRange > 0 ? (pt.ele - minEle) / eleRange : 0.5;
 
-      hoverLine.style.display = 'block';
-      hoverLine.style.left = (canvasOffsetLeft + padLeft + (pt.distFromStart / state.totalDistance) * drawWidth) + 'px';
-      hoverLine.style.top = (canvasOffsetTop + padTop) + 'px';
-      hoverLine.style.height = (rect.height - padTop - padBottom) + 'px';
+      const ptDistFrac = state.totalDistance > 0 ? (pt.distFromStart / state.totalDistance) : 0;
+      const pxX = padLeft + ptDistFrac * drawWidth;
+      const pxY = padTop + drawHeight - (normY * drawHeight);
 
+      // Hide hover line if any (user requested dot instead of line)
+      const hoverLine = document.getElementById('chartHoverLine');
+      if (hoverLine) hoverLine.style.display = 'none';
+
+      // 1. Position and show Hover Dot on Canvas
+      const hoverDot = document.getElementById('elevationHoverDot');
+      if (hoverDot) {
+        hoverDot.style.display = 'block';
+        hoverDot.style.left = pxX + 'px';
+        hoverDot.style.top = pxY + 'px';
+      }
+
+      // 2. Position and update Hover Floating Badge (DIST, ELEV, GRADE)
+      const hoverBadge = document.getElementById('elevationHoverBadge');
+      if (hoverBadge) {
+        hoverBadge.style.display = 'inline-flex';
+        // Keep badge within bounds of container
+        const badgeLeft = Math.max(70, Math.min(rect.width - 70, pxX));
+        hoverBadge.style.left = badgeLeft + 'px';
+
+        const badgeDist = document.getElementById('hoverBadgeDist');
+        const badgeElev = document.getElementById('hoverBadgeElev');
+        const badgeGrade = document.getElementById('hoverBadgeGrade');
+
+        if (badgeDist) badgeDist.textContent = (pt.distFromStart / 1000).toFixed(1) + ' km';
+        if (badgeElev) badgeElev.textContent = Math.round(pt.ele) + ' m';
+        if (badgeGrade) {
+          const sign = grade > 0 ? '+' : '';
+          badgeGrade.textContent = sign + grade.toFixed(1) + '%';
+          badgeGrade.style.color = grade > 4 ? '#f87171' : (grade < -2 ? '#34d399' : '#38bdf8');
+        }
+      }
+
+      // 3. Update Map Marker
       if (!state.mapLayers.hoverMarker) {
         state.mapLayers.hoverMarker = L.circleMarker([pt.lat, pt.lon], {
           radius: 7,
           color: '#ffffff',
           weight: 2,
-          fillColor: '#ef4444',
+          fillColor: '#ea580c',
           fillOpacity: 1,
           pane: 'markerPane'
         }).addTo(state.map);
@@ -739,6 +842,13 @@ function bindEvents() {
     const handleChartLeave = () => {
       const hoverLine = document.getElementById('chartHoverLine');
       if (hoverLine) hoverLine.style.display = 'none';
+
+      const hoverDot = document.getElementById('elevationHoverDot');
+      if (hoverDot) hoverDot.style.display = 'none';
+
+      const hoverBadge = document.getElementById('elevationHoverBadge');
+      if (hoverBadge) hoverBadge.style.display = 'none';
+
       if (state.mapLayers.hoverMarker && state.map) {
         state.map.removeLayer(state.mapLayers.hoverMarker);
       }
@@ -876,6 +986,10 @@ function resetState() {
 
   elements.turnCounterBadge.textContent = getInstructionCountLabel(0);
   elements.elevationCanvas.style.display = 'none';
+  const floatCard = document.getElementById('mapFloatingElevationCard');
+  if (floatCard) floatCard.style.display = 'none';
+  if (elements.floatStatDist) elements.floatStatDist.textContent = '0.0';
+  if (elements.floatStatElev) elements.floatStatElev.textContent = '0';
   const eleTitle = document.getElementById('elevationTitleContainer');
   if (eleTitle) eleTitle.style.display = 'none';
 }
@@ -959,6 +1073,8 @@ function parseGpx() {
 
   elements.statDistance.textContent = `${(runningDist / 1000).toFixed(2)} km`;
   if (elements.statElevationGain) elements.statElevationGain.textContent = `${Math.round(totalEleGain)} m`;
+  if (elements.floatStatDist) elements.floatStatDist.textContent = `${(runningDist / 1000).toFixed(1)}`;
+  if (elements.floatStatElev) elements.floatStatElev.textContent = `${Math.round(totalEleGain)}`;
   elements.statPoints.textContent = points.length.toLocaleString();
 
   updateCreateManualVisibility();
@@ -974,8 +1090,12 @@ function renderElevationChart(highlightClimbObj = null) {
 
   // Make visible BEFORE measuring so getBoundingClientRect() returns true dimensions
   canvas.style.display = 'block';
+  const floatCard = document.getElementById('mapFloatingElevationCard');
+  if (floatCard) floatCard.style.display = 'flex';
+  if (elements.floatStatDist && state.totalDistance) elements.floatStatDist.textContent = `${(state.totalDistance / 1000).toFixed(1)}`;
+  if (elements.floatStatElev && typeof state.totalElevationGain === 'number') elements.floatStatElev.textContent = `${Math.round(state.totalElevationGain)}`;
   const eleTitle = document.getElementById('elevationTitleContainer');
-  if (eleTitle) eleTitle.style.display = 'flex';
+  if (eleTitle) eleTitle.style.display = 'block';
 
   // Set internal resolution based on devicePixelRatio to avoid blur
   const dpr = window.devicePixelRatio || 1;
@@ -1006,11 +1126,11 @@ function renderElevationChart(highlightClimbObj = null) {
   const eleRange = maxEle - minEle;
   const totalDist = state.totalDistance; // in meters
 
-  // Define padding for axes
-  const padLeft = 40;
-  const padBottom = 20;
-  const padTop = 10;
-  const padRight = 10;
+  // Define padding for minimalist chart (matching screenshot)
+  const padLeft = 6;
+  const padBottom = 6;
+  const padTop = 6;
+  const padRight = 6;
 
   const drawWidth = logicalWidth - padLeft - padRight;
   const drawHeight = logicalHeight - padTop - padBottom;
@@ -1029,14 +1149,16 @@ function renderElevationChart(highlightClimbObj = null) {
   ctx.closePath();
 
   const gradient = ctx.createLinearGradient(0, padTop, 0, padTop + drawHeight);
-  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
-  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+  gradient.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+  gradient.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
 
   ctx.fillStyle = gradient;
   ctx.fill();
 
-  ctx.strokeStyle = '#3b82f6';
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#2563eb';
+  ctx.lineWidth = 2.2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
   ctx.stroke();
 
   // Draw Highlighted Climb
@@ -1068,44 +1190,8 @@ function renderElevationChart(highlightClimbObj = null) {
       }
     }
     ctx.strokeStyle = '#ef4444'; // Red color
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.8;
     ctx.stroke();
-  }
-
-  // Draw Axes Grid and Text
-  ctx.fillStyle = '#94a3b8';
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
-  ctx.lineWidth = 1;
-  ctx.font = '10px Inter, sans-serif';
-
-  // Y-axis (Altitude)
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-
-  // Max Elevation
-  ctx.fillText(Math.round(maxEle) + 'm', padLeft - 5, padTop);
-  ctx.beginPath(); ctx.moveTo(padLeft, padTop); ctx.lineTo(padLeft + drawWidth, padTop); ctx.stroke();
-
-  // Min Elevation
-  ctx.fillText(Math.round(minEle) + 'm', padLeft - 5, padTop + drawHeight);
-  ctx.beginPath(); ctx.moveTo(padLeft, padTop + drawHeight); ctx.lineTo(padLeft + drawWidth, padTop + drawHeight); ctx.stroke();
-
-  // Mid Elevation
-  const midEle = (minEle + maxEle) / 2;
-  ctx.fillText(Math.round(midEle) + 'm', padLeft - 5, padTop + drawHeight / 2);
-  ctx.beginPath(); ctx.moveTo(padLeft, padTop + drawHeight / 2); ctx.lineTo(padLeft + drawWidth, padTop + drawHeight / 2); ctx.stroke();
-
-  // X-axis (Distance in km)
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-
-  const totalKm = totalDist / 1000;
-  const numTicks = 4;
-  for (let i = 0; i <= numTicks; i++) {
-    const frac = i / numTicks;
-    const x = padLeft + frac * drawWidth;
-    const val = (frac * totalKm).toFixed(1);
-    ctx.fillText(val, x, padTop + drawHeight + 5);
   }
 
   canvas.style.display = 'block';
@@ -2303,7 +2389,7 @@ function bindRoundTripEvents() {
     const finishDrag = (e) => {
       if (isDraggingCompass) {
         isDraggingCompass = false;
-        try { elements.rtCompassDisc.releasePointerCapture(e.pointerId); } catch (err) {}
+        try { elements.rtCompassDisc.releasePointerCapture(e.pointerId); } catch (err) { }
       }
     };
     elements.rtCompassDisc.addEventListener('pointerup', finishDrag);

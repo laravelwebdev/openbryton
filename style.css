@@ -291,7 +291,16 @@ body {
 }
 
 .main-layout.sidebar-collapsed {
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 1fr;
+}
+
+.main-layout.sidebar-collapsed .sidebar-panel {
+  display: none !important;
+}
+
+.map-container.map-tall-mode {
+  height: 88vh !important;
+  min-height: 700px !important;
 }
 
 @media (max-width: 1080px) {
@@ -529,11 +538,57 @@ body {
   line-height: 1.4;
 }
 
+/* Modern iOS / Fluent Style Switch Toggle */
 .switch-checkbox {
-  width: 38px;
-  height: 20px;
+  position: relative;
+  width: 44px;
+  height: 24px;
+  min-width: 44px;
+  max-width: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #334155;
+  outline: none;
+  border-radius: 20px;
   cursor: pointer;
-  accent-color: var(--primary);
+  transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 0;
+  vertical-align: middle;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.switch-checkbox::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+}
+
+.switch-checkbox:checked {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.switch-checkbox:checked::before {
+  transform: translateX(20px);
+}
+
+.switch-label-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* Buttons */
@@ -774,14 +829,15 @@ body {
   color: var(--accent-green) !important;
 }
 
-/* Map View */
+/* Map View & Modern Elegant Toolbar Dock */
 .map-card {
   padding: 16px;
 }
 
 .map-tools {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
   align-items: center;
 }
 
@@ -819,6 +875,42 @@ body {
 
 .map-container.map-expanded {
   height: 85vh;
+}
+
+/* Floating Fullscreen Button inside Map */
+.map-floating-fullscreen-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1000;
+  width: 38px;
+  height: 38px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  transition: all 0.2s ease;
+}
+
+.map-floating-fullscreen-btn:hover {
+  background: rgba(59, 130, 246, 0.9);
+  border-color: #60a5fa;
+  color: #ffffff;
+  transform: scale(1.06);
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.5);
+}
+
+.map-floating-fullscreen-btn svg,
+.map-floating-fullscreen-btn i {
+  width: 18px;
+  height: 18px;
 }
 
 .collapsed-hidden {
@@ -908,7 +1000,8 @@ body {
 .layer-popup-panel {
   position: absolute;
   bottom: 0;
-  left: 70px;
+  right: 70px;
+  left: auto;
   background: var(--bg-card);
   border-radius: 12px;
   padding: 10px;
@@ -917,7 +1010,7 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   opacity: 0;
   pointer-events: none;
-  transform: translateX(-10px);
+  transform: translateX(10px);
   transition: all 0.3s ease;
   border: 1px solid var(--bg-card-border);
 }
@@ -1882,8 +1975,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 9999;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100005 !important;
   display: none;
   align-items: center;
   justify-content: center;
@@ -1896,10 +1989,10 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 9999;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 100005 !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1956,8 +2049,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 9999;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100005 !important;
   display: none;
   align-items: center;
   justify-content: center;
@@ -2008,8 +2101,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 9999;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100005 !important;
   display: none;
   align-items: center;
   justify-content: center;
@@ -2054,8 +2147,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 9999;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100005 !important;
   display: none;
   align-items: center;
   justify-content: center;
@@ -2100,8 +2193,8 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  z-index: 9999;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 100005 !important;
   display: none;
   align-items: center;
   justify-content: center;
@@ -2284,6 +2377,153 @@ body {
 
 .elevation-canvas-wrapper {
   position: relative;
+}
+
+.elevation-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 62px;
+}
+
+.elevation-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+/* Floating Elevation Profile Card (White rounded card inside Map like reference screenshot) */
+.map-floating-elevation-card {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 16px;
+  padding: 14px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28), 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  min-width: 480px;
+  max-width: 580px;
+  gap: 20px;
+  transition: all 0.25s ease;
+  pointer-events: auto;
+}
+
+/* Left Stats Column */
+.float-card-stats-col {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-right: 20px;
+  border-right: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.float-stat-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.float-stat-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.float-stat-val-row {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.float-stat-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+  font-family: var(--font-sans);
+}
+
+.float-stat-unit {
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+}
+
+/* Right Chart Column */
+.float-card-chart-col {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.float-chart-header {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+/* Floating Hover Badge (Larger and clear text) */
+.elevation-hover-badge {
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 6px 14px;
+  display: none;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  position: absolute;
+  top: -46px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 50;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hover-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.hover-stat-item .hover-lbl {
+  font-size: 10px;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 0.06em;
+}
+
+.hover-stat-item .hover-val {
+  font-size: 14px;
+  font-weight: 800;
+  color: #38bdf8;
+  font-family: var(--font-mono);
+}
+
+.elevation-hover-dot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ea580c;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 12px rgba(234, 88, 12, 0.95);
+  pointer-events: none;
+  display: none;
+  transform: translate(-50%, -50%);
+  z-index: 25;
 }
 
 .popup-source-text {
@@ -3020,17 +3260,179 @@ body {
   .bryton-id-input-group {
     flex-direction: column;
   }
+
   .btn-get-id {
     width: 100%;
     justify-content: center;
   }
+
   .bryton-login-modal {
     padding: 20px 16px;
   }
+
   .modal-footer-row {
     flex-direction: column-reverse;
   }
+
   .modal-footer-row .btn {
     width: 100%;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS (<= 768px)
+   - 1 Widget per Row (1 widget satu baris)
+   - Elevation Card centered & layer control positioned above so no overlap
+   ============================================================ */
+@media (max-width: 768px) {
+  /* Route Stats Grid: 1 widget 1 baris */
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .stat-card {
+    width: 100% !important;
+  }
+
+  /* Map Container responsive height */
+  .map-container {
+    height: 480px !important;
+  }
+
+  .map-container.map-tall-mode {
+    height: 640px !important;
+  }
+
+  /* Floating Elevation Card on Mobile */
+  .map-floating-elevation-card {
+    position: absolute !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 10px 14px !important;
+    border-radius: 14px !important;
+    gap: 12px !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+    z-index: 1000 !important;
+  }
+
+  .float-card-stats-col {
+    gap: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .float-stat-num {
+    font-size: 17px !important;
+  }
+
+  .float-stat-label {
+    font-size: 9px !important;
+  }
+
+  .elevation-canvas-wrap {
+    height: 48px !important;
+  }
+
+  /* Pilihan layer peta tidak tumpang tindih dengan elevasi:
+     Pindahkan kontrol layer ke kanan atas (di bawah tombol fullscreen)
+     atau naikkan posisinya di atas elevation card */
+  .custom-layer-control {
+    margin-bottom: 95px !important; /* Shift up above elevation card */
+  }
+
+  .layer-main-btn {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 10px !important;
+  }
+
+  .layer-popup-panel {
+    bottom: 0 !important;
+    right: 56px !important;
+    padding: 8px !important;
+    gap: 8px !important;
+  }
+
+  .layer-option {
+    width: 52px !important;
+  }
+
+  .layer-option .layer-thumb-box {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  /* Responsive Elegant Map Toolbar */
+  .card-header-flex {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .map-tools {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 6px !important;
+    padding: 6px 8px !important;
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 12px !important;
+    scrollbar-width: none !important; /* Hide scrollbar Firefox */
+  }
+
+  .map-tools::-webkit-scrollbar {
+    display: none !important; /* Hide scrollbar Chrome/Safari */
+  }
+
+  .map-tools .btn {
+    flex-shrink: 0 !important;
+    font-size: 0.76rem !important;
+    padding: 6px 10px !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    background: rgba(30, 41, 59, 0.7) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    color: #f1f5f9 !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .map-tools .btn:hover {
+    background: rgba(37, 99, 235, 0.85) !important;
+    border-color: #60a5fa !important;
+    color: #ffffff !important;
+  }
+
+  .map-tools .btn.active {
+    background: linear-gradient(135deg, #f97316, #ea580c) !important;
+    border-color: #fb923c !important;
+    color: #ffffff !important;
+  }
+
+  /* Responsive Map Status Bar (Switch & Text clean wrap) */
+  .map-status-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 10px 14px !important;
+    font-size: 0.78rem !important;
+    border-radius: 10px !important;
+  }
+
+  .map-status-bar .switch-label-group {
+    width: 100% !important;
+    margin-left: 0 !important;
+    justify-content: space-between !important;
+    padding-top: 6px !important;
+    border-top: 1px solid rgba(245, 158, 11, 0.25) !important;
   }
 }
