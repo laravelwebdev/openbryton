@@ -192,6 +192,7 @@ body {
   display: inline-flex;
   align-items: center;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .lang-btn {
@@ -210,6 +211,7 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   outline: none;
+  white-space: nowrap;
 }
 
 .lang-btn:hover {
@@ -1508,21 +1510,29 @@ body {
 }
 
 @media (max-width: 480px) {
-  .header-badges {
+  .container {
+    padding: 0 10px;
+  }
+
+  .app-header {
+    padding: 10px 0;
+  }
+
+  .app-header .header-content {
     gap: 6px;
   }
 
-  .header-badges select {
-    width: 100%;
+  .logo-title {
+    font-size: 0.95rem !important;
+  }
+
+  .header-badges {
+    gap: 4px !important;
   }
 
   .badge {
     flex: 1 1 calc(50% - 6px);
     justify-content: center;
-  }
-
-  .container {
-    padding: 0 12px;
   }
 
   .logo-subtitle {
@@ -1679,10 +1689,18 @@ body {
     padding-bottom: 5px;
     flex-wrap: nowrap;
     gap: 8px;
+    justify-content: space-between;
+  }
+
+  .logo-group {
+    gap: 8px !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
   }
 
   .logo-title {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
+    white-space: nowrap;
   }
 
   .logo-subtitle {
@@ -1692,6 +1710,7 @@ body {
   .logo-icon {
     width: 32px;
     height: 32px;
+    flex-shrink: 0;
   }
 
   .logo-icon i {
@@ -1702,10 +1721,18 @@ body {
   .header-badges {
     flex-wrap: nowrap;
     align-items: center;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .lang-btn {
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    gap: 5px !important;
   }
 
   #authContainer {
-    gap: 6px !important;
+    gap: 4px !important;
   }
 
   body {
@@ -2476,19 +2503,20 @@ body {
   background: #0f172a;
   color: #ffffff;
   border-radius: 10px;
-  padding: 6px 14px;
+  padding: 5px 10px;
   display: none;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   position: absolute;
-  top: -46px;
+  top: -44px;
   left: 50%;
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 50;
   white-space: nowrap;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 96%;
 }
 
 .hover-stat-item {
@@ -3339,33 +3367,49 @@ body {
     height: 48px !important;
   }
 
+  /* Hover badge on mobile: slightly more compact and anchored cleanly */
+  .elevation-hover-badge {
+    padding: 4px 8px !important;
+    gap: 8px !important;
+    top: -38px !important;
+    border-radius: 8px !important;
+  }
+
+  .hover-stat-item .hover-lbl {
+    font-size: 8px !important;
+  }
+
+  .hover-stat-item .hover-val {
+    font-size: 12px !important;
+  }
+
   /* Pilihan layer peta tidak tumpang tindih dengan elevasi:
-     Pindahkan kontrol layer ke kanan atas (di bawah tombol fullscreen)
-     atau naikkan posisinya di atas elevation card */
+     Naikkan posisi layer control di atas elevation card (elevation card height ~85px + padding) */
   .custom-layer-control {
-    margin-bottom: 95px !important; /* Shift up above elevation card */
+    margin-bottom: 110px !important; /* Aman di atas elevation card */
   }
 
   .layer-main-btn {
-    width: 48px !important;
-    height: 48px !important;
+    width: 44px !important;
+    height: 44px !important;
     border-radius: 10px !important;
   }
 
   .layer-popup-panel {
     bottom: 0 !important;
-    right: 56px !important;
+    right: 52px !important;
     padding: 8px !important;
     gap: 8px !important;
+    z-index: 1050 !important;
   }
 
   .layer-option {
-    width: 52px !important;
+    width: 48px !important;
   }
 
   .layer-option .layer-thumb-box {
-    width: 44px !important;
-    height: 44px !important;
+    width: 40px !important;
+    height: 40px !important;
   }
 
   /* Responsive Elegant Map Toolbar */

@@ -424,6 +424,13 @@ function initMapWithLayers() {
 
   createCustomLayerControl();
 
+  // Mencegah drag/klik pada kartu elevasi menggerakkan peta Leaflet di belakangnya
+  const floatCard = document.getElementById('mapFloatingElevationCard');
+  if (floatCard && typeof L !== 'undefined' && L.DomEvent) {
+    L.DomEvent.disableClickPropagation(floatCard);
+    L.DomEvent.disableScrollPropagation(floatCard);
+  }
+
   // Map Click Listener (for adding manual turn or adding waypoint)
   state.map.on('click', handleMapClick);
 }
@@ -804,8 +811,9 @@ function bindEvents() {
       const hoverBadge = document.getElementById('elevationHoverBadge');
       if (hoverBadge) {
         hoverBadge.style.display = 'inline-flex';
-        // Keep badge within bounds of container
-        const badgeLeft = Math.max(70, Math.min(rect.width - 70, pxX));
+        // Keep badge cleanly within bounds of container
+        const halfWidth = Math.max(45, (hoverBadge.offsetWidth || 130) / 2);
+        const badgeLeft = Math.max(halfWidth, Math.min(rect.width - halfWidth, pxX));
         hoverBadge.style.left = badgeLeft + 'px';
 
         const badgeDist = document.getElementById('hoverBadgeDist');
@@ -854,11 +862,20 @@ function bindEvents() {
       }
     };
 
-    elements.elevationCanvas.addEventListener('mousemove', (e) => handleChartHover(e.clientX));
+    elements.elevationCanvas.addEventListener('mousemove', (e) => {
+      e.stopPropagation();
+      handleChartHover(e.clientX);
+    });
+
+    elements.elevationCanvas.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      handleChartHover(e.clientX);
+    });
 
     elements.elevationCanvas.addEventListener('mouseleave', handleChartLeave);
 
     elements.elevationCanvas.addEventListener('touchmove', (e) => {
+      e.stopPropagation();
       if (e.touches.length > 0) {
         e.preventDefault(); // Prevent scrolling while interacting with the chart
         handleChartHover(e.touches[0].clientX);
@@ -866,12 +883,16 @@ function bindEvents() {
     }, { passive: false });
 
     elements.elevationCanvas.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
       if (e.touches.length > 0) {
         handleChartHover(e.touches[0].clientX);
       }
-    }, { passive: true });
+    }, { passive: false });
 
-    elements.elevationCanvas.addEventListener('touchend', handleChartLeave);
+    elements.elevationCanvas.addEventListener('touchend', (e) => {
+      e.stopPropagation();
+      handleChartLeave();
+    });
   }
 }
 
