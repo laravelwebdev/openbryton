@@ -357,41 +357,6 @@
 
       <!-- Right Column: Map Preview & Turn Details -->
       <section class="content-panel">
-        <!-- Route Stats Bar (Distance & Elevation gain are displayed in the floating profile card) -->
-        <div class="stats-grid">
-          <!-- Hidden fallback elements to maintain JS element bindings -->
-          <span id="statDistance" style="display:none;">0.00 km</span>
-          <span id="statElevationGain" style="display:none;">0 m</span>
-          <div class="stat-card">
-            <div class="stat-icon"><i data-lucide="map-pin"></i></div>
-            <div>
-              <div class="stat-label" data-i18n="statPoints">Titik Koordinat</div>
-              <div class="stat-value" id="statPoints">0</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon text-cyan"><i data-lucide="compass"></i></div>
-            <div>
-              <div class="stat-label" data-i18n="statOsm">Belokan OSM</div>
-              <div class="stat-value text-cyan" id="statOsmTurns">0</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon text-orange"><i data-lucide="corner-up-right"></i></div>
-            <div>
-              <div class="stat-label" data-i18n="statAngle">Belokan Tambahan</div>
-              <div class="stat-value text-orange" id="statExtraTurns">0</div>
-            </div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-icon text-green"><i data-lucide="route"></i></div>
-            <div>
-              <div class="stat-label" data-i18n="statTotal">Total Instruksi TBT</div>
-              <div class="stat-value text-green" id="statTotalTurns">0</div>
-            </div>
-          </div>
-        </div>
-
         <!-- Map View with Editing Toolbar -->
         <div class="card map-card">
           <div class="card-header-flex">
@@ -557,6 +522,41 @@
                   Angle Turn (Orange)</span></span>
               <span class="legend-item"><span class="legend-line"></span> <span data-i18n="legendTrack">Track Path
                   (Blue)</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Route Stats Bar (Placed between Map and TBT Tables) -->
+        <div class="stats-grid">
+          <!-- Hidden fallback elements to maintain JS element bindings -->
+          <span id="statDistance" style="display:none;">0.00 km</span>
+          <span id="statElevationGain" style="display:none;">0 m</span>
+          <div class="stat-card">
+            <div class="stat-icon"><i data-lucide="map-pin"></i></div>
+            <div>
+              <div class="stat-label" data-i18n="statPoints">Titik Koordinat</div>
+              <div class="stat-value" id="statPoints">0</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon text-cyan"><i data-lucide="compass"></i></div>
+            <div>
+              <div class="stat-label" data-i18n="statOsm">Belokan OSM</div>
+              <div class="stat-value text-cyan" id="statOsmTurns">0</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon text-orange"><i data-lucide="corner-up-right"></i></div>
+            <div>
+              <div class="stat-label" data-i18n="statAngle">Belokan Tambahan</div>
+              <div class="stat-value text-orange" id="statExtraTurns">0</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon text-green"><i data-lucide="route"></i></div>
+            <div>
+              <div class="stat-label" data-i18n="statTotal">Total Instruksi TBT</div>
+              <div class="stat-value text-green" id="statTotalTurns">0</div>
             </div>
           </div>
         </div>
