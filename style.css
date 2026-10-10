@@ -3636,3 +3636,109 @@ body {
     border-top: 1px solid rgba(245, 158, 11, 0.25) !important;
   }
 }
+
+/* ==========================================
+   Splash / Initial Auth Loading Screen
+========================================== */
+.app-auth-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: var(--bg-main, #0f172a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.app-auth-loading.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.auth-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: authFadeIn 0.4s ease-out;
+}
+
+.auth-loading-logo {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+  animation: authPulse 2s infinite ease-in-out;
+}
+
+.auth-loading-logo i {
+  width: 32px;
+  height: 32px;
+}
+
+.auth-loading-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0;
+}
+
+.auth-loading-title span {
+  background: linear-gradient(90deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: authSpin 0.8s linear infinite;
+  margin-top: 4px;
+}
+
+.auth-loading-text {
+  font-size: 0.88rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+}
+
+@keyframes authSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes authPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 45px rgba(59, 130, 246, 0.65);
+  }
+}
+
+@keyframes authFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

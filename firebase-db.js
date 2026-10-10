@@ -48,6 +48,16 @@ if (auth) {
   setTimeout(() => updateAuthUI(null), 100);
 }
 
+function hideAuthLoading() {
+  const loadingEl = document.getElementById('appAuthLoading');
+  if (loadingEl && !loadingEl.classList.contains('hidden')) {
+    loadingEl.classList.add('hidden');
+    setTimeout(() => {
+      loadingEl.style.display = 'none';
+    }, 350);
+  }
+}
+
 function updateAuthUI(user) {
   const btnLogin = document.getElementById('btnLogin');
   const userProfile = document.getElementById('userProfile');
@@ -85,6 +95,9 @@ function updateAuthUI(user) {
     // Redirect to login page
     switchPage('login');
   }
+
+  // Dismiss initial splash loading screen
+  hideAuthLoading();
 }
 
 function loginWithGoogle() {

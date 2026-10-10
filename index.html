@@ -40,7 +40,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=51">
+  <link rel="stylesheet" href="style.css?v=52">
 </head>
 
 <body>
@@ -98,11 +98,23 @@
     </div>
   </header>
 
+  <!-- Splash / Auth Loading Screen -->
+  <div id="appAuthLoading" class="app-auth-loading">
+    <div class="auth-loading-content">
+      <div class="auth-loading-logo">
+        <i data-lucide="navigation"></i>
+      </div>
+      <h2 class="auth-loading-title">OpenBryton <span>Pro</span></h2>
+      <div class="auth-loading-spinner"></div>
+      <p class="auth-loading-text" data-i18n="loadingApp">Memuat aplikasi...</p>
+    </div>
+  </div>
+
   <!-- Router Container -->
   <div id="appContainer">
 
     <!-- PAGE: LOGIN -->
-    <main class="container page-view active container-migrated-4" id="page-login">
+    <main class="container page-view hidden container-migrated-4" id="page-login" style="display:none;">
       <div class="card card-migrated-5">
         <div class="feature-logo-box">
           <i data-lucide="navigation" class="inline-style-6"></i>
@@ -1082,9 +1094,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-  <script src="lang.js?v=47"></script>
-  <script src="firebase-db.js?v=47"></script>
-  <script src="app.js?v=47"></script>
+  <script src="lang.js?v=52"></script>
+  <script src="firebase-db.js?v=52"></script>
+  <script src="app.js?v=52"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (typeof lucide !== 'undefined') {
