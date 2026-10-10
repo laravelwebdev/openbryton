@@ -812,8 +812,9 @@ function bindEvents() {
       if (hoverBadge) {
         hoverBadge.style.display = 'inline-flex';
         // Keep badge cleanly within bounds of container
-        const halfWidth = Math.max(45, (hoverBadge.offsetWidth || 130) / 2);
-        const badgeLeft = Math.max(halfWidth, Math.min(rect.width - halfWidth, pxX));
+        const currentBadgeWidth = hoverBadge.offsetWidth || 110;
+        const halfWidth = currentBadgeWidth / 2;
+        const badgeLeft = Math.max(halfWidth + 2, Math.min(rect.width - halfWidth - 2, pxX));
         hoverBadge.style.left = badgeLeft + 'px';
 
         const badgeDist = document.getElementById('hoverBadgeDist');

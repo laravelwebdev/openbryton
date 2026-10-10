@@ -3518,18 +3518,25 @@ body {
 
   /* Hover badge on mobile: slightly more compact and anchored cleanly */
   .elevation-hover-badge {
-    padding: 4px 8px !important;
-    gap: 8px !important;
-    top: -38px !important;
-    border-radius: 8px !important;
+    padding: 3px 6px !important;
+    gap: 6px !important;
+    top: -34px !important;
+    border-radius: 6px !important;
+    max-width: 98% !important;
+    box-sizing: border-box !important;
+  }
+
+  .hover-stat-item {
+    min-width: 0 !important;
   }
 
   .hover-stat-item .hover-lbl {
-    font-size: 8px !important;
+    font-size: 7.5px !important;
+    letter-spacing: 0.02em !important;
   }
 
   .hover-stat-item .hover-val {
-    font-size: 12px !important;
+    font-size: 11px !important;
   }
 
   /* Pilihan layer peta tidak tumpang tindih dengan elevasi:
