@@ -935,8 +935,20 @@ body {
   background-image: url('https://tile.openstreetmap.org/10/815/528.png');
 }
 
+.google-streets-thumb {
+  background-image: url('https://mt1.google.com/vt/lyrs=m&x=815&y=528&z=10');
+}
+
 .google-sat-thumb {
   background-image: url('https://mt1.google.com/vt/lyrs=y&x=815&y=528&z=10');
+}
+
+.google-terrain-thumb {
+  background-image: url('https://mt1.google.com/vt/lyrs=p&x=815&y=528&z=10');
+}
+
+.opentopo-thumb {
+  background-image: url('https://a.tile.opentopomap.org/10/815/528.png');
 }
 
 .sat-thumb {
@@ -1013,6 +1025,8 @@ body {
   padding: 10px;
   display: flex;
   gap: 12px;
+  max-width: calc(100vw - 80px);
+  overflow-x: auto;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   opacity: 0;
   pointer-events: none;
@@ -1033,6 +1047,7 @@ body {
   align-items: center;
   cursor: pointer;
   width: 64px;
+  flex-shrink: 0;
   opacity: 0.7;
   transition: opacity 0.2s;
 }

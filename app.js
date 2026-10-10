@@ -379,11 +379,31 @@ function initMapWithLayers() {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
 
+  const googleStreets = L.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    subdomains: ['0', '1', '2', '3'],
+    maxZoom: 21,
+    maxNativeZoom: 20,
+    attribution: '&copy; Google Maps'
+  });
+
   const googleSatellite = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
     subdomains: ['0', '1', '2', '3'],
     maxZoom: 21,
     maxNativeZoom: 20,
     attribution: '&copy; Google Maps'
+  });
+
+  const googleTerrain = L.tileLayer('https://mt{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+    subdomains: ['0', '1', '2', '3'],
+    maxZoom: 21,
+    maxNativeZoom: 20,
+    attribution: '&copy; Google Maps'
+  });
+
+  const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    maxZoom: 17,
+    maxNativeZoom: 17,
+    attribution: 'Map: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> | Data: &copy; <a href="https://openstreetmap.org/copyright">OSM</a>, SRTM'
   });
 
   const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -425,7 +445,10 @@ function initMapWithLayers() {
   });
   state.baseMaps = {
     'osm': osmStandard,
+    'google-streets': googleStreets,
     'google-sat': googleSatellite,
+    'google-terrain': googleTerrain,
+    'opentopo': openTopoMap,
     'sat': esriSatellite,
     'cycle': cyclOsm
   };
@@ -463,9 +486,21 @@ function createCustomLayerControl() {
             <div class="layer-thumb-box osm-thumb"></div>
             <span>OSM</span>
           </div>
+          <div class="layer-option" data-layer="google-streets">
+            <div class="layer-thumb-box google-streets-thumb"></div>
+            <span>Google</span>
+          </div>
           <div class="layer-option" data-layer="google-sat">
             <div class="layer-thumb-box google-sat-thumb"></div>
             <span>Google Sat</span>
+          </div>
+          <div class="layer-option" data-layer="google-terrain">
+            <div class="layer-thumb-box google-terrain-thumb"></div>
+            <span>Google Topo</span>
+          </div>
+          <div class="layer-option" data-layer="opentopo">
+            <div class="layer-thumb-box opentopo-thumb"></div>
+            <span>OpenTopo</span>
           </div>
           <div class="layer-option" data-layer="sat">
             <div class="layer-thumb-box sat-thumb"></div>
@@ -516,9 +551,9 @@ function createCustomLayerControl() {
           opt.classList.add('active');
 
           // Update main button to next alternative (like Google Maps)
-          // If selected OSM, show Google Sat as alternative; if others, show OSM
-          const nextLayer = selected === 'osm' ? 'google-sat' : 'osm';
-          const nextText = selected === 'osm' ? 'Google Sat' : 'OSM';
+          // If selected OSM or Google Streets, show Google Sat as alternative; otherwise show Google Streets
+          const nextLayer = (selected === 'osm' || selected === 'google-streets') ? 'google-sat' : 'google-streets';
+          const nextText = nextLayer === 'google-sat' ? 'Google Sat' : 'Google';
           btn.innerHTML = `<div class="layer-thumb-box ${nextLayer}-thumb"></div><span>${nextText}</span>`;
 
           panel.classList.remove('show');
