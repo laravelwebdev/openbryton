@@ -379,6 +379,13 @@ function initMapWithLayers() {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
 
+  const googleSatellite = L.tileLayer('https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    subdomains: ['0', '1', '2', '3'],
+    maxZoom: 21,
+    maxNativeZoom: 20,
+    attribution: '&copy; Google Maps'
+  });
+
   const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 20,
     maxNativeZoom: 18,
@@ -418,6 +425,7 @@ function initMapWithLayers() {
   });
   state.baseMaps = {
     'osm': osmStandard,
+    'google-sat': googleSatellite,
     'sat': esriSatellite,
     'cycle': cyclOsm
   };
@@ -446,7 +454,7 @@ function createCustomLayerControl() {
     div.innerHTML = `
       <div class="layer-selector-wrapper" id="layerSelectorWrapper">
         <div class="layer-main-btn" id="layerMainBtn" title="Ganti Peta Dasar">
-          <div class="layer-thumb-box sat-thumb"></div>
+          <div class="layer-thumb-box google-sat-thumb"></div>
           <span>Satelit</span>
         </div>
         
@@ -455,9 +463,13 @@ function createCustomLayerControl() {
             <div class="layer-thumb-box osm-thumb"></div>
             <span>OSM</span>
           </div>
+          <div class="layer-option" data-layer="google-sat">
+            <div class="layer-thumb-box google-sat-thumb"></div>
+            <span>Google Sat</span>
+          </div>
           <div class="layer-option" data-layer="sat">
             <div class="layer-thumb-box sat-thumb"></div>
-            <span>Satelit</span>
+            <span>Esri Sat</span>
           </div>
           <div class="layer-option" data-layer="cycle">
             <div class="layer-thumb-box cycle-thumb"></div>
@@ -504,9 +516,9 @@ function createCustomLayerControl() {
           opt.classList.add('active');
 
           // Update main button to next alternative (like Google Maps)
-          // If selected OSM, show Sat as alternative
-          const nextLayer = selected === 'sat' ? 'osm' : 'sat';
-          const nextText = nextLayer === 'sat' ? 'Satelit' : 'OSM';
+          // If selected OSM, show Google Sat as alternative; if others, show OSM
+          const nextLayer = selected === 'osm' ? 'google-sat' : 'osm';
+          const nextText = selected === 'osm' ? 'Google Sat' : 'OSM';
           btn.innerHTML = `<div class="layer-thumb-box ${nextLayer}-thumb"></div><span>${nextText}</span>`;
 
           panel.classList.remove('show');

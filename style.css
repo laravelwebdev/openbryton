@@ -935,6 +935,10 @@ body {
   background-image: url('https://tile.openstreetmap.org/10/815/528.png');
 }
 
+.google-sat-thumb {
+  background-image: url('https://mt1.google.com/vt/lyrs=y&x=815&y=528&z=10');
+}
+
 .sat-thumb {
   background-image: url('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/10/528/815');
 }
