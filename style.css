@@ -3570,21 +3570,111 @@ body {
     border-radius: 10px !important;
   }
 
+  .layer-main-btn span {
+    font-size: 8.5px !important;
+    padding: 1px 0 !important;
+  }
+
+  /* Popup pilihan layer mobile dibuat vertikal agar tidak terpotong */
   .layer-popup-panel {
-    bottom: 0 !important;
-    right: 52px !important;
-    padding: 8px !important;
-    gap: 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    bottom: calc(100% + 8px) !important;
+    right: 0 !important;
+    left: auto !important;
+    width: auto !important;
+    min-width: 135px !important;
+    max-width: 165px !important;
+    max-height: min(290px, calc(100vh - 240px)) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 6px !important;
+    gap: 4px !important;
+    background: rgba(15, 23, 42, 0.94) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3) !important;
     z-index: 1050 !important;
+    transform: translateY(8px) !important;
+    transition: opacity 0.25s ease, transform 0.25s ease !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent !important;
+  }
+
+  .layer-popup-panel.show {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    transform: translateY(0) !important;
+  }
+
+  .layer-popup-panel::-webkit-scrollbar {
+    width: 4px !important;
+  }
+
+  .layer-popup-panel::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
+  .layer-popup-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.25) !important;
+    border-radius: 4px !important;
   }
 
   .layer-option {
-    width: 48px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 5px 8px !important;
+    border-radius: 8px !important;
+    gap: 10px !important;
+    box-sizing: border-box !important;
+    opacity: 0.8 !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .layer-option:active,
+  .layer-option:hover {
+    opacity: 1 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .layer-option.active {
+    opacity: 1 !important;
+    background: rgba(59, 130, 246, 0.18) !important;
+    border: 1px solid rgba(59, 130, 246, 0.35) !important;
   }
 
   .layer-option .layer-thumb-box {
-    width: 40px !important;
-    height: 40px !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    border-radius: 6px !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+    margin-bottom: 0 !important;
+    flex-shrink: 0 !important;
+  }
+
+  .layer-option.active .layer-thumb-box {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.6) !important;
+  }
+
+  .layer-option span {
+    font-size: 11.5px !important;
+    font-weight: 500 !important;
+    color: #e2e8f0 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+  }
+
+  .layer-option.active span {
+    color: #ffffff !important;
+    font-weight: 700 !important;
   }
 
   /* Responsive Elegant Map Toolbar */
