@@ -245,6 +245,7 @@ const elements = {
 document.addEventListener('DOMContentLoaded', () => {
   initIcons();
   initTabs();
+  initToolbarInteractivity();
   initMapWithLayers();
   bindEvents();
 });
@@ -275,6 +276,36 @@ function initTabs() {
   });
 }
 
+function initToolbarInteractivity() {
+  const tabs = document.querySelectorAll('.toolbar-nav-tab');
+  const toolsContainer = document.getElementById('mapToolsContainer');
+  if (!tabs.length || !toolsContainer) return;
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const category = tab.getAttribute('data-category') || 'all';
+      setToolbarActiveCategory(category);
+    });
+  });
+}
+
+function setToolbarActiveCategory(category) {
+  const tabs = document.querySelectorAll('.toolbar-nav-tab');
+  const toolsContainer = document.getElementById('mapToolsContainer');
+  if (!toolsContainer) return;
+
+  tabs.forEach(t => {
+    const isTarget = t.getAttribute('data-category') === category;
+    t.classList.toggle('active', isTarget);
+  });
+
+  if (category === 'all') {
+    toolsContainer.removeAttribute('data-filter');
+  } else {
+    toolsContainer.setAttribute('data-filter', category);
+  }
+}
+
 function initIcons() {
   if (window.lucide) {
     window.lucide.createIcons();
@@ -283,57 +314,9 @@ function initIcons() {
 
 let toastTimeout;
 function showToast(message, type = 'info', autoHide = true) {
-  let translatedMsg = message;
-
-  if (currentLang === 'en') {
-    const toEn = {
-      'Gagal mendapatkan lokasi Anda. Pastikan izin GPS (Lokasi) diaktifkan di browser.': 'Failed to get location. Ensure GPS (Location) permission is enabled in browser.',
-      'Harap pilih file dengan format .gpx!': 'Please select a .gpx file!',
-      'File GPX dimuat! Klik "Analisis & Generate Route"': 'GPX file loaded! Click "Analyze & Generate Route"',
-      'Format GPX tidak valid atau tidak memiliki titik koordinat.': 'Invalid GPX format or missing coordinates.',
-      'Sedang melakukan smoothing jalan OSM (Anti-Double Track)...': 'Performing OSM road smoothing (Anti-Double Track)...',
-      'Smoothing presisi jalan berhasil tanpa double jalur!': 'Precision road smoothing successful without double tracking!',
-      'Gagal melakukan snap jalan, menggunakan koordinat GPX asli.': 'Failed to snap to road, using original GPX coordinates.',
-      'Upload file GPX terlebih dahulu untuk mengedit rute.': 'Please upload a GPX file first to edit route.',
-      'Mode Edit Aktif: Geser titik putih atau KLIK di garis rute untuk menambah titik baru!': 'Edit Mode Active: Drag white markers or CLICK on the route line to add new points!',
-      'Membuat rute ke titik baru...': 'Routing to new point...',
-      'Undo berhasil': 'Undo successful',
-      'Redo berhasil': 'Redo successful',
-      'Rute berhasil diperbarui! Menjalankan ulang analisis belokan...': 'Route updated successfully! Rerunning turn analysis...',
-      'Upload file GPX terlebih dahulu.': 'Please upload a GPX file first.',
-      'Klik pada garis rute di peta untuk memasang belokan manual.': 'Click on the route line on the map to place a manual turn.',
-      'Titik awal rute ditambahkan!': 'Starting route point added!',
-      'Merutekan ke jalan...': 'Routing to road...',
-      'Titik ditambahkan (Snap ke Jalan)!': 'Point added (Snap to Road)!',
-      'Titik lurus ditambahkan (Offroad)!': 'Straight point added (Offroad)!',
-      'Klik pada peta untuk mulai menggambar rute manual.': 'Click on the map to start drawing a manual route.',
-      'Sedang menganalisis rute & mendeteksi belokan OSM...': 'Analyzing route & detecting OSM turns...',
-      'Mengambil TBT via OpenRouteService API...': 'Fetching TBT via OpenRouteService API...',
-      'Menggunakan engine deteksi jalan OSM langsung (Overpass)...': 'Using direct OSM road detection engine (Overpass)...',
-      'Mengambil nama jalan resmi dari OpenStreetMap...': 'Fetching official street names from OpenStreetMap...',
-      'Silakan lakukan analisis rute terlebih dahulu.': 'Please analyze the route first.',
-      'Sedang membuat file ZIP Bryton...': 'Generating Bryton ZIP file...',
-      'Download ZIP berhasil! Silakan salin file ke Bryton Anda.': 'ZIP download successful! Please copy the files to your Bryton.'
-    };
-
-    if (toEn[message]) {
-      translatedMsg = toEn[message];
-    } else if (message.startsWith('Titik baru ditambahkan di indeks')) {
-      translatedMsg = message.replace('Titik baru ditambahkan di indeks', 'New point added at index');
-    } else if (message.startsWith('Belokan manual "')) {
-      translatedMsg = message.replace('Belokan manual "', 'Manual turn "').replace('" berhasil ditambahkan!', '" added successfully!');
-    } else if (message.startsWith('Analisis selesai! Terdeteksi')) {
-      translatedMsg = message.replace('Analisis selesai! Terdeteksi', 'Analysis complete! Detected').replace('instruksi turn-by-turn.', 'turn-by-turn instructions.');
-    } else if (message.startsWith('Terjadi kesalahan saat analisis:')) {
-      translatedMsg = message.replace('Terjadi kesalahan saat analisis:', 'Error during analysis:');
-    } else if (message.startsWith('Belokan "')) {
-      translatedMsg = message.replace('Belokan "', 'Turn "').replace('" dihapus.', '" deleted.');
-    } else if (message.startsWith('Gagal membuat ZIP:')) {
-      translatedMsg = message.replace('Gagal membuat ZIP:', 'Failed to generate ZIP:');
-    }
-  }
-
-
+  const translatedMsg = typeof translateToast === 'function'
+    ? translateToast(message)
+    : (typeof t === 'function' ? t(message) : message);
 
   elements.toast.className = `toast toast-${type}`;
   elements.toastMsg.textContent = translatedMsg;
@@ -1511,6 +1494,7 @@ function toggleRouteEditing() {
   }
 
   state.isEditingRoute = true;
+  setToolbarActiveCategory('edit');
   elements.btnToggleEditRoute.classList.add('active');
   elements.btnEditRouteText.setAttribute('data-i18n', 'btnEditModeOff');
   elements.btnEditRouteText.textContent = t('btnEditModeOff');
@@ -2073,6 +2057,7 @@ function toggleAddManualTurnMode(mode = 'turn') {
   // Enable adding with new mode
   state.isAddingManualTurn = true;
   state.manualAddMode = mode;
+  setToolbarActiveCategory('points');
 
   // Reset UI
   elements.btnAddTurnManual.classList.remove('active');
@@ -2224,6 +2209,22 @@ function updateCreateManualVisibility() {
     if (elements.btnRoundTrip) elements.btnRoundTrip.classList.remove('hidden');
     if (elements.btnUploadGpxToolbar) elements.btnUploadGpxToolbar.classList.remove('hidden');
   }
+
+  // Sync Create category group and tab visibility
+  const createGroup = document.querySelector('.toolbar-group-create');
+  const createTab = document.querySelector('.toolbar-nav-tab[data-category="create"]');
+  const createBtns = [elements.btnCreateManualRoute, elements.btnRoundTrip, elements.btnUploadGpxToolbar].filter(Boolean);
+  const allCreateHidden = createBtns.length > 0 && createBtns.every(b => b.classList.contains('hidden'));
+
+  if (createGroup) {
+    createGroup.classList.toggle('is-empty', allCreateHidden);
+  }
+  if (createTab) {
+    createTab.classList.toggle('hidden', allCreateHidden);
+    if (allCreateHidden && createTab.classList.contains('active')) {
+      setToolbarActiveCategory('all');
+    }
+  }
 }
 
 function toggleCreateManualRoute() {
@@ -2233,6 +2234,7 @@ function toggleCreateManualRoute() {
   state.isCreatingRoute = !state.isCreatingRoute;
 
   if (state.isCreatingRoute) {
+    setToolbarActiveCategory('create');
     if (state.points.length > 0) {
       if (!confirm(t('confirmManualRouteStart'))) {
         state.isCreatingRoute = false;

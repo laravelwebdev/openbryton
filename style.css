@@ -3851,3 +3851,405 @@ body {
     transform: translateY(0);
   }
 }
+
+/* ==========================================================================
+   INTERACTIVE CATEGORIZED MAP TOOLBAR
+   ========================================================================== */
+
+.map-card > .card-header-flex {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.map-card .map-title-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.toolbar-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  position: relative;
+}
+
+/* Category Filter Tabs Bar */
+.toolbar-category-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(11, 15, 25, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.toolbar-category-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.toolbar-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.toolbar-nav-tab i {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.2s ease;
+}
+
+.toolbar-nav-tab:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.toolbar-nav-tab:hover i {
+  transform: scale(1.12);
+}
+
+.toolbar-nav-tab.active {
+  color: #ffffff;
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.3);
+}
+
+.toolbar-nav-tab[data-category="create"].active {
+  color: #67e8f9;
+  background: rgba(6, 182, 212, 0.2);
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.3);
+}
+
+.toolbar-nav-tab[data-category="edit"].active {
+  color: #fde047;
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.3);
+}
+
+.toolbar-nav-tab[data-category="points"].active {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+}
+
+.toolbar-nav-tab[data-category="tools"].active {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.3);
+}
+
+/* Categorized Toolbar Groups Container */
+.toolbar-groups-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: rgba(18, 24, 38, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  animation: toolbarGroupFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.toolbar-group:hover {
+  background: rgba(24, 32, 50, 0.85);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.toolbar-group-create {
+  border-left: 3px solid #06b6d4;
+}
+
+.toolbar-group-edit {
+  border-left: 3px solid #f59e0b;
+}
+
+.toolbar-group-points {
+  border-left: 3px solid #10b981;
+}
+
+.toolbar-group-tools {
+  border-left: 3px solid #3b82f6;
+}
+
+/* Category Label Badges */
+.toolbar-group-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 8px;
+  border-radius: 4px;
+  user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.toolbar-group-label i {
+  width: 13px;
+  height: 13px;
+}
+
+.toolbar-group-create .toolbar-group-label {
+  color: #22d3ee;
+  background: rgba(6, 182, 212, 0.14);
+}
+
+.toolbar-group-edit .toolbar-group-label {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.toolbar-group-points .toolbar-group-label {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.14);
+}
+
+.toolbar-group-tools .toolbar-group-label {
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.14);
+}
+
+/* Items inside Category Group */
+.toolbar-group-items {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Toolbar Buttons */
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.toolbar-btn i {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.toolbar-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+}
+
+.toolbar-btn:hover:not(:disabled) i {
+  transform: scale(1.1);
+}
+
+.toolbar-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.toolbar-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Highlighted button states */
+.toolbar-btn.active {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(59, 130, 246, 0.25));
+  border-color: #22d3ee;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.35);
+}
+
+#btnToggleEditRoute.active {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(239, 68, 68, 0.25));
+  border-color: #f59e0b;
+  color: #fef08a;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.4);
+}
+
+#btnSaveRouteEdit {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #6ee7b7;
+}
+
+#btnSaveRouteEdit:hover {
+  background: rgba(16, 185, 129, 0.35);
+  border-color: #10b981;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+  color: #ffffff;
+}
+
+.toolbar-icon-btn {
+  padding: 6px 10px;
+}
+
+/* Filter Tab Visibility Rules */
+.toolbar-groups-container[data-filter="create"] .toolbar-group:not([data-category="create"]),
+.toolbar-groups-container[data-filter="edit"] .toolbar-group:not([data-category="edit"]),
+.toolbar-groups-container[data-filter="points"] .toolbar-group:not([data-category="points"]),
+.toolbar-groups-container[data-filter="tools"] .toolbar-group:not([data-category="tools"]) {
+  display: none !important;
+}
+
+/* Automatic empty group hiding */
+.toolbar-group:not(:has(.toolbar-group-items > .toolbar-btn:not(.hidden))),
+.toolbar-group.is-empty {
+  display: none !important;
+}
+
+@keyframes toolbarGroupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 992px) {
+  .toolbar-wrapper {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+  .toolbar-category-nav {
+    padding: 3px;
+    gap: 4px;
+  }
+  .toolbar-nav-tab {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+  .toolbar-groups-container {
+    gap: 8px;
+  }
+  .toolbar-group {
+    padding: 5px 8px;
+    gap: 8px;
+  }
+  .toolbar-btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .toolbar-category-nav {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+    width: 100%;
+  }
+  .toolbar-nav-tab {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+  .toolbar-groups-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .toolbar-group {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .toolbar-group-label {
+    align-self: flex-start;
+  }
+  .toolbar-group-items {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .toolbar-btn {
+    flex: 1 1 calc(50% - 6px);
+    justify-content: center;
+    min-height: 38px;
+    padding: 7px 10px;
+    font-size: 0.75rem;
+  }
+  .toolbar-icon-btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar-nav-tab {
+    padding: 5px 9px;
+    font-size: 0.72rem;
+    gap: 5px;
+  }
+  .toolbar-btn {
+    flex: 1 1 100%;
+    font-size: 0.74rem;
+  }
+}

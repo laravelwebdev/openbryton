@@ -40,7 +40,7 @@
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <!-- App Stylesheet -->
-  <link rel="stylesheet" href="style.css?v=53">
+  <link rel="stylesheet" href="style.css?v=57">
 </head>
 
 <body>
@@ -343,59 +343,140 @@
               </h2>
             </div>
 
-            <div class="map-tools" id="mapToolsContainer">
-              <button type="button" class="btn btn-sm btn-outline" id="btnLocateMe" title="Pergi ke Lokasi Saat Ini"
-                data-i18n-title="btnLocateMe">
-                <i data-lucide="crosshair"></i>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline hidden" id="btnUndoEdit" title="Undo (Ctrl+Z)"
-                data-i18n-title="btnUndoEdit">
-                <i data-lucide="undo"></i>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline hidden" id="btnRedoEdit" title="Redo (Ctrl+Y)"
-                data-i18n-title="btnRedoEdit">
-                <i data-lucide="redo"></i>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnUploadGpxToolbar" title="Upload file GPX"
-                data-i18n-title="btnUploadGpxTitle">
-                <i data-lucide="upload"></i>
-                <span data-i18n="btnUploadGpxToolbar">Upload GPX</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnCreateManualRoute">
-                <i data-lucide="pen-tool"></i>
-                <span data-i18n="btnCreateRoute">Buat Rute Manual</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnRoundTrip" title="Buat Rute Round Trip (Loop)"
-                data-i18n-title="btnRoundTripTitle">
-                <i data-lucide="repeat"></i>
-                <span data-i18n="btnRoundTrip">Round Trip</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnCloseRoute"
-                title="Tutup Rute (Sambung ke Awal)" data-i18n-title="btnCloseRouteTitle">
-                <i data-lucide="refresh-ccw"></i>
-                <span data-i18n="btnCloseRoute">Close Route</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnSimplifyRdp"
-                title="Optimasi Garis Lurus (RDP)" data-i18n-title="btnSimplifyRdpTitle">
-                <i data-lucide="minimize"></i>
-                <span data-i18n="btnSimplifyRdp">RDP</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnToggleEditRoute">
-                <i data-lucide="move"></i>
-                <span id="btnEditRouteText" data-i18n="btnEditModeOn">Mode Edit (Geser Titik)</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnAddTurnManual">
-                <i data-lucide="corner-up-right"></i>
-                <span data-i18n="btnAddTurn">Tambah Belokan</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline" id="btnAddPoiManual">
-                <i data-lucide="map-pin"></i>
-                <span data-i18n="btnAddPoi">Tambah POI</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline hidden" id="btnSaveRouteEdit">
-                <i data-lucide="check"></i>
-                <span data-i18n="btnSaveRouteEdit">Selesai & Update Rute</span>
-              </button>
+            <div class="toolbar-wrapper" id="toolbarWrapper">
+              <!-- Interactive Category Filter Tabs -->
+              <div class="toolbar-category-nav" id="toolbarCategoryNav">
+                <button type="button" class="toolbar-nav-tab active" data-category="all" title="Tampilkan Semua Alat"
+                  data-i18n-title="toolbarFilterAll">
+                  <i data-lucide="layout-grid"></i>
+                  <span data-i18n="toolbarFilterAll">Semua</span>
+                </button>
+                <button type="button" class="toolbar-nav-tab" data-category="create" title="Kategori Pembuatan Rute"
+                  data-i18n-title="toolbarCatCreate">
+                  <i data-lucide="compass"></i>
+                  <span data-i18n="toolbarCatCreate">Buat Rute</span>
+                </button>
+                <button type="button" class="toolbar-nav-tab" data-category="edit"
+                  title="Kategori Pengeditan & Optimasi" data-i18n-title="toolbarCatEdit">
+                  <i data-lucide="edit-3"></i>
+                  <span data-i18n="toolbarCatEdit">Edit & Jalur</span>
+                </button>
+                <button type="button" class="toolbar-nav-tab" data-category="points"
+                  title="Kategori Titik Belokan & POI" data-i18n-title="toolbarCatPoints">
+                  <i data-lucide="map-pin"></i>
+                  <span data-i18n="toolbarCatPoints">Belokan & POI</span>
+                </button>
+                <button type="button" class="toolbar-nav-tab" data-category="tools" title="Alat & Kontrol Peta"
+                  data-i18n-title="toolbarCatTools">
+                  <i data-lucide="sliders"></i>
+                  <span data-i18n="toolbarCatTools">Alat</span>
+                </button>
+              </div>
+
+              <!-- Categorized Toolbar Groups Container -->
+              <div class="map-tools toolbar-groups-container" id="mapToolsContainer">
+                <!-- Group 1: Buat Rute -->
+                <div class="toolbar-group toolbar-group-create" data-category="create">
+                  <div class="toolbar-group-label">
+                    <i data-lucide="compass"></i>
+                    <span data-i18n="toolbarCatCreate">Buat Rute</span>
+                  </div>
+                  <div class="toolbar-group-items">
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn" id="btnUploadGpxToolbar"
+                      title="Unggah file rute GPX dari perangkat" data-i18n-title="toolbarBtnUploadTitle">
+                      <i data-lucide="upload"></i>
+                      <span data-i18n="btnUploadGpxToolbar">Upload GPX</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn" id="btnCreateManualRoute"
+                      title="Gambar rute baru secara manual di peta" data-i18n-title="toolbarBtnCreateTitle">
+                      <i data-lucide="pen-tool"></i>
+                      <span data-i18n="btnCreateRoute">Buat Rute Manual</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn" id="btnRoundTrip"
+                      title="Hasilkan rute loop otomatis dengan GraphHopper" data-i18n-title="toolbarBtnRoundTripTitle">
+                      <i data-lucide="repeat"></i>
+                      <span data-i18n="btnRoundTrip">Round Trip</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Group 2: Edit & Jalur -->
+                <div class="toolbar-group toolbar-group-edit" data-category="edit">
+                  <div class="toolbar-group-label">
+                    <i data-lucide="edit-3"></i>
+                    <span data-i18n="toolbarCatEdit">Edit & Jalur</span>
+                  </div>
+                  <div class="toolbar-group-items">
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn" id="btnToggleEditRoute"
+                      title="Aktifkan mode geser titik koordinat rute" data-i18n-title="toolbarBtnEditTitle">
+                      <i data-lucide="move"></i>
+                      <span id="btnEditRouteText" data-i18n="btnEditModeOn">Mode Edit (Geser Titik)</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn hidden" id="btnSaveRouteEdit"
+                      title="Simpan hasil pengeditan titik rute" data-i18n-title="toolbarBtnSaveEditTitle">
+                      <i data-lucide="check"></i>
+                      <span data-i18n="btnSaveRouteEdit">Selesai & Update Rute</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn" id="btnCloseRoute"
+                      title="Sambungkan titik akhir rute ke titik awal (Loop)" data-i18n-title="toolbarBtnCloseTitle">
+                      <i data-lucide="refresh-ccw"></i>
+                      <span data-i18n="btnCloseRoute">Close Route</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn" id="btnSimplifyRdp"
+                      title="Sederhanakan titik garis lurus tanpa merubah bentuk rute"
+                      data-i18n-title="toolbarBtnRdpTitle">
+                      <i data-lucide="minimize-2"></i>
+                      <span data-i18n="btnSimplifyRdp">RDP</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Group 3: Titik Belokan & POI -->
+                <div class="toolbar-group toolbar-group-points" data-category="points">
+                  <div class="toolbar-group-label">
+                    <i data-lucide="map-pin"></i>
+                    <span data-i18n="toolbarCatPoints">Belokan & POI</span>
+                  </div>
+                  <div class="toolbar-group-items">
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn" id="btnAddTurnManual"
+                      title="Pasang instruksi belokan kustom di titik rute" data-i18n-title="toolbarBtnAddTurnTitle">
+                      <i data-lucide="corner-up-right"></i>
+                      <span data-i18n="btnAddTurn">Tambah Belokan</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn" id="btnAddPoiManual"
+                      title="Pasang titik penting (POI) seperti minimarket/kafe"
+                      data-i18n-title="toolbarBtnAddPoiTitle">
+                      <i data-lucide="map-pin"></i>
+                      <span data-i18n="btnAddPoi">Tambah POI</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Group 4: Alat & Navigasi -->
+                <div class="toolbar-group toolbar-group-tools" data-category="tools">
+                  <div class="toolbar-group-label">
+                    <i data-lucide="sliders"></i>
+                    <span data-i18n="toolbarCatTools">Alat</span>
+                  </div>
+                  <div class="toolbar-group-items">
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn toolbar-icon-btn hidden"
+                      id="btnUndoEdit" title="Undo (Ctrl+Z)" data-i18n-title="btnUndoEdit">
+                      <i data-lucide="undo-2"></i>
+                      <span class="toolbar-btn-text">Undo</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn toolbar-icon-btn hidden"
+                      id="btnRedoEdit" title="Redo (Ctrl+Y)" data-i18n-title="btnRedoEdit">
+                      <i data-lucide="redo-2"></i>
+                      <span class="toolbar-btn-text">Redo</span>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline toolbar-btn toolbar-icon-btn" id="btnLocateMe"
+                      title="Pergi ke Lokasi Saat Ini" data-i18n-title="btnLocateMe">
+                      <i data-lucide="crosshair"></i>
+                      <span class="toolbar-btn-text" data-i18n="toolbarBtnGps">GPS</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1065,9 +1146,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-  <script src="lang.js?v=56"></script>
-  <script src="firebase-db.js?v=56"></script>
-  <script src="app.js?v=56"></script>
+  <script src="lang/id.js?v=61"></script>
+  <script src="lang/en.js?v=61"></script>
+  <script src="lang.js?v=61"></script>
+  <script src="firebase-db.js?v=61"></script>
+  <script src="app.js?v=61"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       if (typeof lucide !== 'undefined') {
