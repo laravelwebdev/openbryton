@@ -74,7 +74,8 @@ function updateAuthUI(user) {
     if (mainNav) mainNav.style.display = 'flex';
 
     // Auto redirect to My Routes on login if on login page
-    if (document.getElementById('page-login')?.classList.contains('active') || !document.querySelector('.page-view.active') || document.querySelector('.page-view.active').id === 'page-login') {
+    const activePage = document.querySelector('.page-view.active');
+    if (document.getElementById('page-login')?.classList.contains('active') || !activePage || activePage.id === 'page-login') {
       switchPage('myroutes');
     }
     // Load Bryton userId jika sudah pernah disimpan
@@ -186,28 +187,37 @@ function switchPage(pageId, isManualClick = false) {
 // ==========================================
 // Database Operations (Mock/Real)
 // ==========================================
+let isSavingRoute = false;
+
 async function saveRouteToDb() {
   if (!currentUser) return alert(t('alertNeedLogin'));
-  if (!window.state || window.state.points.length === 0) return alert(t('alertNoRouteToSave'));
+  if (!window.state || !window.state.points || window.state.points.length === 0) return alert(t('alertNoRouteToSave'));
+  if (isSavingRoute) return;
 
   const btnSave = document.getElementById('btnSaveRoute');
-  const origHtml = btnSave.innerHTML;
-  btnSave.innerHTML = `<i class="lucide lucide-loader spinner"></i> <span>${t('savingRouteText')}</span>`;
-  btnSave.disabled = true;
+  if (btnSave && btnSave.disabled) return;
+  isSavingRoute = true;
+
+  const origHtml = btnSave ? btnSave.innerHTML : '';
+  if (btnSave) {
+    btnSave.innerHTML = `<i class="lucide lucide-loader spinner"></i> <span>${t('savingRouteText')}</span>`;
+    btnSave.disabled = true;
+  }
 
   try {
-    const routeName = document.getElementById('brytonRouteName').value.trim() || window.state.baseName || 'My Route';
+    const routeName = (document.getElementById('brytonRouteName')?.value?.trim()) || window.state.baseName || 'My Route';
+    const lastPtDist = window.state.points[window.state.points.length - 1]?.distFromStart || window.state.totalDistance || 0;
 
     const payload = {
       uid: currentUser.uid,
-      authorName: currentUser.displayName,
-      authorPhoto: currentUser.photoURL,
+      authorName: currentUser.displayName || 'Goweser',
+      authorPhoto: currentUser.photoURL || '',
       title: routeName,
-      distance: window.state.points[window.state.points.length - 1].distFromStart,
+      distance: lastPtDist,
       elevation: calculateTotalElevation(window.state.points),
       createdAt: isMockMode ? Date.now() : firebase.firestore.FieldValue.serverTimestamp(),
-      points: JSON.stringify(window.state.points.map(p => [parseFloat(p.lat.toFixed(5)), parseFloat(p.lon.toFixed(5)), parseFloat((p.ele || 0).toFixed(1))])),
-      instructions: JSON.stringify(window.state.combinedInstructions)
+      points: JSON.stringify(window.state.points.map(p => [parseFloat(p.lat.toFixed(5)), parseFloat(p.lon.toFixed(5)), parseFloat(((p.ele !== undefined && p.ele !== null) ? p.ele : 0).toFixed(1))])),
+      instructions: JSON.stringify(window.state.combinedInstructions || [])
     };
 
     if (isMockMode) {
@@ -242,15 +252,21 @@ async function saveRouteToDb() {
     console.error("Save error", error);
     alert(t('alertSaveFailed') + error.message);
   } finally {
-    btnSave.innerHTML = origHtml;
-    btnSave.disabled = false;
+    isSavingRoute = false;
+    if (btnSave) {
+      btnSave.innerHTML = origHtml;
+      btnSave.disabled = false;
+    }
   }
 }
 
 function calculateTotalElevation(points) {
+  if (!points || points.length < 2) return 0;
   let ele = 0;
   for (let i = 1; i < points.length; i++) {
-    const diff = points[i].ele - points[i - 1].ele;
+    const curEle = points[i].ele !== undefined && points[i].ele !== null ? points[i].ele : 0;
+    const prevEle = points[i - 1].ele !== undefined && points[i - 1].ele !== null ? points[i - 1].ele : 0;
+    const diff = curEle - prevEle;
     if (diff > 0) ele += diff;
   }
   return ele;
@@ -272,8 +288,8 @@ function renderRouteCards(containerId, routes, isMyRoutes) {
   }
 
   container.innerHTML = routes.map(r => {
-    const dist = (r.distance / 1000).toFixed(2);
-    const ele = r.elevation.toFixed(1);
+    const dist = ((r.distance || 0) / 1000).toFixed(2);
+    const ele = (Number(r.elevation) || 0).toFixed(1);
     let dateStr = t('cardJustNow');
     if (isMockMode && r.createdAt) {
       dateStr = new Date(r.createdAt).toLocaleDateString();
@@ -312,7 +328,7 @@ function renderRouteCards(containerId, routes, isMyRoutes) {
       try {
         const pts = JSON.parse(r.points).map(p => [parseFloat(p[0]), parseFloat(p[1])]);
         const mapEl = document.getElementById(`map-thumb-${r.id}`);
-        if (mapEl && pts.length > 0) {
+        if (mapEl && !mapEl._leaflet_id && pts.length > 0) {
           const map = L.map(mapEl, { zoomControl: false, attributionControl: false, interactive: false });
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
           const poly = L.polyline(pts, { color: 'red', weight: 2 }).addTo(map);
@@ -323,10 +339,13 @@ function renderRouteCards(containerId, routes, isMyRoutes) {
   }, 100);
 }
 
+let isLoadingMyRoutes = false;
+
 async function loadMyRoutes() {
-  if (!currentUser) return;
+  if (!currentUser || isLoadingMyRoutes) return;
+  isLoadingMyRoutes = true;
   const container = document.getElementById('myroutesGrid');
-  container.innerHTML = `<p>${t('loadingRoutes')}</p>`;
+  if (container) container.innerHTML = `<p>${t('loadingRoutes')}</p>`;
   try {
     let routes = [];
     if (isMockMode) {
@@ -345,11 +364,17 @@ async function loadMyRoutes() {
     renderRouteCards('myroutesGrid', routes, true);
   } catch (err) {
     console.error(err);
-    container.innerHTML = `<p>${t('failedLoadingRoutes')}${err.message}</p>`;
+    if (container) container.innerHTML = `<p>${t('failedLoadingRoutes')}${err.message}</p>`;
+  } finally {
+    isLoadingMyRoutes = false;
   }
 }
 
+let isLoadingEditRoute = false;
+
 async function editRoute(id) {
+  if (isLoadingEditRoute) return;
+  isLoadingEditRoute = true;
   try {
     let data = null;
     if (isMockMode) {
@@ -373,14 +398,20 @@ async function editRoute(id) {
     }
   } catch (e) {
     alert(t('alertLoadRouteFailed') + e.message);
+  } finally {
+    isLoadingEditRoute = false;
   }
 }
 
+let isDeletingRoute = false;
+
 async function deleteRoute(id) {
+  if (isDeletingRoute) return;
   if (!confirm(t('confirmDeleteRoute') || 'Hapus rute ini?')) {
     return;
   }
 
+  isDeletingRoute = true;
   try {
     if (isMockMode) {
       let dbMock = JSON.parse(localStorage.getItem('openbryton_mock_db') || '[]');
@@ -396,6 +427,8 @@ async function deleteRoute(id) {
   } catch (err) {
     console.error("Delete error", err);
     alert((t('alertDeleteFailed') || 'Gagal menghapus rute: ') + err.message);
+  } finally {
+    isDeletingRoute = false;
   }
 }
 

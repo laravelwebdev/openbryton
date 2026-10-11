@@ -14,17 +14,25 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  let body = '';
-  for await (const chunk of req) body += chunk;
-
-  if (!body) {
-    return res.status(400).json({ error: 'Empty request body' });
-  }
-
-  const brytonUrl = 'https://okaymlks2a.execute-api.us-west-2.amazonaws.com/prod/api/v1/?g1=150&g2=1.5&g3=150&c1=1.8&c2=2000&c3=300&d1=1000';
-
   try {
+    let body = '';
+    for await (const chunk of req) body += chunk;
+
+    if (!body) {
+      return res.status(400).json({ error: 'Empty request body' });
+    }
+
+    const brytonUrl = 'https://okaymlks2a.execute-api.us-west-2.amazonaws.com/prod/api/v1/?g1=150&g2=1.5&g3=150&c1=1.8&c2=2000&c3=300&d1=1000';
+
     const result = await new Promise((resolve, reject) => {
+      let settled = false;
+      const done = (err, resData) => {
+        if (settled) return;
+        settled = true;
+        if (err) reject(err);
+        else resolve(resData);
+      };
+
       const parsedUrl = new URL(brytonUrl);
       const options = {
         hostname: parsedUrl.hostname,
@@ -40,10 +48,14 @@ module.exports = async function handler(req, res) {
       const proxyReq = https.request(options, (proxyRes) => {
         let respData = '';
         proxyRes.on('data', c => respData += c);
-        proxyRes.on('end', () => resolve({ status: proxyRes.statusCode, data: respData }));
+        proxyRes.on('end', () => done(null, { status: proxyRes.statusCode, data: respData }));
+        proxyRes.on('error', err => done(err));
       });
-      proxyReq.on('error', reject);
-      proxyReq.on('timeout', () => { proxyReq.destroy(); reject(new Error('Request timeout')); });
+      proxyReq.on('error', err => done(err));
+      proxyReq.on('timeout', () => {
+        proxyReq.destroy();
+        done(new Error('Request timeout'));
+      });
       proxyReq.write(body);
       proxyReq.end();
     });

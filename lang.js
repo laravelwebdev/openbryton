@@ -684,6 +684,7 @@ const translations = {
 let currentLang = localStorage.getItem('openbryton_lang') || 'id';
 
 function t(key) {
+  if (!key) return '';
   if (translations[currentLang] && translations[currentLang][key] !== undefined) {
     return translations[currentLang][key];
   }

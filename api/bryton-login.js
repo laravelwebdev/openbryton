@@ -16,16 +16,20 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
-  let body = '';
-  if (typeof req.body === 'object') {
+  let body = {};
+  if (req.body && typeof req.body === 'object') {
     body = req.body;
+  } else if (typeof req.body === 'string') {
+    try { body = JSON.parse(req.body); } catch (_) {}
   } else {
-    body = await new Promise((resolve, reject) => {
-      let data = '';
-      req.on('data', chunk => data += chunk);
-      req.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { reject(e); } });
-      req.on('error', reject);
-    });
+    try {
+      body = await new Promise((resolve, reject) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { resolve({}); } });
+        req.on('error', reject);
+      });
+    } catch (_) {}
   }
 
   const { email, password } = body || {};
@@ -36,11 +40,6 @@ module.exports = async function handler(req, res) {
   // SHA-256 hash password sesuai standar Meteor
   const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
 
-  // Login via DDP — gunakan https request ke SockJS info endpoint dulu,
-  // lalu handshake WebSocket manual via http upgrade.
-  // Karena Vercel serverless tidak support WebSocket outbound dengan mudah,
-  // kita gunakan http.get ke SockJS polling endpoint sebagai fallback
-  
   try {
     const result = await loginViaWebSocket(email, passwordHash);
     return res.status(200).json(result);
@@ -58,6 +57,18 @@ const WebSocket = require('ws');
 
 function loginViaWebSocket(email, passwordHash) {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    let timeout = null;
+
+    const done = (err, result) => {
+      if (settled) return;
+      settled = true;
+      if (timeout) clearTimeout(timeout);
+      try { ws.close(); } catch (_) {}
+      if (err) reject(err);
+      else resolve(result);
+    };
+
     const serverId = String(Math.floor(Math.random() * 999)).padStart(3, '0');
     const sessionId = Array.from({ length: 8 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
     const wsUrl = `wss://active.brytonsport.com/sockjs/${serverId}/${sessionId}/websocket`;
@@ -66,9 +77,8 @@ function loginViaWebSocket(email, passwordHash) {
     let isConnected = false;
 
     // Timeout proteksi (10 detik)
-    const timeout = setTimeout(() => {
-      ws.close();
-      reject(new Error('WebSocket login timeout'));
+    timeout = setTimeout(() => {
+      done(new Error('WebSocket login timeout'));
     }, 10000);
 
     ws.on('open', () => {
@@ -102,16 +112,16 @@ function loginViaWebSocket(email, passwordHash) {
                 }]
               })]);
               ws.send(loginMsg);
+            } else if (msg.msg === 'failed') {
+              done(new Error('DDP version negotiation failed'));
             }
 
             // Step 3: Terima result dari login
             if (msg.msg === 'result' && msg.id === '1') {
-              clearTimeout(timeout);
-              ws.close();
               if (msg.error) {
-                reject(new Error(msg.error.reason || msg.error.message || 'Login failed'));
+                done(new Error(msg.error.reason || msg.error.message || 'Login failed'));
               } else {
-                resolve(msg.result); // Mengembalikan { id: userId, token: ... }
+                done(null, msg.result); // Mengembalikan { id: userId, token: ... }
               }
             }
           }
@@ -122,13 +132,13 @@ function loginViaWebSocket(email, passwordHash) {
     });
 
     ws.on('error', (err) => {
-      clearTimeout(timeout);
-      reject(err);
+      done(err);
     });
 
     ws.on('close', () => {
-      clearTimeout(timeout);
-      if (!isConnected) reject(new Error('WebSocket closed before connection established'));
+      if (!isConnected) {
+        done(new Error('WebSocket closed before connection established'));
+      }
     });
   });
 }

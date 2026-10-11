@@ -122,16 +122,6 @@ window.loadRouteFromFirebase = function (data, isOwner = true) {
 
   state.rawBackupPoints = JSON.parse(JSON.stringify(state.points));
 
-  // Update map bounds and render track
-  if (state.points.length > 0) {
-    const lats = state.points.map(p => p.lat);
-    const lons = state.points.map(p => p.lon);
-    state.boundingBox = {
-      latMin: Math.min(...lats), latMax: Math.max(...lats),
-      lonMin: Math.min(...lons), lonMax: Math.max(...lons)
-    };
-  }
-
   renderTrackOnMap(true);
   updateStatsAndUI();
   updateCreateManualVisibility();
@@ -620,6 +610,7 @@ function bindEvents() {
 
   document.addEventListener('keydown', (e) => {
     if (state.isEditingRoute) {
+      if (e.target && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
       if (e.ctrlKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         undoEdit();
@@ -960,6 +951,9 @@ function processFile(file) {
     parseGpx();
     showToast(t('toastGpxLoaded'), 'success');
   };
+  reader.onerror = () => {
+    showToast(t('toastGpxInvalid') || 'Gagal membaca file GPX', 'error');
+  };
   reader.readAsText(file);
 }
 
@@ -1016,10 +1010,15 @@ function resetState() {
     state.map.removeLayer(state.mapLayers.rtStartMarker);
     state.mapLayers.rtStartMarker = null;
   }
+  if (state.mapLayers.hoverMarker && state.map) {
+    state.map.removeLayer(state.mapLayers.hoverMarker);
+    state.mapLayers.hoverMarker = null;
+  }
   stopPickRtStartMode();
   clearTurnMarkers();
   clearEditHandles();
   clearCreationPins();
+  updateUndoRedoUI();
   elements.mapPlaceholder.classList.remove('hidden');
 
   updateCreateManualVisibility();
@@ -1149,7 +1148,9 @@ function parseGpx() {
   renderElevationChart();
 
   // Otomatis deteksi tanjakan saat rute GPX diimport (sama seperti Bryton Active resmi)
+  const currentPoints = state.points;
   detectBrytonClimbs(state.points).then(climbs => {
+    if (state.points !== currentPoints) return; // Stale detection, route changed or reset
     state.climbs = climbs;
     renderTurnsTable(state.combinedInstructions || []);
     renderElevationChart();
@@ -1273,7 +1274,13 @@ function renderElevationChart(highlightClimbObj = null) {
 }
 
 function renderTrackOnMap(fitBounds = true) {
-  if (state.points.length === 0) return;
+  if (state.points.length === 0) {
+    if (state.mapLayers.trackLine && state.map) {
+      state.map.removeLayer(state.mapLayers.trackLine);
+      state.mapLayers.trackLine = null;
+    }
+    return;
+  }
 
   elements.mapPlaceholder.classList.add('hidden');
 
@@ -1291,6 +1298,9 @@ function renderTrackOnMap(fitBounds = true) {
 
   // Click on polyline to add manual turn
   state.mapLayers.trackLine.on('click', (e) => {
+    if (window.L && L.DomEvent) {
+      L.DomEvent.stopPropagation(e);
+    }
     if (state.isEditingRoute) {
       insertWaypointAtLatLng(e.latlng);
     } else if (state.isAddingManualTurn) {
@@ -1603,6 +1613,7 @@ function setupRouteEditHandles() {
       state.extraTurns = removeAtIdx(state.extraTurns);
       state.manualTurns = removeAtIdx(state.manualTurns);
       state.climbTurns = removeAtIdx(state.climbTurns);
+      state.combinedInstructions = removeAtIdx(state.combinedInstructions);
 
       // 2. Geser indeks yang berada di atas pointIndex ke kiri sebanyak 1 (-1)
       shiftTurnIndices(pointIndex + 1, -1);
@@ -1619,6 +1630,7 @@ function setupRouteEditHandles() {
       saveHistoryState();
       renderTrackOnMap(false);
       setupRouteEditHandles();
+      updateStatsAndUI();
     };
 
     marker.on('contextmenu', deletePoint);
@@ -1642,6 +1654,7 @@ function shiftTurnIndices(startIndex, amount) {
   shiftArr(state.extraTurns);
   shiftArr(state.manualTurns);
   shiftArr(state.climbTurns);
+  shiftArr(state.combinedInstructions);
 
   if (state.climbs) {
     for (let i = state.climbs.length - 1; i >= 0; i--) {
@@ -1659,17 +1672,18 @@ function shiftTurnIndices(startIndex, amount) {
  * Inserts a new waypoint vertex when clicking on the track polyline in Edit Mode.
  */
 async function insertWaypointAtLatLng(latlng) {
-  const insertIdx = findBestInsertIndex(state.points, latlng.lat, latlng.lng);
-
-  shiftTurnIndices(insertIdx, 1);
   const newPt = { lat: latlng.lat, lon: latlng.lng, ele: 0, distFromStart: 0, isManualHandle: true };
   await fetchElevationForSinglePoint(newPt);
+
+  const insertIdx = findBestInsertIndex(state.points, latlng.lat, latlng.lng);
+  shiftTurnIndices(insertIdx, 1);
   state.points.splice(insertIdx, 0, newPt);
 
   recalculateRouteDistances();
   saveHistoryState();
   renderTrackOnMap(false);
   setupRouteEditHandles();
+  updateStatsAndUI();
   showToast(t('toastPointAddedIndex').replace('{idx}', insertIdx), 'success');
 }
 
@@ -1812,7 +1826,7 @@ async function routeSegmentOSRM(coords, vehicle = 'bike') {
                 const eleData = await eleRes.json();
                 if (eleData && eleData.elevation) {
                   eleData.elevation.forEach((ele, idx) => {
-                    if (ele !== null && !isNaN(ele)) rawPoints[i + idx].ele = ele;
+                    if (rawPoints[i + idx] && typeof ele === 'number' && !isNaN(ele)) rawPoints[i + idx].ele = ele;
                   });
                 }
               } else {
@@ -1841,7 +1855,8 @@ async function fetchElevationForSinglePoint(point) {
     if (res.ok) {
       const data = await res.json();
       if (data && data.elevation && data.elevation.length > 0) {
-        point.ele = data.elevation[0];
+        const val = data.elevation[0];
+        if (typeof val === 'number' && !isNaN(val)) point.ele = val;
       }
     }
   } catch (err) {
@@ -2147,12 +2162,13 @@ async function handleMapClick(e) {
 }
 
 async function closeRouteLoop() {
+  if (state.isProcessing) return;
   if (state.points.length < 2) {
     showToast(t('toastNeed2PointsToClose'), "error");
     return;
   }
   state.isProcessing = true;
-  elements.btnProcess.disabled = true;
+  if (elements.btnProcess) elements.btnProcess.disabled = true;
 
   try {
     const firstPt = state.points[0];
@@ -2531,7 +2547,10 @@ function bindRoundTripEvents() {
   }
 }
 
+let cachedGhApiKey = null;
+
 async function getGraphHopperApiKey() {
+  if (cachedGhApiKey) return cachedGhApiKey;
   // Strategy: Try Bryton document direct key first, fallback to known working brytonsport active key
   const fallbackKey = '917f326f-93f8-4e9f-97a0-679b508012b9';
   try {
@@ -2540,7 +2559,10 @@ async function getGraphHopperApiKey() {
     });
     if (keyRes.ok) {
       const text = (await keyRes.text()).trim();
-      if (text && text.length > 10) return text;
+      if (text && text.length > 10) {
+        cachedGhApiKey = text;
+        return text;
+      }
     }
   } catch (err) {
     console.warn('Fallback ke default GraphHopper Key:', err);
@@ -2549,6 +2571,7 @@ async function getGraphHopperApiKey() {
 }
 
 async function generateRoundTripRoute() {
+  if (state.isProcessing) return;
   if (!state.roundTripStart) {
     showToast(typeof t === 'function' ? t('toastRtNoPoint') : 'Silakan tentukan titik awal terlebih dahulu.', 'error');
     return;
@@ -2745,8 +2768,10 @@ window.generateRoundTripRoute = generateRoundTripRoute;
 
 async function confirmAddManualTurn() {
   if (!state.pendingManualCoord) return;
-  const lat = state.pendingManualCoord.lat;
-  const lon = state.pendingManualCoord.lng;
+  const coord = state.pendingManualCoord;
+  state.pendingManualCoord = null;
+  const lat = coord.lat;
+  const lon = coord.lng;
   const dirCode = parseInt(document.getElementById('addTurnDirection').value, 10);
   let text = document.getElementById('addTurnText').value.trim() || getDirectionLabel(dirCode);
   await _addManualItem(lat, lon, dirCode, text);
@@ -2754,8 +2779,10 @@ async function confirmAddManualTurn() {
 
 async function confirmAddPoi() {
   if (!state.pendingManualCoord) return;
-  const lat = state.pendingManualCoord.lat;
-  const lon = state.pendingManualCoord.lng;
+  const coord = state.pendingManualCoord;
+  state.pendingManualCoord = null;
+  const lat = coord.lat;
+  const lon = coord.lng;
   const dirCode = parseInt(document.getElementById('addPoiDirection').value, 10);
   let text = document.getElementById('addPoiText').value.trim();
   if (!text) {
@@ -2802,11 +2829,11 @@ async function ensurePointForManualItem(lat, lon) {
     return closestIdx;
   }
 
-  const insertIdx = findBestInsertIndex(state.points, lat, lon);
-  shiftTurnIndices(insertIdx, 1);
-
   const newPt = { lat, lon, ele: closestPt.ele ?? 0, distFromStart: 0 };
   await fetchElevationForSinglePoint(newPt);
+
+  const insertIdx = findBestInsertIndex(state.points, lat, lon);
+  shiftTurnIndices(insertIdx, 1);
   state.points.splice(insertIdx, 0, newPt);
   recalculateRouteDistances();
 
@@ -2822,7 +2849,7 @@ async function ensurePointForManualItem(lat, lon) {
  * 4. Merges with Smart Angle Detection and Manual Turns.
  */
 async function runTurnAnalysis() {
-  if (state.points.length === 0) return;
+  if (state.isProcessing || state.points.length === 0) return;
 
   state.isProcessing = true;
   elements.btnProcess.disabled = true;
@@ -3930,6 +3957,11 @@ async function generateBrytonZip() {
     return;
   }
 
+  if (elements.btnDownloadBryton) {
+    if (elements.btnDownloadBryton.disabled) return;
+    elements.btnDownloadBryton.disabled = true;
+  }
+
   try {
     const zip = new JSZip();
     let prefix = elements.brytonRouteName.value.trim();
@@ -3978,6 +4010,8 @@ async function generateBrytonZip() {
   } catch (error) {
     console.error('Failed to generate ZIP:', error);
     showToast(t('toastZipError') + error.message, 'error');
+  } finally {
+    if (elements.btnDownloadBryton) elements.btnDownloadBryton.disabled = false;
   }
 }
 
@@ -4522,7 +4556,8 @@ async function loadBrytonUserIdFromFirestore() {
     return;
   }
 
-  const userKey = 'openbryton_userid_' + currentUser.uid;
+  const requestUid = currentUser.uid;
+  const userKey = 'openbryton_userid_' + requestUid;
 
   // 1. Prioritaskan load dari localStorage spesifik user ini agar langsung muncul tanpa delay
   const cachedId = localStorage.getItem(userKey);
@@ -4535,7 +4570,8 @@ async function loadBrytonUserIdFromFirestore() {
   // 2. Fetch dari Firestore jika db tersedia, dan timpa/update jika ada
   if (!db) return;
   try {
-    const doc = await db.collection('users').doc(currentUser.uid).get();
+    const doc = await db.collection('users').doc(requestUid).get();
+    if (!currentUser || currentUser.uid !== requestUid) return; // User switched or logged out
     if (doc.exists && doc.data() && doc.data().brytonUserId) {
       const idFromDb = doc.data().brytonUserId;
       input.value = idFromDb;
@@ -4553,7 +4589,8 @@ window.loadBrytonUserIdFromFirestore = loadBrytonUserIdFromFirestore;
 /** Simpan Bryton userId ke Firestore dan LocalStorage untuk current user */
 async function saveBrytonUserIdToFirestore(userId) {
   if (!currentUser) return;
-  const userKey = 'openbryton_userid_' + currentUser.uid;
+  const targetUid = currentUser.uid;
+  const userKey = 'openbryton_userid_' + targetUid;
 
   // Selalu simpan ke localStorage spesifik user
   if (userId) {
@@ -4564,7 +4601,7 @@ async function saveBrytonUserIdToFirestore(userId) {
 
   if (!db) return;
   try {
-    await db.collection('users').doc(currentUser.uid).set(
+    await db.collection('users').doc(targetUid).set(
       { brytonUserId: userId },
       { merge: true }
     );
@@ -4652,10 +4689,16 @@ function initBrytonActivePanel() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
         });
-        const data = await resp.json();
+        let data;
+        try {
+          data = await resp.json();
+        } catch (_) {
+          data = { error: `Server error (${resp.status}): ${resp.statusText}` };
+        }
         if (!resp.ok || data.error) throw new Error(data.error || resp.statusText);
 
         const brytonId = data.id;
+        if (!brytonId) throw new Error(t('toastBrytonIdFailed') || 'User ID tidak ditemukan');
         // Isi input
         const idInput = document.getElementById('brytonUserId');
         if (idInput) idInput.value = brytonId;
@@ -4687,6 +4730,9 @@ function initBrytonActivePanel() {
 async function shareToBrytonActive() {
   if (state.points.length === 0) return;
 
+  const btnShare = document.getElementById('btnShareBrytonActive');
+  if (btnShare && btnShare.disabled) return;
+
   const idInput = document.getElementById('brytonUserId');
   const brytonUserId = idInput?.value?.trim();
   if (!brytonUserId) {
@@ -4694,7 +4740,6 @@ async function shareToBrytonActive() {
     return;
   }
 
-  const btnShare = document.getElementById('btnShareBrytonActive');
   const origHtml = btnShare?.innerHTML;
   if (btnShare) {
     btnShare.innerHTML = '<i class="lucide lucide-loader spinner"></i>';
@@ -4714,7 +4759,12 @@ async function shareToBrytonActive() {
       body: fitBlob
     });
 
-    const result = await resp.json();
+    let result;
+    try {
+      result = await resp.json();
+    } catch (_) {
+      result = { success: false, error: `HTTP ${resp.status}: ${resp.statusText}` };
+    }
 
     if (!resp.ok || result.success === false) {
       throw new Error(result.body || result.error || `HTTP ${resp.status}`);
