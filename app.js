@@ -964,14 +964,27 @@ function processFile(file) {
 }
 
 function resetState() {
+  disableRouteEditing(false);
+  disableManualTurnMode();
+  if (state.isCreatingRoute) {
+    state.isCreatingRoute = false;
+    if (elements.btnCreateManualRoute) {
+      elements.btnCreateManualRoute.classList.remove('active');
+      const span = elements.btnCreateManualRoute.querySelector('span');
+      if (span) {
+        span.setAttribute('data-i18n', 'btnCreateRoute');
+        span.textContent = typeof t === 'function' ? t('btnCreateRoute') : 'Buat Rute Manual';
+      }
+    }
+    if (elements.createStatusBar) elements.createStatusBar.classList.add('hidden');
+  }
+
   state.currentRouteId = null;
   state.currentRouteOwner = null;
   state.rawGpxText = '';
   state.fileName = '';
   state.points = [];
   state.rawBackupPoints = [];
-
-  updateCreateManualVisibility();
   state.isSnapped = false;
   state.osmTurns = [];
   state.extraTurns = [];
@@ -979,12 +992,10 @@ function resetState() {
   state.climbTurns = [];
   state.climbs = [];
   state.combinedInstructions = [];
+  state.history = [];
+  state.historyIndex = -1;
 
   clearClimbHighlight();
-
-  if (state.isEditingRoute) toggleRouteEditing();
-  if (state.isAddingManualTurn) disableManualTurnMode();
-  if (state.isCreatingRoute) toggleCreateManualRoute();
 
   elements.brytonRouteName.value = '';
   if (elements.fileInput) elements.fileInput.value = '';
@@ -1010,6 +1021,8 @@ function resetState() {
   clearEditHandles();
   clearCreationPins();
   elements.mapPlaceholder.classList.remove('hidden');
+
+  updateCreateManualVisibility();
 
   elements.statDistance.textContent = '0.00 km';
   if (elements.statElevationGain) elements.statElevationGain.textContent = '0 m';
@@ -1044,6 +1057,8 @@ function resetState() {
   const eleTitle = document.getElementById('elevationTitleContainer');
   if (eleTitle) eleTitle.style.display = 'none';
 }
+window.resetState = resetState;
+window.disableRouteEditing = disableRouteEditing;
 
 function clearTurnMarkers() {
   state.mapLayers.turnMarkers.forEach(marker => state.map.removeLayer(marker));
@@ -1417,11 +1432,65 @@ function simplifyRoute(epsilonMeters = 1.5) {
   updateStatsAndUI();
 }
 
+function disableRouteEditing(restoreBackup = false) {
+  state.isEditingRoute = false;
+
+  if (elements.btnToggleEditRoute) {
+    elements.btnToggleEditRoute.classList.remove('active');
+  }
+  if (elements.btnEditRouteText) {
+    elements.btnEditRouteText.setAttribute('data-i18n', 'btnEditModeOn');
+    elements.btnEditRouteText.textContent = typeof t === 'function' ? t('btnEditModeOn') : 'Mode Edit (Geser Titik)';
+  }
+  if (elements.btnSaveRouteEdit) {
+    elements.btnSaveRouteEdit.classList.add('hidden');
+  }
+  if (elements.btnUndoEdit) {
+    elements.btnUndoEdit.classList.add('hidden');
+  }
+  if (elements.btnRedoEdit) {
+    elements.btnRedoEdit.classList.add('hidden');
+  }
+  if (elements.editStatusBar) {
+    elements.editStatusBar.classList.add('hidden');
+  }
+
+  // Restore state if canceled (not saved)
+  if (restoreBackup && state.originalStateBeforeEdit) {
+    state.points = state.originalStateBeforeEdit.points;
+    state.osmTurns = state.originalStateBeforeEdit.osmTurns;
+    state.extraTurns = state.originalStateBeforeEdit.extraTurns;
+    state.manualTurns = state.originalStateBeforeEdit.manualTurns;
+    state.climbTurns = state.originalStateBeforeEdit.climbTurns;
+    state.climbs = state.originalStateBeforeEdit.climbs;
+    state.originalStateBeforeEdit = null;
+    recalculateRouteDistances();
+    state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
+    updateStatsAndUI();
+  } else {
+    state.originalStateBeforeEdit = null;
+  }
+
+  if (state.map) {
+    state.map.off('moveend', setupRouteEditHandles);
+  }
+  clearEditHandles();
+  if (state.points && state.points.length > 0) {
+    renderTrackOnMap(false);
+  }
+  updateCreateManualVisibility();
+}
+
 /**
  * Interactive Route Editing Mode:
  * Allows dragging vertices and clicking on the path to add new vertices.
  */
 function toggleRouteEditing() {
+  if (state.isEditingRoute) {
+    disableRouteEditing(true);
+    return;
+  }
+
   if (state.points.length === 0) {
     showToast(t('toastUploadFirstEdit'), 'error');
     return;
@@ -1431,70 +1500,40 @@ function toggleRouteEditing() {
     disableManualTurnMode();
   }
 
-  state.isEditingRoute = !state.isEditingRoute;
+  state.isEditingRoute = true;
+  elements.btnToggleEditRoute.classList.add('active');
+  elements.btnEditRouteText.setAttribute('data-i18n', 'btnEditModeOff');
+  elements.btnEditRouteText.textContent = t('btnEditModeOff');
+  elements.btnSaveRouteEdit.classList.remove('hidden');
+  if (elements.btnUndoEdit) elements.btnUndoEdit.classList.remove('hidden');
+  if (elements.btnRedoEdit) elements.btnRedoEdit.classList.remove('hidden');
+  elements.editStatusBar.classList.remove('hidden');
 
-  if (state.isEditingRoute) {
-    elements.btnToggleEditRoute.classList.add('active');
-    elements.btnEditRouteText.setAttribute('data-i18n', 'btnEditModeOff');
-    elements.btnEditRouteText.textContent = t('btnEditModeOff');
-    elements.btnSaveRouteEdit.classList.remove('hidden');
-    if (elements.btnUndoEdit) elements.btnUndoEdit.classList.remove('hidden');
-    if (elements.btnRedoEdit) elements.btnRedoEdit.classList.remove('hidden');
-    elements.editStatusBar.classList.remove('hidden');
+  state.history = [];
+  state.historyIndex = -1;
+  saveHistoryState();
 
-    state.history = [];
-    state.historyIndex = -1;
-    saveHistoryState();
+  // Save original state for cancel
+  state.originalStateBeforeEdit = {
+    points: state.points.map(p => ({ ...p })),
+    osmTurns: state.osmTurns.map(t => ({ ...t })),
+    extraTurns: state.extraTurns.map(t => ({ ...t })),
+    manualTurns: state.manualTurns.map(t => ({ ...t })),
+    climbTurns: state.climbTurns.map(t => ({ ...t })),
+    climbs: state.climbs ? state.climbs.map(c => ({ ...c })) : []
+  };
 
-    // Save original state for cancel
-    state.originalStateBeforeEdit = {
-      points: state.points.map(p => ({ ...p })),
-      osmTurns: state.osmTurns.map(t => ({ ...t })),
-      extraTurns: state.extraTurns.map(t => ({ ...t })),
-      manualTurns: state.manualTurns.map(t => ({ ...t })),
-      climbTurns: state.climbTurns.map(t => ({ ...t })),
-      climbs: state.climbs ? state.climbs.map(c => ({ ...c })) : []
-    };
+  // Jadikan SEMUA titik di rute sebagai handle, tanpa batasan!
+  state.points.forEach((p, i) => {
+    p.isManualHandle = true;
+  });
 
-    // Jadikan SEMUA titik di rute sebagai handle, tanpa batasan!
-    state.points.forEach((p, i) => {
-      p.isManualHandle = true;
-    });
+  // Pasang listener pergerakan peta agar handle dirender ulang sesuai area yang terlihat
+  state.map.on('moveend', setupRouteEditHandles);
 
-    // Pasang listener pergerakan peta agar handle dirender ulang sesuai area yang terlihat
-    state.map.on('moveend', setupRouteEditHandles);
-
-    setupRouteEditHandles();
-    updateCreateManualVisibility();
-    showToast(t('toastEditModeOn'), 'info');
-  } else {
-    elements.btnToggleEditRoute.classList.remove('active');
-    elements.btnEditRouteText.setAttribute('data-i18n', 'btnEditModeOn');
-    elements.btnEditRouteText.textContent = t('btnEditModeOn');
-    elements.btnSaveRouteEdit.classList.add('hidden');
-    if (elements.btnUndoEdit) elements.btnUndoEdit.classList.add('hidden');
-    if (elements.btnRedoEdit) elements.btnRedoEdit.classList.add('hidden');
-    elements.editStatusBar.classList.add('hidden');
-
-    // Restore state if canceled (not saved)
-    if (state.originalStateBeforeEdit) {
-      state.points = state.originalStateBeforeEdit.points;
-      state.osmTurns = state.originalStateBeforeEdit.osmTurns;
-      state.extraTurns = state.originalStateBeforeEdit.extraTurns;
-      state.manualTurns = state.originalStateBeforeEdit.manualTurns;
-      state.climbTurns = state.originalStateBeforeEdit.climbTurns;
-      state.climbs = state.originalStateBeforeEdit.climbs;
-      state.originalStateBeforeEdit = null;
-      recalculateRouteDistances();
-      state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
-      updateStatsAndUI();
-    }
-
-    state.map.off('moveend', setupRouteEditHandles);
-    clearEditHandles();
-    renderTrackOnMap(false);
-    updateCreateManualVisibility();
-  }
+  setupRouteEditHandles();
+  updateCreateManualVisibility();
+  showToast(t('toastEditModeOn'), 'info');
 }
 
 function setupRouteEditHandles() {
@@ -1967,7 +2006,7 @@ async function saveRouteEditing() {
   recalculateRouteDistances();
   state.combinedInstructions = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
   updateStatsAndUI();
-  toggleRouteEditing();
+  disableRouteEditing(false);
   showToast(t('toastRouteUpdated'), 'success');
 }
 
@@ -2172,8 +2211,8 @@ function updateCreateManualVisibility() {
 }
 
 function toggleCreateManualRoute() {
-  if (state.isEditingRoute) toggleRouteEditing();
-  if (state.isAddingManualTurn) disableManualTurnMode();
+  disableRouteEditing(false);
+  disableManualTurnMode();
 
   state.isCreatingRoute = !state.isCreatingRoute;
 
@@ -2293,9 +2332,9 @@ function closeModal() {
  * ============================================================================
  */
 function openRoundTripModal() {
-  if (state.isEditingRoute) toggleRouteEditing();
+  disableRouteEditing(false);
   if (state.isCreatingRoute) toggleCreateManualRoute();
-  if (state.isAddingManualTurn) disableManualTurnMode();
+  disableManualTurnMode();
 
   // If no start coordinate chosen yet, try to default to existing route first point or map center
   if (!state.roundTripStart) {
