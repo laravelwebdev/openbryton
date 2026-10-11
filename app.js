@@ -2599,7 +2599,7 @@ async function generateRoundTripRoute() {
     // ------------------------------------------------
     // SMART CLIMB DENSIFICATION & DETECTION FOR ROUND TRIP
     // ------------------------------------------------
-    const densePoints = densifyRoute(state.points, 50);
+    const densePoints = densifyRoute(state.points, 20);
     const denseClimbs = await detectBrytonClimbs(densePoints);
 
     const finalPoints = [];
@@ -2803,8 +2803,8 @@ async function runTurnAnalysis() {
     // ------------------------------------------------
     // SMART CLIMB DENSIFICATION & CLEANUP LOGIC
     // ------------------------------------------------
-    // 1. Densify route so that max distance between points is 50 m
-    const densePoints = densifyRoute(state.points, 50);
+    // 1. Densify route so that max distance between points is 20 m (matching Bryton Active APK)
+    const densePoints = densifyRoute(state.points, 20);
 
     // 2. Detect climbs on the dense route using official Bryton algorithm
     const denseClimbs = await detectBrytonClimbs(densePoints);
@@ -3084,7 +3084,7 @@ function getClimbCategory(score) {
 /**
  * 3. Bryton Climb Segmentation & Detection Algorithm
  * Queries Bryton's AWS Lambda microservice (?g1=150&g2=1.5&g3=150&c1=1.8&c2=2000&c3=300&d1=1000)
- * with robust local Savitzky-Golay fallback if network is offline or unavailable.
+ * via CORS-safe proxy /api/bryton-climb, with calibrated local fallback matching Bryton Active APK.
  */
 async function detectBrytonClimbs(points) {
   if (!points || points.length < 2) return [];
@@ -3100,30 +3100,24 @@ async function detectBrytonClimbs(points) {
     return [];
   }
 
-  // Smooth elevations using Savitzky-Golay 9-point filter
-  const smoothedAlts = smoothElevationProfile(points);
-  const smoothedPoints = points.map((p, idx) => ({
-    ...p,
-    ele: smoothedAlts[idx]
-  }));
+  // Siapkan payload titik raw (x: distance, y: altitude) tanpa pre-smoothing berlebihan
+  // karena backend Bryton Active memproses raw altitude points secara native.
+  const payload = {
+    points: points.map(p => ({
+      x: Math.round(p.distFromStart * 10) / 10,
+      y: Math.round((p.ele || 0) * 10) / 10
+    }))
+  };
 
-  // Attempt to call Bryton Active AWS API
   let apiSuccess = false;
   let detectedIndexPairs = [];
 
+  // 1. Coba panggil proxy /api/bryton-climb terlebih dahulu (aman dari CORS di dev server & Vercel)
   try {
-    const apiUrl = 'https://okaymlks2a.execute-api.us-west-2.amazonaws.com/prod/api/v1/?g1=150&g2=1.5&g3=150&c1=1.8&c2=2000&c3=300&d1=1000';
-    const payload = {
-      points: smoothedPoints.map(p => ({
-        x: Math.round(p.distFromStart * 10) / 10,
-        y: Math.round(p.ele * 10) / 10
-      }))
-    };
-
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 7000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    const resp = await fetch(apiUrl, {
+    const resp = await fetch('/api/bryton-climb', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -3139,37 +3133,62 @@ async function detectBrytonClimbs(points) {
       }
     }
   } catch (err) {
-    console.warn('Bryton Climb API unavailable or timed out, using local Bryton algorithm fallback:', err);
+    // Abaikan jika proxy gagal/tidak tersedia
   }
 
-  // Local fallback segmentation if API was unreachable
+  // 2. Jika proxy belum berhasil, coba direct AWS Lambda Bryton
   if (!apiSuccess) {
-    detectedIndexPairs = detectClimbSegmentsLocal(smoothedPoints);
+    try {
+      const apiUrl = 'https://okaymlks2a.execute-api.us-west-2.amazonaws.com/prod/api/v1/?g1=150&g2=1.5&g3=150&c1=1.8&c2=2000&c3=300&d1=1000';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      const resp = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = await resp.json();
+        if (Array.isArray(data.climb_indexes)) {
+          detectedIndexPairs = data.climb_indexes;
+          apiSuccess = true;
+        }
+      }
+    } catch (err) {
+      console.warn('Bryton Climb API unavailable, using calibrated local algorithm fallback:', err);
+    }
   }
 
-  // Construct climb objects with UCI scoring and categorization
+  // 3. Fallback segmentasi lokal cerdas jika koneksi internet offline
+  if (!apiSuccess) {
+    detectedIndexPairs = detectClimbSegmentsLocal(points);
+  }
+
+  // Susun objek climb resmi sesuai indeks hasil deteksi
   const climbs = [];
   detectedIndexPairs.forEach(([sIdx, eIdx]) => {
-    if (sIdx >= 0 && eIdx < smoothedPoints.length && sIdx < eIdx) {
-      const startPt = smoothedPoints[sIdx];
-      const endPt = smoothedPoints[eIdx];
+    if (sIdx >= 0 && eIdx < points.length && sIdx < eIdx) {
+      const startPt = points[sIdx];
+      const endPt = points[eIdx];
       const dist = endPt.distFromStart - startPt.distFromStart;
       const eleGain = endPt.ele - startPt.ele;
       const avgGrad = dist > 0 ? (eleGain / dist) * 100 : 0;
       const score = calculateClimbScore(avgGrad, eleGain);
       const category = getClimbCategory(score);
 
-      if (dist >= 300 && avgGrad >= 1.5) {
-        climbs.push({
-          startIndex: sIdx,
-          endIndex: eIdx,
-          dist,
-          eleGain,
-          avgGrad,
-          score,
-          category
-        });
-      }
+      climbs.push({
+        startIndex: sIdx,
+        endIndex: eIdx,
+        dist,
+        eleGain,
+        avgGrad,
+        score,
+        category
+      });
     }
   });
 
@@ -3180,23 +3199,24 @@ async function detectBrytonClimbs(points) {
 const detectClimbs = detectBrytonClimbs;
 
 /**
- * Local Bryton segmentation fallback matching parameters:
- * c1=1.8% min avg grade, c3=300m min dist, c2=2000m max merge, d1=1000m downhill tolerance
+ * Local Bryton segmentation fallback matching Bryton parameters:
+ * c1=1.8% min avg grade, c3=300m min dist, c2=2000m merge gap, d1=1000m downhill tolerance, g1=150m lookahead
  */
 function detectClimbSegmentsLocal(points) {
   const segments = [];
   let inClimb = false;
   let startIndex = 0;
   let dropDistance = 0;
+  let dropElevation = 0;
   let peakEle = 0;
   let peakIdx = 0;
 
   for (let i = 1; i < points.length; i++) {
     const cur = points[i];
     if (!inClimb) {
-      // Lookahead 150m with slope >= 1.8%
+      // Lookahead 150m dengan gradien >= 1.8%
       let lookIdx = i;
-      while (lookIdx < points.length && points[lookIdx].distFromStart - cur.distFromStart < 150) {
+      while (lookIdx < points.length && (points[lookIdx].distFromStart - cur.distFromStart) < 150) {
         lookIdx++;
       }
       if (lookIdx < points.length) {
@@ -3208,6 +3228,7 @@ function detectClimbSegmentsLocal(points) {
           peakEle = cur.ele;
           peakIdx = i;
           dropDistance = 0;
+          dropElevation = 0;
         }
       }
     } else {
@@ -3215,12 +3236,21 @@ function detectClimbSegmentsLocal(points) {
         peakEle = cur.ele;
         peakIdx = i;
         dropDistance = 0;
+        dropElevation = 0;
       } else {
         dropDistance += (cur.distFromStart - points[i - 1].distFromStart);
+        dropElevation = peakEle - cur.ele;
       }
 
-      // Check if climb ended (downhill exceeded d1=1000m or route ended)
-      let isEnd = (i === points.length - 1) || (dropDistance >= 1000);
+      // Syarat berakhirnya tanjakan:
+      // 1. Mencapai akhir rute
+      // 2. Turunan berjarak >= 1000m (d1=1000)
+      // 3. Penurunan elevasi (dropElevation) melebihi 20m dan >= 25% dari total climb gain yang sudah diraih
+      const climbGainSoFar = peakEle - points[startIndex].ele;
+      const isEnd = (i === points.length - 1) ||
+                    (dropDistance >= 1000) ||
+                    (climbGainSoFar >= 30 && dropElevation >= 20 && dropElevation >= 0.25 * climbGainSoFar);
+
       if (isEnd) {
         const actualEndIdx = peakIdx;
         const dist = points[actualEndIdx].distFromStart - points[startIndex].distFromStart;
@@ -3228,22 +3258,35 @@ function detectClimbSegmentsLocal(points) {
         const avgGrad = dist > 0 ? (gain / dist) * 100 : 0;
 
         if (dist >= 300 && avgGrad >= 1.8) {
-          // Merge with previous climb if gap <= c2 (2000m)
+          let merged = false;
+          // Periksa apakah dapat digabung dengan tanjakan sebelumnya jika jarak gap <= 2000m
           if (segments.length > 0) {
             const prev = segments[segments.length - 1];
             const gap = points[startIndex].distFromStart - points[prev[1]].distFromStart;
             if (gap <= 2000) {
-              const combinedDist = points[actualEndIdx].distFromStart - points[prev[0]].distFromStart;
-              const combinedGain = points[actualEndIdx].ele - points[prev[0]].ele;
-              const combinedGrad = combinedDist > 0 ? (combinedGain / combinedDist) * 100 : 0;
-              if (combinedGrad >= 1.8) {
-                prev[1] = actualEndIdx;
-                inClimb = false;
-                continue;
+              // Cek kedalaman lembah di antara prev[1] dan startIndex
+              let minValleyEle = points[prev[1]].ele;
+              for (let k = prev[1]; k <= startIndex; k++) {
+                if (points[k].ele < minValleyEle) minValleyEle = points[k].ele;
+              }
+              const valleyDrop = points[prev[1]].ele - minValleyEle;
+              const prevGain = points[prev[1]].ele - points[prev[0]].ele;
+
+              // Hanya merge jika lembah di antaranya tidak berupa turunan signifikan (< 15m dan < 20% gain)
+              if (valleyDrop < 15 && valleyDrop < 0.20 * prevGain) {
+                const combinedDist = points[actualEndIdx].distFromStart - points[prev[0]].distFromStart;
+                const combinedGain = points[actualEndIdx].ele - points[prev[0]].ele;
+                const combinedGrad = combinedDist > 0 ? (combinedGain / combinedDist) * 100 : 0;
+                if (combinedGrad >= 1.8) {
+                  prev[1] = actualEndIdx;
+                  merged = true;
+                }
               }
             }
           }
-          segments.push([startIndex, actualEndIdx]);
+          if (!merged) {
+            segments.push([startIndex, actualEndIdx]);
+          }
         }
         inClimb = false;
       }
