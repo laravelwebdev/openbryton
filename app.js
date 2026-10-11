@@ -172,12 +172,6 @@ const elements = {
   dupDistanceThresholdValue: document.getElementById('dupDistanceThresholdValue'),
   smoothingRadius: document.getElementById('smoothingRadius'),
   smoothingRadiusValue: document.getElementById('smoothingRadiusValue'),
-  climbMinDist: document.getElementById('climbMinDist'),
-  climbMinDistValue: document.getElementById('climbMinDistValue'),
-  climbMinGrade: document.getElementById('climbMinGrade'),
-  climbMinGradeValue: document.getElementById('climbMinGradeValue'),
-  climbMinScore: document.getElementById('climbMinScore'),
-  climbMinScoreValue: document.getElementById('climbMinScoreValue'),
   elevationCanvas: document.getElementById('elevationCanvas'),
   brytonRouteName: document.getElementById('brytonRouteName'),
   settingsCardToggle: document.getElementById('settingsCardToggle'),
@@ -579,18 +573,6 @@ function bindEvents() {
 
   elements.smoothingRadius.addEventListener('input', (e) => {
     elements.smoothingRadiusValue.textContent = `${e.target.value} m`;
-  });
-
-  elements.climbMinDist.addEventListener('input', (e) => {
-    elements.climbMinDistValue.textContent = `${e.target.value} m`;
-  });
-
-  elements.climbMinGrade.addEventListener('input', (e) => {
-    elements.climbMinGradeValue.textContent = `${parseFloat(e.target.value).toFixed(1)} %`;
-  });
-
-  elements.climbMinScore.addEventListener('input', (e) => {
-    elements.climbMinScoreValue.textContent = `${e.target.value}`;
   });
 
   elements.fileInput.addEventListener('change', handleFileSelect);
@@ -2618,7 +2600,7 @@ async function generateRoundTripRoute() {
     // SMART CLIMB DENSIFICATION & DETECTION FOR ROUND TRIP
     // ------------------------------------------------
     const densePoints = densifyRoute(state.points, 50);
-    const denseClimbs = detectClimbs(densePoints);
+    const denseClimbs = await detectBrytonClimbs(densePoints);
 
     const finalPoints = [];
     const indexMap = new Map();
@@ -2648,6 +2630,7 @@ async function generateRoundTripRoute() {
       const newEndIdx = finalPoints.indexOf(endPt);
       state.climbs.push({ ...c, startIndex: newStartIdx, endIndex: newEndIdx });
 
+      const catLabel = c.category ? ` (${c.category})` : '';
       state.climbTurns.push({
         id: Math.random().toString(36).substr(2, 9),
         source: 'climb',
@@ -2655,7 +2638,7 @@ async function generateRoundTripRoute() {
         lat: startPt.lat,
         lon: startPt.lon,
         directionCode: 190,
-        instruction: `Climb ${idx + 1} Start`,
+        instruction: `Climb ${idx + 1} Start${catLabel}`,
         distFromStart: startPt.distFromStart
       });
       state.climbTurns.push({
@@ -2823,8 +2806,8 @@ async function runTurnAnalysis() {
     // 1. Densify route so that max distance between points is 50 m
     const densePoints = densifyRoute(state.points, 50);
 
-    // 2. Detect climbs on the dense route
-    const denseClimbs = detectClimbs(densePoints);
+    // 2. Detect climbs on the dense route using official Bryton algorithm
+    const denseClimbs = await detectBrytonClimbs(densePoints);
 
     // 3. Build a final points array that keeps original points
     //    and also retains every point that lies inside a climb segment.
@@ -2862,6 +2845,7 @@ async function runTurnAnalysis() {
       const newEndIdx = finalPoints.indexOf(endPt);
       state.climbs.push({ ...c, startIndex: newStartIdx, endIndex: newEndIdx });
 
+      const catLabel = c.category ? ` (${c.category})` : '';
       state.climbTurns.push({
         id: Math.random().toString(36).substr(2, 9),
         source: 'climb',
@@ -2869,7 +2853,7 @@ async function runTurnAnalysis() {
         lat: startPt.lat,
         lon: startPt.lon,
         directionCode: 190,
-        instruction: `Climb ${idx + 1} Start`,
+        instruction: `Climb ${idx + 1} Start${catLabel}`,
         distFromStart: startPt.distFromStart
       });
       state.climbTurns.push({
@@ -3028,64 +3012,244 @@ async function enrichCandidateTurnsWithGraphHopper(points, candidateTurns) {
   return turns;
 }
 
-function detectClimbs(points) {
+// ------------------------------------------------
+// BRYTON ACTIVE OFFICIAL CLIMB ALGORITHMS
+// ------------------------------------------------
+
+/**
+ * 1. Savitzky-Golay 9-point elevation smoothing algorithm
+ * Replicates ClimbProUtil.smoothAltAlgorithm from Bryton Active APK.
+ * Kernel: [-21, 14, 39, 54, 59, 54, 39, 14, -21] / 231.0f
+ */
+function smoothElevationProfile(points) {
+  const n = points.length;
+  if (n < 9) return points.map(p => p.ele || 0);
+
+  const totalDist = points[n - 1].distFromStart - points[0].distFromStart;
+  if (totalDist <= 0) return points.map(p => p.ele || 0);
+
+  let step = Math.round((n * 140) / totalDist);
+  if (step < 1) step = 1;
+
+  const kernel = [-21, 14, 39, 54, 59, 54, 39, 14, -21];
+  const smoothed = new Array(n);
+  const alts = points.map(p => p.ele || 0);
+
+  if (n < step * 8) {
+    return alts;
+  }
+
+  // Head border: copy original
+  for (let i = 0; i < step * 4; i++) {
+    smoothed[i] = alts[i];
+  }
+
+  // Savitzky-Golay 9-point filter
+  for (let i = step * 4; i < n - step * 4; i++) {
+    let sum = 0;
+    for (let k = 0; k < 9; k++) {
+      const offset = (k - 4) * step;
+      sum += kernel[k] * alts[i + offset];
+    }
+    smoothed[i] = Math.round((sum / 231.0) * 10) / 10;
+  }
+
+  // Tail border: copy original
+  for (let i = n - step * 4; i < n; i++) {
+    smoothed[i] = alts[i];
+  }
+
+  return smoothed;
+}
+
+/**
+ * 2. UCI Climb Categorizer & Scoring
+ * Replicates ClimbCategorizer.calculateScore & getCategoryLabelResId from Bryton Active APK.
+ * Formula: Score = (avgGrade^1.5 * eleGain) / 100
+ */
+function calculateClimbScore(avgGrade, eleGain) {
+  if (avgGrade <= 0 || eleGain <= 0) return 0;
+  return (Math.pow(avgGrade, 1.5) * eleGain) / 100.0;
+}
+
+function getClimbCategory(score) {
+  if (score < 12.0) return '';
+  if (score < 20.0) return 'Cat 4';
+  if (score < 50.0) return 'Cat 3';
+  if (score < 120.0) return 'Cat 2';
+  if (score < 200.0) return 'Cat 1';
+  return 'HC';
+}
+
+/**
+ * 3. Bryton Climb Segmentation & Detection Algorithm
+ * Queries Bryton's AWS Lambda microservice (?g1=150&g2=1.5&g3=150&c1=1.8&c2=2000&c3=300&d1=1000)
+ * with robust local Savitzky-Golay fallback if network is offline or unavailable.
+ */
+async function detectBrytonClimbs(points) {
+  if (!points || points.length < 2) return [];
+
+  // Check if route has any meaningful elevation relief
+  let minEle = Infinity, maxEle = -Infinity;
+  for (let i = 0; i < points.length; i++) {
+    const el = points[i].ele || 0;
+    if (el < minEle) minEle = el;
+    if (el > maxEle) maxEle = el;
+  }
+  if (maxEle - minEle < 5) {
+    return [];
+  }
+
+  // Smooth elevations using Savitzky-Golay 9-point filter
+  const smoothedAlts = smoothElevationProfile(points);
+  const smoothedPoints = points.map((p, idx) => ({
+    ...p,
+    ele: smoothedAlts[idx]
+  }));
+
+  // Attempt to call Bryton Active AWS API
+  let apiSuccess = false;
+  let detectedIndexPairs = [];
+
+  try {
+    const apiUrl = 'https://okaymlks2a.execute-api.us-west-2.amazonaws.com/prod/api/v1/?g1=150&g2=1.5&g3=150&c1=1.8&c2=2000&c3=300&d1=1000';
+    const payload = {
+      points: smoothedPoints.map(p => ({
+        x: Math.round(p.distFromStart * 10) / 10,
+        y: Math.round(p.ele * 10) / 10
+      }))
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+    const resp = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data.climb_indexes)) {
+        detectedIndexPairs = data.climb_indexes;
+        apiSuccess = true;
+      }
+    }
+  } catch (err) {
+    console.warn('Bryton Climb API unavailable or timed out, using local Bryton algorithm fallback:', err);
+  }
+
+  // Local fallback segmentation if API was unreachable
+  if (!apiSuccess) {
+    detectedIndexPairs = detectClimbSegmentsLocal(smoothedPoints);
+  }
+
+  // Construct climb objects with UCI scoring and categorization
   const climbs = [];
+  detectedIndexPairs.forEach(([sIdx, eIdx]) => {
+    if (sIdx >= 0 && eIdx < smoothedPoints.length && sIdx < eIdx) {
+      const startPt = smoothedPoints[sIdx];
+      const endPt = smoothedPoints[eIdx];
+      const dist = endPt.distFromStart - startPt.distFromStart;
+      const eleGain = endPt.ele - startPt.ele;
+      const avgGrad = dist > 0 ? (eleGain / dist) * 100 : 0;
+      const score = calculateClimbScore(avgGrad, eleGain);
+      const category = getClimbCategory(score);
+
+      if (dist >= 300 && avgGrad >= 1.5) {
+        climbs.push({
+          startIndex: sIdx,
+          endIndex: eIdx,
+          dist,
+          eleGain,
+          avgGrad,
+          score,
+          category
+        });
+      }
+    }
+  });
+
+  return climbs;
+}
+
+// Alias for backwards compatibility
+const detectClimbs = detectBrytonClimbs;
+
+/**
+ * Local Bryton segmentation fallback matching parameters:
+ * c1=1.8% min avg grade, c3=300m min dist, c2=2000m max merge, d1=1000m downhill tolerance
+ */
+function detectClimbSegmentsLocal(points) {
+  const segments = [];
   let inClimb = false;
   let startIndex = 0;
+  let dropDistance = 0;
+  let peakEle = 0;
+  let peakIdx = 0;
 
   for (let i = 1; i < points.length; i++) {
+    const cur = points[i];
     if (!inClimb) {
-      // Check if starting a climb: gradient > 2% over next 100m
-      let futureIdx = i;
-      while (futureIdx < points.length && points[futureIdx].distFromStart - points[i].distFromStart < 100) futureIdx++;
-      if (futureIdx < points.length) {
-        let d = points[futureIdx].distFromStart - points[i].distFromStart;
-        let e = points[futureIdx].ele - points[i].ele;
-        if ((e / d) * 100 >= 2.0) {
+      // Lookahead 150m with slope >= 1.8%
+      let lookIdx = i;
+      while (lookIdx < points.length && points[lookIdx].distFromStart - cur.distFromStart < 150) {
+        lookIdx++;
+      }
+      if (lookIdx < points.length) {
+        const d = points[lookIdx].distFromStart - cur.distFromStart;
+        const e = points[lookIdx].ele - cur.ele;
+        if (d > 0 && (e / d) * 100 >= 1.8) {
           inClimb = true;
-          startIndex = i;
+          startIndex = i - 1;
+          peakEle = cur.ele;
+          peakIdx = i;
+          dropDistance = 0;
         }
       }
     } else {
-      // Check if climb has ended: gradient <= 0% over next 150m (allow small flat sections), or reached end of route
-      let isEnd = false;
-      let futureIdx = i;
-      while (futureIdx < points.length && points[futureIdx].distFromStart - points[i].distFromStart < 150) futureIdx++;
-
-      if (futureIdx < points.length) {
-        let d = points[futureIdx].distFromStart - points[i].distFromStart;
-        let e = points[futureIdx].ele - points[i].ele;
-        if ((e / d) * 100 <= -1.0) { // drops significantly
-          isEnd = true;
-        }
+      if (cur.ele > peakEle) {
+        peakEle = cur.ele;
+        peakIdx = i;
+        dropDistance = 0;
       } else {
-        isEnd = true; // end of route
+        dropDistance += (cur.distFromStart - points[i - 1].distFromStart);
       }
 
+      // Check if climb ended (downhill exceeded d1=1000m or route ended)
+      let isEnd = (i === points.length - 1) || (dropDistance >= 1000);
       if (isEnd) {
-        let totalDist = points[i].distFromStart - points[startIndex].distFromStart;
-        let totalEle = points[i].ele - points[startIndex].ele;
-        let avgGrad = (totalEle / totalDist) * 100;
-        let score = totalDist * avgGrad;
+        const actualEndIdx = peakIdx;
+        const dist = points[actualEndIdx].distFromStart - points[startIndex].distFromStart;
+        const gain = points[actualEndIdx].ele - points[startIndex].ele;
+        const avgGrad = dist > 0 ? (gain / dist) * 100 : 0;
 
-        const minD = parseFloat(elements.climbMinDist ? elements.climbMinDist.value : 500);
-        const minG = parseFloat(elements.climbMinGrade ? elements.climbMinGrade.value : 3.0);
-        const minS = parseFloat(elements.climbMinScore ? elements.climbMinScore.value : 1500);
-
-        if (totalDist >= minD && avgGrad >= minG && score >= minS) {
-          climbs.push({
-            startIndex: startIndex,
-            endIndex: i,
-            dist: totalDist,
-            eleGain: totalEle,
-            avgGrad: avgGrad
-          });
+        if (dist >= 300 && avgGrad >= 1.8) {
+          // Merge with previous climb if gap <= c2 (2000m)
+          if (segments.length > 0) {
+            const prev = segments[segments.length - 1];
+            const gap = points[startIndex].distFromStart - points[prev[1]].distFromStart;
+            if (gap <= 2000) {
+              const combinedDist = points[actualEndIdx].distFromStart - points[prev[0]].distFromStart;
+              const combinedGain = points[actualEndIdx].ele - points[prev[0]].ele;
+              const combinedGrad = combinedDist > 0 ? (combinedGain / combinedDist) * 100 : 0;
+              if (combinedGrad >= 1.8) {
+                prev[1] = actualEndIdx;
+                inClimb = false;
+                continue;
+              }
+            }
+          }
+          segments.push([startIndex, actualEndIdx]);
         }
         inClimb = false;
       }
     }
   }
-  return climbs;
+  return segments;
 }
 
 // ------------------------------------------------
@@ -3530,13 +3694,14 @@ function renderTurnsTable(instructions) {
       });
 
       const climbName = climb.name || `${climbPrefix} ${idx + 1}`;
+      const catBadge = climb.category ? `<span class="badge" style="margin-left:6px; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:700; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;">${climb.category}</span>` : '';
       const btnEdit = `<button type="button" class="btn-edit-item" data-type="climb" data-index="${idx}"><i data-lucide="edit-2"></i></button>`;
       tr.innerHTML = `
         <td>${idx + 1}</td>
         <td><div class="turn-icon-cell">🧗</div></td>
-        <td><strong>${climbName}</strong></td>
+        <td><strong>${climbName}</strong>${catBadge}</td>
         <td>${climb.avgGrad.toFixed(1)}%</td>
-        <td>${Math.round(climb.dist)}</td>
+        <td>${Math.round(climb.dist)} m</td>
         <td class="coord-cell">${state.points[climb.startIndex].lat.toFixed(5)}, ${state.points[climb.startIndex].lon.toFixed(5)}</td>
         <td class="text-center"><div style="display:flex; justify-content:center; align-items:center; gap:4px;">${btnEdit}</div></td>
       `;
