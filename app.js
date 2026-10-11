@@ -983,7 +983,7 @@ function resetState() {
   clearClimbHighlight();
 
   if (state.isEditingRoute) toggleRouteEditing();
-  if (state.isAddingManualTurn) toggleAddManualTurnMode();
+  if (state.isAddingManualTurn) disableManualTurnMode();
   if (state.isCreatingRoute) toggleCreateManualRoute();
 
   elements.brytonRouteName.value = '';
@@ -1026,7 +1026,7 @@ function resetState() {
   const poisBody = document.getElementById('poisTableBody');
   const climbsBody = document.getElementById('climbsTableBody');
   if (poisBody) poisBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyPois') : 'Belum ada data.'}</td></tr>`;
-  if (climbsBody) climbsBody.innerHTML = `<tr class="empty-row"><td colspan="7" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
+  if (climbsBody) climbsBody.innerHTML = `<tr class="empty-row"><td colspan="9" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
 
   const bTurns = document.getElementById('badge-turns');
   const bPois = document.getElementById('badge-pois');
@@ -1132,6 +1132,15 @@ function parseGpx() {
 
   renderTrackOnMap();
   renderElevationChart();
+
+  // Otomatis deteksi tanjakan saat rute GPX diimport (sama seperti Bryton Active resmi)
+  detectBrytonClimbs(state.points).then(climbs => {
+    state.climbs = climbs;
+    renderTurnsTable(state.combinedInstructions || []);
+    renderElevationChart();
+  }).catch(err => {
+    console.warn('Auto detect climbs error:', err);
+  });
 }
 
 function renderElevationChart(highlightClimbObj = null) {
@@ -1419,7 +1428,7 @@ function toggleRouteEditing() {
   }
 
   if (state.isAddingManualTurn) {
-    toggleAddManualTurnMode();
+    disableManualTurnMode();
   }
 
   state.isEditingRoute = !state.isEditingRoute;
@@ -1962,6 +1971,31 @@ async function saveRouteEditing() {
   showToast(t('toastRouteUpdated'), 'success');
 }
 
+function disableManualTurnMode() {
+  if (!state.isAddingManualTurn) return;
+  state.isAddingManualTurn = false;
+  state.manualAddMode = null;
+  if (elements.btnAddTurnManual) {
+    elements.btnAddTurnManual.classList.remove('active');
+    const span = elements.btnAddTurnManual.querySelector('span');
+    if (span) {
+      span.setAttribute('data-i18n', 'btnAddTurn');
+      span.textContent = t('btnAddTurn');
+    }
+  }
+  if (elements.btnAddPoiManual) {
+    elements.btnAddPoiManual.classList.remove('active');
+    const span = elements.btnAddPoiManual.querySelector('span');
+    if (span) {
+      span.setAttribute('data-i18n', 'btnAddPoiToolbar');
+      span.textContent = t('btnAddPoiToolbar');
+    }
+  }
+  if (elements.addTurnStatusBar) {
+    elements.addTurnStatusBar.classList.add('hidden');
+  }
+}
+
 /**
  * Manual Turn Feature:
  * Allows user to add a custom turn by clicking on the map.
@@ -1978,12 +2012,13 @@ function toggleAddManualTurnMode(mode = 'turn') {
 
   // If already adding and clicking the same mode, toggle off
   if (state.isAddingManualTurn && state.manualAddMode === mode) {
-    state.isAddingManualTurn = false;
-  } else {
-    // Enable adding with new mode
-    state.isAddingManualTurn = true;
-    state.manualAddMode = mode;
+    disableManualTurnMode();
+    return;
   }
+
+  // Enable adding with new mode
+  state.isAddingManualTurn = true;
+  state.manualAddMode = mode;
 
   // Reset UI
   elements.btnAddTurnManual.classList.remove('active');
@@ -1994,21 +2029,19 @@ function toggleAddManualTurnMode(mode = 'turn') {
   elements.btnAddPoiManual.querySelector('span').textContent = t('btnAddPoiToolbar');
   elements.addTurnStatusBar.classList.add('hidden');
 
-  if (state.isAddingManualTurn) {
-    if (mode === 'turn') {
-      elements.btnAddTurnManual.classList.add('active');
-      elements.btnAddTurnManual.querySelector('span').setAttribute('data-i18n', 'btnCancelAddTurn');
-      elements.btnAddTurnManual.querySelector('span').textContent = t('btnCancelAddTurn');
-    } else {
-      elements.btnAddPoiManual.classList.add('active');
-      elements.btnAddPoiManual.querySelector('span').setAttribute('data-i18n', 'btnCancelAddPoiToolbar');
-      elements.btnAddPoiManual.querySelector('span').textContent = t('btnCancelAddPoiToolbar');
-    }
-
-    elements.addTurnStatusBar.classList.remove('hidden');
-    elements.addTurnStatusBar.querySelector('span').textContent = mode === 'turn' ? t('modeAddTurnActive') : t('modeAddPoiActive');
-    showToast(t('toastClickManualTurn'), 'info');
+  if (mode === 'turn') {
+    elements.btnAddTurnManual.classList.add('active');
+    elements.btnAddTurnManual.querySelector('span').setAttribute('data-i18n', 'btnCancelAddTurn');
+    elements.btnAddTurnManual.querySelector('span').textContent = t('btnCancelAddTurn');
+  } else {
+    elements.btnAddPoiManual.classList.add('active');
+    elements.btnAddPoiManual.querySelector('span').setAttribute('data-i18n', 'btnCancelAddPoiToolbar');
+    elements.btnAddPoiManual.querySelector('span').textContent = t('btnCancelAddPoiToolbar');
   }
+
+  elements.addTurnStatusBar.classList.remove('hidden');
+  elements.addTurnStatusBar.querySelector('span').textContent = mode === 'turn' ? t('modeAddTurnActive') : t('modeAddPoiActive');
+  showToast(t('toastClickManualTurn'), 'info');
 }
 
 async function handleMapClick(e) {
@@ -2140,7 +2173,7 @@ function updateCreateManualVisibility() {
 
 function toggleCreateManualRoute() {
   if (state.isEditingRoute) toggleRouteEditing();
-  if (state.isAddingManualTurn) toggleAddManualTurnMode();
+  if (state.isAddingManualTurn) disableManualTurnMode();
 
   state.isCreatingRoute = !state.isCreatingRoute;
 
@@ -2245,7 +2278,7 @@ function closeAllModals() {
   state.pendingManualCoord = null;
   state.editingItem = null;
   if (state.isAddingManualTurn) {
-    toggleAddManualTurnMode(state.manualAddMode);
+    disableManualTurnMode();
   }
 }
 window.closeAllModals = closeAllModals;
@@ -2262,7 +2295,7 @@ function closeModal() {
 function openRoundTripModal() {
   if (state.isEditingRoute) toggleRouteEditing();
   if (state.isCreatingRoute) toggleCreateManualRoute();
-  if (state.isAddingManualTurn) toggleAddManualTurnMode();
+  if (state.isAddingManualTurn) disableManualTurnMode();
 
   // If no start coordinate chosen yet, try to default to existing route first point or map center
   if (!state.roundTripStart) {
@@ -2597,54 +2630,32 @@ async function generateRoundTripRoute() {
     });
 
     // ------------------------------------------------
-    // SMART CLIMB DENSIFICATION & DETECTION FOR ROUND TRIP
+    // OFFICIAL BRYTON CLIMB DETECTION FOR ROUND TRIP
     // ------------------------------------------------
-    const densePoints = densifyRoute(state.points, 20);
-    const denseClimbs = await detectBrytonClimbs(densePoints);
+    const detectedClimbs = await detectBrytonClimbs(state.points);
+    state.climbs = detectedClimbs;
 
-    const finalPoints = [];
-    const indexMap = new Map();
-    let originalIdx = 0;
-    densePoints.forEach((p, denseIdx) => {
-      const inClimb = denseClimbs.some(c => denseIdx >= c.startIndex && denseIdx <= c.endIndex);
-      if (p.isOriginal || inClimb) {
-        finalPoints.push(p);
-        if (p.isOriginal) {
-          indexMap.set(originalIdx, finalPoints.length - 1);
-          originalIdx++;
-        }
-      }
-    });
-
-    state.points = finalPoints;
-    state.osmTurns.forEach(t => {
-      if (indexMap.has(t.index)) t.index = indexMap.get(t.index);
-    });
-
-    state.climbs = [];
     state.climbTurns = [];
-    denseClimbs.forEach((c, idx) => {
-      const startPt = densePoints[c.startIndex];
-      const endPt = densePoints[c.endIndex];
-      const newStartIdx = finalPoints.indexOf(startPt);
-      const newEndIdx = finalPoints.indexOf(endPt);
-      state.climbs.push({ ...c, startIndex: newStartIdx, endIndex: newEndIdx });
-
+    state.climbs.forEach((c, idx) => {
+      const startPt = state.points[c.startIndex];
+      const endPt = state.points[c.endIndex];
       const catLabel = c.category ? ` (${c.category})` : '';
+
       state.climbTurns.push({
         id: Math.random().toString(36).substr(2, 9),
         source: 'climb',
-        index: newStartIdx,
+        index: c.startIndex,
         lat: startPt.lat,
         lon: startPt.lon,
         directionCode: 190,
         instruction: `Climb ${idx + 1} Start${catLabel}`,
         distFromStart: startPt.distFromStart
       });
+
       state.climbTurns.push({
         id: Math.random().toString(36).substr(2, 9),
         source: 'climb',
-        index: newEndIdx,
+        index: c.endIndex,
         lat: endPt.lat,
         lon: endPt.lon,
         directionCode: 191,
@@ -2801,65 +2812,34 @@ async function runTurnAnalysis() {
     }
 
     // ------------------------------------------------
-    // SMART CLIMB DENSIFICATION & CLEANUP LOGIC
+    // OFFICIAL BRYTON CLIMB DETECTION & TURN INTEGRATION
     // ------------------------------------------------
-    // 1. Densify route so that max distance between points is 20 m (matching Bryton Active APK)
-    const densePoints = densifyRoute(state.points, 20);
+    // 1. Deteksi tanjakan langsung pada titik rute asli menggunakan spesifikasi resmi Bryton
+    const detectedClimbs = await detectBrytonClimbs(state.points);
+    state.climbs = detectedClimbs;
 
-    // 2. Detect climbs on the dense route using official Bryton algorithm
-    const denseClimbs = await detectBrytonClimbs(densePoints);
-
-    // 3. Build a final points array that keeps original points
-    //    and also retains every point that lies inside a climb segment.
-    const finalPoints = [];
-    const indexMap = new Map(); // original index → new index after cleanup
-    let originalIdx = 0;
-    densePoints.forEach((p, denseIdx) => {
-      const inClimb = denseClimbs.some(c => denseIdx >= c.startIndex && denseIdx <= c.endIndex);
-      if (p.isOriginal || inClimb) {
-        finalPoints.push(p);
-        if (p.isOriginal) {
-          indexMap.set(originalIdx, finalPoints.length - 1);
-          originalIdx++;
-        }
-      }
-    });
-
-    // 4. Replace the global points with the cleaned‑up version
-    state.points = finalPoints;
-
-    // 5. Adjust indexes of pre‑existing turn objects (OSM, extra, manual)
-    state.osmTurns.forEach(t => t.index = indexMap.get(t.index));
-    state.extraTurns.forEach(t => t.index = indexMap.get(t.index));
-    if (state.manualTurns) {
-      state.manualTurns.forEach(t => t.index = indexMap.get(t.index));
-    }
-
-    // 6. Build climbTurns from denseClimbs using the new indexes
-    state.climbs = [];
+    // 2. Buat climbTurns (Start: 190, End: 191) sesuai standar Bryton Active
     state.climbTurns = [];
-    denseClimbs.forEach((c, idx) => {
-      const startPt = densePoints[c.startIndex];
-      const endPt = densePoints[c.endIndex];
-      const newStartIdx = finalPoints.indexOf(startPt);
-      const newEndIdx = finalPoints.indexOf(endPt);
-      state.climbs.push({ ...c, startIndex: newStartIdx, endIndex: newEndIdx });
-
+    state.climbs.forEach((c, idx) => {
+      const startPt = state.points[c.startIndex];
+      const endPt = state.points[c.endIndex];
       const catLabel = c.category ? ` (${c.category})` : '';
+
       state.climbTurns.push({
         id: Math.random().toString(36).substr(2, 9),
         source: 'climb',
-        index: newStartIdx,
+        index: c.startIndex,
         lat: startPt.lat,
         lon: startPt.lon,
         directionCode: 190,
         instruction: `Climb ${idx + 1} Start${catLabel}`,
         distFromStart: startPt.distFromStart
       });
+
       state.climbTurns.push({
         id: Math.random().toString(36).substr(2, 9),
         source: 'climb',
-        index: newEndIdx,
+        index: c.endIndex,
         lat: endPt.lat,
         lon: endPt.lon,
         directionCode: 191,
@@ -2867,7 +2847,6 @@ async function runTurnAnalysis() {
         distFromStart: endPt.distFromStart
       });
     });
-
 
     let combined = finalizeInstructions(state.points, state.osmTurns, state.extraTurns, state.manualTurns, state.climbTurns);
 
@@ -3100,14 +3079,16 @@ async function detectBrytonClimbs(points) {
     return [];
   }
 
-  // Siapkan payload titik raw (x: distance, y: altitude) tanpa pre-smoothing berlebihan
-  // karena backend Bryton Active memproses raw altitude points secara native.
-  const payload = {
-    points: points.map(p => ({
-      x: Math.round(p.distFromStart * 10) / 10,
-      y: Math.round((p.ele || 0) * 10) / 10
-    }))
-  };
+  // Siapkan payload titik raw sesuai spesifikasi persis Bryton Active APK (ClimbProUtil.pointsToClimbIndex)
+  // x = jarak kumulatif titik ke-i, y = elevasi titik ke-(i-1)
+  const payloadPoints = [];
+  for (let i = 1; i < points.length; i++) {
+    payloadPoints.push({
+      x: Math.round(points[i].distFromStart * 10) / 10,
+      y: Math.round((points[i - 1].ele || 0) * 10) / 10
+    });
+  }
+  const payload = { points: payloadPoints };
 
   let apiSuccess = false;
   let detectedIndexPairs = [];
@@ -3115,7 +3096,7 @@ async function detectBrytonClimbs(points) {
   // 1. Coba panggil proxy /api/bryton-climb terlebih dahulu (aman dari CORS di dev server & Vercel)
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     const resp = await fetch('/api/bryton-climb', {
       method: 'POST',
@@ -3127,7 +3108,7 @@ async function detectBrytonClimbs(points) {
 
     if (resp.ok) {
       const data = await resp.json();
-      if (Array.isArray(data.climb_indexes)) {
+      if (Array.isArray(data.climb_indexes) && data.climb_indexes.length > 0) {
         detectedIndexPairs = data.climb_indexes;
         apiSuccess = true;
       }
@@ -3141,7 +3122,7 @@ async function detectBrytonClimbs(points) {
     try {
       const apiUrl = 'https://okaymlks2a.execute-api.us-west-2.amazonaws.com/prod/api/v1/?g1=150&g2=1.5&g3=150&c1=1.8&c2=2000&c3=300&d1=1000';
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
 
       const resp = await fetch(apiUrl, {
         method: 'POST',
@@ -3153,7 +3134,7 @@ async function detectBrytonClimbs(points) {
 
       if (resp.ok) {
         const data = await resp.json();
-        if (Array.isArray(data.climb_indexes)) {
+        if (Array.isArray(data.climb_indexes) && data.climb_indexes.length > 0) {
           detectedIndexPairs = data.climb_indexes;
           apiSuccess = true;
         }
@@ -3660,7 +3641,7 @@ function renderTurnsTable(instructions) {
   if (instructions.length === 0) {
     turnsBody.innerHTML = `<tr class="empty-row"><td colspan="8" class="text-center">${typeof t === 'function' ? t('emptyTable') : 'Belum ada data.'}</td></tr>`;
     poisBody.innerHTML = `<tr class="empty-row"><td colspan="6" class="text-center">${typeof t === 'function' ? t('emptyPois') : 'Belum ada data.'}</td></tr>`;
-    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="7" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
+    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="9" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data.'}</td></tr>`;
     return;
   }
 
@@ -3723,7 +3704,7 @@ function renderTurnsTable(instructions) {
 
   // Render Climbs separately
   if (state.climbs.length === 0) {
-    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="7" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data Tanjakan.'}</td></tr>`;
+    climbsBody.innerHTML = `<tr class="empty-row"><td colspan="9" class="text-center">${typeof t === 'function' ? t('emptyClimbs') : 'Belum ada data Tanjakan.'}</td></tr>`;
   } else {
     const climbPrefix = typeof t === 'function' ? t('climbPrefix') : 'Tanjakan';
     state.climbs.forEach((climb, idx) => {
@@ -3739,13 +3720,22 @@ function renderTurnsTable(instructions) {
       const climbName = climb.name || `${climbPrefix} ${idx + 1}`;
       const catBadge = climb.category ? `<span class="badge" style="margin-left:6px; font-size:11px; padding:2px 6px; border-radius:4px; font-weight:700; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd;">${climb.category}</span>` : '';
       const btnEdit = `<button type="button" class="btn-edit-item" data-type="climb" data-index="${idx}"><i data-lucide="edit-2"></i></button>`;
+
+      const startPt = state.points[climb.startIndex];
+      const startDist = startPt ? (startPt.distFromStart || 0) : 0;
+      const startKmStr = `${(startDist / 1000).toFixed(2)} km`;
+      const lenStr = climb.dist >= 1000 ? `${(climb.dist / 1000).toFixed(2)} km` : `${Math.round(climb.dist)} m`;
+      const gainStr = `${Math.round(climb.eleGain || 0)} m`;
+
       tr.innerHTML = `
         <td>${idx + 1}</td>
         <td><div class="turn-icon-cell">🧗</div></td>
         <td><strong>${climbName}</strong>${catBadge}</td>
+        <td>${startKmStr}</td>
+        <td>${lenStr}</td>
+        <td>${gainStr}</td>
         <td>${climb.avgGrad.toFixed(1)}%</td>
-        <td>${Math.round(climb.dist)} m</td>
-        <td class="coord-cell">${state.points[climb.startIndex].lat.toFixed(5)}, ${state.points[climb.startIndex].lon.toFixed(5)}</td>
+        <td class="coord-cell">${startPt ? `${startPt.lat.toFixed(5)}, ${startPt.lon.toFixed(5)}` : '-'}</td>
         <td class="text-center"><div style="display:flex; justify-content:center; align-items:center; gap:4px;">${btnEdit}</div></td>
       `;
       climbsBody.appendChild(tr);
