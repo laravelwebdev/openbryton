@@ -11,7 +11,7 @@ const firebaseConfig = {
 };
 
 
-let app, auth, db, storage;
+let app, auth, db;
 const isMockMode = (firebaseConfig.projectId === "your-app");
 
 try {
@@ -19,7 +19,6 @@ try {
     app = firebase.initializeApp(firebaseConfig);
     auth = firebase.auth();
     db = firebase.firestore();
-    storage = firebase.storage();
   } else {
     console.warn("MOCK MODE: Firebase config is placeholder. Using LocalStorage for database.");
   }
