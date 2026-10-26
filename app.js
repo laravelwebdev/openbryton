@@ -2754,6 +2754,7 @@ async function generateRoundTripRoute() {
     elements.btnDownloadKml.disabled = false;
     elements.btnDownloadGpx.disabled = false;
     elements.btnDownloadFit.disabled = false;
+    if (elements.btnShareBrytonActive) elements.btnShareBrytonActive.disabled = false;
     if (elements.btnToggleDownload) elements.btnToggleDownload.disabled = false;
 
     showToast(typeof t === 'function' ? t('toastRtSuccess') : 'Rute round trip berhasil dibuat!', 'success');
